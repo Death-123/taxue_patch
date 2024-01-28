@@ -317,7 +317,7 @@ local function getItemInfo(target)
     if target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
-        if interior then
+        if interior and TaxuePatch.cfg.SHOW_SHOP then
             local shopItemList = {}
             local maxNameLength = 0
             local maxCostLength = 0
@@ -424,23 +424,25 @@ local function getItemInfo(target)
                 local lineNum = 0
                 local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
                     "gem", "egg_all", "book2", "book3", "book1", "golden_food", "treasure_map", "weapon1",
-                    "weapon2", "armor1", "armor2", "key", "agentia_all", "others" 
+                    "weapon2", "armor1", "armor2", "key", "agentia_all", "others"
                 }
                 if maxLineNum > 0 then
-                    for _, order in pairs(orders) do
-                        for typeName, amount in pairs(target.amountIndex) do
-                            if typeName == order then
-                                if lineNum <= maxLineNum then
-                                    local valueStr = target.valueMap[typeName].hasValue and "/总价值" .. formatCoins(target.valueMap[typeName].value) or "/无法售出"
-                                    Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%d"):format(TableCount(target.item_list[typeName]), amount)) .. valueStr)
+                    if target.amountIndex then
+                        for _, order in pairs(orders) do
+                            for typeName, amount in pairs(target.amountIndex) do
+                                if typeName == order then
+                                    if lineNum <= maxLineNum then
+                                        local valueStr = target.valueMap[typeName].hasValue and "/总价值" .. formatCoins(target.valueMap[typeName].value) or "/无法售出"
+                                        Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%d"):format(TableCount(target.item_list[typeName]), amount)) .. valueStr)
+                                    end
+                                    lineNum = lineNum + 1
+                                    break
                                 end
-                                lineNum = lineNum + 1
-                                break
                             end
                         end
-                    end
-                    if lineNum > maxLineNum then
-                        Info:Add("...")
+                        if lineNum > maxLineNum then
+                            Info:Add("...")
+                        end
                     end
                 else
                     lineNum = TableCount(target.item_list)

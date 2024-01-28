@@ -78,6 +78,7 @@ local PATCHS = {
             { index = 3070, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
         }
     },
+    --#region 打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = require "patchData/taxue_super_package_machine",
     ["scripts/prefabs/taxue_bundle.lua"] = {
         mode = "patch",
@@ -86,7 +87,33 @@ local PATCHS = {
             { index = 92, endIndex = 176, type = "override", content = "        UnpackSuperPackage(inst)" }
         }
     },
-    ["scripts/prefabs/taxue_book.lua"] = require "patchData/taxue_book"
+    ["scripts/prefabs/taxue_book.lua"] = require "patchData/taxue_book",
+    --#endregion
+    --箱子可以被锤
+    ["scripts/prefabs/taxue_locked_chest.lua"] = {
+        mode = "patch",
+        md5 = "6c6f63616c20617373657473203d7b0d",
+        lines = {
+            { index = 671, type = "override" }
+        }
+    },
+    --移除使用宝石时的保存
+    ["scripts/prefabs/taxue_equipment.lua"] = {
+        mode = "patch",
+        md5 = "2d2de5a484e79086e8a385e5a487e58f",
+        lines = {
+            { index = 292, type = "override" },
+            { index = 304, type = "override" },
+            { index = 330, type = "override" },
+            { index = 348, type = "override" },
+            { index = 426, type = "override" },
+        }
+    },
+    --打包机只能黄金法杖摧毁
+    ["scripts/prefabs/taxue_staff.lua"] = {
+        md5 = "0d0a6c6f63616c2066756e6374696f6e",
+        lines = {}
+    }
 }
 
 local function patchFile(filePath, data)
@@ -111,10 +138,10 @@ local function patchFile(filePath, data)
                 local inPatch = false
                 local type = ""
                 while line do
-                    if line:startWith(patchStr) then
+                    if not inPatch and line:startWith(patchStr) then
                         inPatch = true
-                        type = line:sub(#patchStr + 1)
-                    elseif line:startWith("--endPatch") then
+                        type = line:sub(#patchStr + 1):trim()
+                    elseif inPatch and line:startWith("--endPatch") then
                         line = file:read("*l")
                         inPatch = false
                     end
@@ -163,7 +190,7 @@ local function patchFile(filePath, data)
                 patchLine = patchFile:read("*l")
             end
             patchFile:close()
-        elseif data.mode == "patch" then
+        else
             print("patching " .. filePath)
             local patchLines = data.lines
             local i = 1
@@ -172,7 +199,8 @@ local function patchFile(filePath, data)
             --遍历原文件每一行
             for lineNum, line in ipairs(oringinContents) do
                 if patchLines[i] then
-                    index, type, endIndex, content = patchLines[i].index, patchLines[i].type, patchLines[i].endIndex, patchLines[i].content
+                    local linedata = patchLines[i]
+                    index, type, endIndex, content = linedata.index, linedata.type or "override", linedata.endIndex or linedata.index, linedata.content
                     --是目标行
                     if lineNum == index then
                         table.insert(contents, "--patch " .. type)
@@ -187,7 +215,7 @@ local function patchFile(filePath, data)
                             i = i + 1
                         end
                         --是目标结束行
-                    elseif inPatch and lineNum == (endIndex and endIndex + 1) then
+                    elseif inPatch and lineNum == endIndex + 1 then
                         inPatch = false
                         table.insert(contents, "--endPatch")
                         i = i + 1
@@ -249,15 +277,68 @@ end
 local function patchAll()
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
+            if data.lines and #data.lines == 0 then
+                data.mode = "unpatch"
+            end
             patchFile(path, data)
         end
     end
 end
 
+local function disablePatch(key)
+    PATCHS[key].mode = "unpatch"
+end
+
+local function addPatch(key, line)
+    table.insert(PATCHS[key].lines, line)
+end
+
 if not cfg.PACKAGE_PATCH then
-    PATCHS["scripts/prefabs/taxue_super_package_machine.lua"].mode = "unpatch"
-    PATCHS["scripts/prefabs/taxue_bundle.lua"].mode = "unpatch"
-    PATCHS["scripts/prefabs/taxue_book.lua"].mode = "unpatch"
+    disablePatch("scripts/prefabs/taxue_super_package_machine.lua")
+    disablePatch("scripts/prefabs/taxue_bundle.lua")
+    disablePatch("scripts/prefabs/taxue_book.lua")
+end
+
+if not cfg.CHEST_CAN_HAMMER then
+    disablePatch("scripts/prefabs/taxue_locked_chest.lua")
+end
+
+if not cfg.DISABLE_GEM_SAVE then
+    disablePatch("scripts/prefabs/taxue_equipment.lua")
+end
+
+if cfg.PACKAGE_STAFF then
+    addPatch("scripts/prefabs/taxue_staff.lua",
+        {
+            index = 288,
+            type = "override",
+            content =
+            [[        if target.prefab == "taxue_treasuretrans_monster_machine" or target.prefab == "thumper" or target.prefab == "taxue_slotmachine" or target.prefab == "super_package_machine" then  --怪物宝藏转移机,地震仪]]
+        })
+    addPatch("scripts/prefabs/taxue_staff.lua",
+        {
+            index = 437,
+            type = "override",
+            content =
+            [[            if target.prefab == "taxue_treasuretrans_monster_machine" or target.prefab == "thumper" or target.prefab == "taxue_slotmachine" or target.prefab == "super_package_machine" then]]
+        })
+    addPatch("scripts/game_changed_taxue.lua", { index = 3305, type = "add", content = [[AddPrefabPostInit("super_package_machine",function (inst) inst:RemoveComponent("workable") end)]] })
+end
+
+if cfg.BUFF_STAFF then
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 491, content = [[    inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 507, content = [[    inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 544, content = [[            inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 552, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 611, content = [[
+            local mult1 = ({1.33, 2, 3, 4, 5, 6})[cfg.BUFF_STAFF_MULT]
+            local mult2 = ({2, 4, 6, 8, 10, 12})[cfg.BUFF_STAFF_MULT]
+            inst.work_efficiency = name == "blue_staff" and mult1 or mult2
+            ]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff",cfg.BUFF_STAFF_SPEED,nil),     --彩虹法杖-冰箱背包升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff",cfg.BUFF_STAFF_SPEED,nil),            --湛青法杖-武器升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff",cfg.BUFF_STAFF_SPEED,nil),     --锻造法杖]]) })
 end
 
 -- getMd5()

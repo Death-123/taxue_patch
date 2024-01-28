@@ -1,4 +1,3 @@
---patch 3.76.1
 ItemTypeMap = {
     book1 = {
         "book_rocky",     --石虾
@@ -264,6 +263,10 @@ function AddItemToSuperPackage(package, entity, showFx)
     --特效
     if showFx then SpawnPrefab("small_puff").Transform:SetPosition(entity.Transform:GetWorldPosition()) end
     --fx.Transform:SetScale(0.5,0.5,0.5)
+    if not package.isPatched then
+        package = UnpackSuperPackage(package)
+        if not package then return end
+    end
 
     local item_list = package.item_list
     if entity.prefab == "super_package" then
@@ -320,7 +323,8 @@ function AddItemToSuperPackage(package, entity, showFx)
 end
 
 ---打开超级包裹
----@param package table
+---@param package table 
+---@return table|nil
 function UnpackSuperPackage(package)
     if package.isPatched then
         local item_list = package.item_list
@@ -397,6 +401,7 @@ function UnpackSuperPackage(package)
         end
         newPackage.isPatched = true
         giveItem(package, newPackage)
+        return newPackage
     end
     package:Remove()
 end

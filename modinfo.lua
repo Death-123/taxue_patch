@@ -1,7 +1,7 @@
 name = "踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.76.1"
+version = "3.77.2"
 forumthread = ""
 api_version = 6
 priority = -3125
@@ -29,6 +29,72 @@ configuration_options = {
             { description = "95%", data = 0.95 },
         },
         default = 0.75,
+    },
+    {
+        name = "CHEST_CAN_HAMMER",
+        label = "可以锤迷你箱",
+        hover = "让迷你箱子可以锤",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "PACKAGE_STAFF",
+        label = "打包机防破坏",
+        hover = "让打包机只能被黄金法杖摧毁",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "DISABLE_GEM_SAVE",
+        label = "禁止宝石自动保存",
+        hover = "移除使用宝石时的保存",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "BUFF_STAFF",
+        label = "增强湛青法杖",
+        hover = "提高湛青,锻造法杖的工作效率,并且提高加速数值",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },{
+        name = "BUFF_STAFF_SPEED",
+        label = "增强速度",
+        hover = "提高的速度",
+        options = {
+            { description = "50", data = 0.5 },
+            { description = "75", data = 0.75 },
+            { description = "100", data = 1 },
+            { description = "150", data = 1.5 },
+            { description = "300", data = 3 },
+        },
+        default = 0.5,
+    },
+    {
+        name = "BUFF_STAFF_MULT",
+        label = "增强效率",
+        hover = "提高的效率",
+        options = {
+            { description = "1.33/2(默认)", data = 1 },
+            { description = "2/4", data = 2 },
+            { description = "3/6", data = 3 },
+            { description = "4/8", data = 4 },
+            { description = "5/10", data = 5 },
+            { description = "6/12", data = 6 },
+        },
+        default = 1,
     },
     {
         name = "SHOW_SHOP",
