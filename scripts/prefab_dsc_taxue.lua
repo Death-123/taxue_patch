@@ -4,7 +4,11 @@ local ItemTile = require "widgets/itemtile"
 local OldGDS = ItemTile.GetDescriptionString --原版显示物品描述
 local Text = require "widgets/text"
 
+require "patchlib"
+
 local textColor = { 255, 108, 180 }
+
+--#region tool functions
 
 --获取装备颜色
 local function GetEquipmentName(position)
@@ -47,10 +51,10 @@ end
 local function formatNumber(number, formatStr)
     local number = tonumber(number)
     local a = math.floor(number)
-    local b = number - a
+    local b = number - a + 0.00000001
     local numberStr = string.reverse(tostring(a))
     local str = {}
-    local length = string.len(a)
+    local length = string.len(tostring(a))
     for i = 1, length do
         table.insert(str, string.sub(numberStr, i, i))
         if i % 3 == 0 and i < length then
@@ -68,6 +72,16 @@ local function formatNumber(number, formatStr)
     end
     return string.reverse(table.concat(str)) .. string.sub(string.format(formatStr, b), 2)
 end
+
+local function formatCoins(amount, force)
+    local amountMod100 = math.floor(amount / 100)
+    if force or amount <= amountMod100 * 100 then
+        return formatNumber(amount / 100) .. "梅币"
+    else
+        return formatNumber(amount) .. "银梅币"
+    end
+end
+--#endregion
 
 --#region Info
 ---@class Info
@@ -260,6 +274,9 @@ local function getItemInfo(target)
     if target.prefab == "golden_statue" then
         Info:Add("已收获金肉: " .. GetPlayer().golden_statue_lv .. " 枚")
     end
+    if target.prefab == "golden_statue_colorful" then
+        Info:Add("已收获金肉: " .. GetPlayer().golden_statue_colorful_lv .. " 枚")
+    end
     --黄金boss雕像
     if target.prefab == "taxue_golden_boss_altar" then
         Info:Add("变异概率: " .. string.format("%6.1f", (GetPlayer().boss_altar_value * 100)) .. " %")
@@ -295,20 +312,60 @@ local function getItemInfo(target)
         if target.day then
             Info:Add("当前天数: " .. target.day % 3 + 1 .. " / 3")
         end
-        if player.perpetual_machine_num then
-            Info:Add("已建造数量: " .. player.perpetual_machine_num .. " / " .. target.MAX_NUM)
-        end
     end
     --踏雪商店
     if target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
         if interior then
+            local shopItemList = {}
+            local maxNameLength = 0
+            local maxCostLength = 0
+            --遍历商店中所有实体
             for _, obj in pairs(interior.object_list) do
+                --如果是货架,保存物品名 花费 花费物品
                 if obj.prefab == "shop_buyer" then
                     local item = obj.components.shopdispenser:GetItem()
-                    local cost = formatNumber(obj.cost)
-                    Info:Add(STRINGS.NAMES[string.upper(item)] .. ": " .. cost .. STRINGS.NAMES[string.upper(obj.costprefab)])
+                    if item then
+                        local name = TaxueToChs(item) or item
+                        local cost = formatNumber(obj.cost)
+                        local costName = TaxueToChs(obj.costprefab) or obj.costprefab
+                        if #tostring(name) > maxNameLength then maxNameLength = #tostring(name) end
+                        if #tostring(cost) > maxCostLength then maxCostLength = #tostring(cost) end
+                        table.insert(shopItemList, { id = item, name = name, cost = cost, costName = costName })
+                    end
+                end
+            end
+            --遍历保存的物品,排序
+            local itemList = {}
+            for _, shopItem in ipairs(TaxueList.shop_item_atlas) do
+                for _, item in pairs(shopItemList) do
+                    if shopItem == item.id then
+                        table.insert(itemList, item)
+                    end
+                end
+            end
+            if #itemList < #shopItemList then
+                for _, item in ipairs(shopItemList) do
+                    local flag = true
+                    if #itemList > 0 then
+                        for i = 1, #itemList do
+                            if item == itemList[i] then
+                                flag = false
+                                break
+                            end
+                        end
+                    end
+                    if flag then
+                        table.insert(itemList, item)
+                    end
+                end
+            end
+            --添加信息
+            for _, item in ipairs(itemList) do
+                if item.name then
+                    local cost = ("%" .. maxCostLength + math.floor(#tostring(maxCostLength) / 4) .. "s"):format(item.cost):gsub(" ", "  ")
+                    Info:Add(("%-" .. maxNameLength .. "s: %s%s"):format(item.name, cost, item.costName))
                 end
             end
         end
@@ -344,23 +401,71 @@ local function getItemInfo(target)
     end
     --超级包裹
     if target.prefab == "super_package" then
-        local num = 0
-        for __, v in pairs(target.item_list) do
-            num = num + v
-        end
-        local k2, v2
-        local num2 = 0
-        while true do
-            k2, v2 = next(target.item_list, k2)
-            if not v2 then
-                break
+        if target.isPatched then
+            local totalAmount = target.amount
+            local itemsType = target.type
+            local maxLineNum = TaxuePatch.cfg.PACKAGE_DES_MAX_LINES
+            if itemsType then
+                local lineNum = 0
+                for name, amount in pairs(target.item_list[itemsType]) do
+                    if maxLineNum > 0 then
+                        amount = type(amount) == "number" and amount or TableCount(amount)
+                        if lineNum <= maxLineNum then
+                            Info:Add(TaxueToChs(name) .. ((": %d个"):format(amount)))
+                        end
+                    end
+                    lineNum = lineNum + 1
+                end
+                if lineNum > maxLineNum then
+                    Info:Add("...")
+                end
+                Info:Add(("%d种物品,物品总数量: %d"):format(lineNum, totalAmount))
             else
-                num2 = num2 + 1
+                local lineNum = 0
+                local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
+                    "gem", "egg_all", "book2", "book3", "book1", "golden_food", "treasure_map", "weapon1",
+                    "weapon2", "armor1", "armor2", "key", "agentia_all", "others" 
+                }
+                if maxLineNum > 0 then
+                    for _, order in pairs(orders) do
+                        for typeName, amount in pairs(target.amountIndex) do
+                            if typeName == order then
+                                if lineNum <= maxLineNum then
+                                    local valueStr = target.valueMap[typeName].hasValue and "/总价值" .. formatCoins(target.valueMap[typeName].value) or "/无法售出"
+                                    Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%d"):format(TableCount(target.item_list[typeName]), amount)) .. valueStr)
+                                end
+                                lineNum = lineNum + 1
+                                break
+                            end
+                        end
+                    end
+                    if lineNum > maxLineNum then
+                        Info:Add("...")
+                    end
+                else
+                    lineNum = TableCount(target.item_list)
+                end
+                Info:Add(("%d类物品,物品总数量: %d"):format(lineNum, totalAmount))
             end
+        else
+            local num = 0
+            for __, v in pairs(target.item_list) do
+                num = num + v
+            end
+            local k2, v2
+            local num2 = 0
+            while true do
+                k2, v2 = next(target.item_list, k2)
+                if not v2 then
+                    break
+                else
+                    num2 = num2 + 1
+                end
+            end
+            local num3 = target.components.container:NumItems()
+            Info:Add("可堆叠物品种类:" .. num2 .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
+            Info:Add("其他物品数量:" .. formatNumber(num3) .. "/∞个")
         end
-        local num3 = target.components.container:NumItems()
-        Info:Add("可堆叠物品种类:" .. num2 .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
-        Info:Add("其他物品数量:" .. formatNumber(num3) .. "/∞个")
     end
     --点树成精
     if target.prefab == "book_touch_leif" then
@@ -395,22 +500,33 @@ local function getItemInfo(target)
         Info:Add("重铸成功率:" .. string.format("%6.2f", GetPlayer().recasting_num * 100) .. "%")
     end
     --超级打包机
-    if target.prefab == "super_package_machine" and target.switch == "on" then
-        local kind = 0
-        local num = 0
-        local container_num = 0
-        for k, v in pairs(target.item_list) do
-            kind = kind + 1
-            num = num + v
-        end
-        local slots = target.components.container.slots
-        for __, v in pairs(slots) do
-            if v.prefab == "super_package" then
-                container_num = v.components.container:NumItems()
+    if target.prefab == "super_package_machine" then
+        if target.isPatched then
+            local slots = target.components.container.slots
+            local package = nil
+            for __, v in pairs(slots) do
+                if v.prefab == "super_package" then
+                    package = v
+                end
             end
+            getItemInfo(package)
+        elseif target.switch == "on" then
+            local kind = 0
+            local num = 0
+            local container_num = 0
+            for k, v in pairs(target.item_list) do
+                kind = kind + 1
+                num = num + v
+            end
+            local slots = target.components.container.slots
+            for __, v in pairs(slots) do
+                if v.prefab == "super_package" then
+                    container_num = v.components.container:NumItems()
+                end
+            end
+            Info:Add("可堆叠物品种类:" .. kind .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
+            Info:Add("其他物品数量:" .. formatNumber(container_num) .. "/∞个")
         end
-        Info:Add("可堆叠物品种类:" .. kind .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
-        Info:Add("其他物品数量:" .. formatNumber(container_num) .. "/∞个")
     end
     --炼药台
     if target.prefab == "taxue_agentia_station" and target.components.melter.cooking == true then
@@ -464,12 +580,15 @@ local function getItemInfo(target)
     --货币价值物品
     if target.taxue_coin_value then
         local stacksize = target.components.stackable and target.components.stackable.stacksize or 1
-        local stackValueStr = ""
+        local valueStr = formatCoins(target.taxue_coin_value)
         if stacksize > 1 then
             local stackValue = stacksize * target.taxue_coin_value
-            stackValueStr = "/总价值:" .. formatNumber(stackValue) .. "银梅币"
+            local force = stackValue > 1000
+            local stackValueStr = "/总价值:" .. formatCoins(stackValue, force)
+            Info:Add("单价:" .. valueStr .. stackValueStr)
+        else
+            Info:Add("价值:" .. valueStr)
         end
-        Info:Add("单个价值:" .. formatNumber(target.taxue_coin_value) .. "银梅币" .. stackValueStr)
     end
     --boss献祭价值
     if target.boss_altar then
