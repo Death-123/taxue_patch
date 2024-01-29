@@ -1,4 +1,21 @@
 local str79 = [[
+    if not inst.isPatched and inst.item_list and next(inst.item_list) then
+        local tempPackage = SpawnPrefab("super_package")
+        tempPackage.item_list = inst.item_list
+        if package then
+            package = MergePackage(package, tempPackage)
+        else
+            package = TransformPackage(tempPackage)
+        end
+    end
+    if package and not package.isPatched then
+        package = TransformPackage(package)
+        inst.components.container:GiveItem(package)
+    end
+    inst.isPatched = true
+]]
+
+local str93 = [[
         local blackList = {"chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone", "blooming_armor", "blooming_headwear"}
         local pos = Vector3(inst.Transform:GetWorldPosition())
         local ents = TheSim:FindEntities(pos.x, pos.y, pos.z, range, nil, { "INLIMBO", "NOCLICK", "catchable", "fire" })
@@ -22,7 +39,6 @@ local str79 = [[
             package.type = nil
             package.name = TaxueToChs(package.prefab)
         end
-        package.isPatched = true
         --判断字典型数组是否空
         if TableCount(package.item_list) == 0 and package.components.container:IsEmpty() then
             package:Remove()
@@ -35,13 +51,8 @@ local data = {
     mode = "patch",
     md5 = "6c6f63616c206173736574733d0d0a7b",
     lines = {
-        { index = 79,  endIndex = 82, type = "override", content = "    inst.isPatched = true" },
-        {
-            index = 93,
-            endIndex = 134,
-            type = "override",
-            content = str79
-        },
+        { index = 79,  endIndex = 82,  type = "override", content = str79 },
+        { index = 93,  endIndex = 134, type = "override", content = str93 },
         { index = 148, endIndex = 151, type = "override" }
     }
 }

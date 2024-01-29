@@ -1,7 +1,7 @@
-name = "踏雪补丁"
+name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.77.2"
+version = "3.77.4"
 forumthread = ""
 api_version = 6
 priority = -3125
@@ -19,7 +19,7 @@ configuration_options = {
     {
         name = "HIGH_EQUIPMENT_PERCENT",
         label = "高属性五彩比值",
-        hover = "打包时判断高属性五彩装备的(属性/能掉落的最大属性)比值",
+        hover = "设定打包时判断高属性五彩装备的 (属性/能掉落的最大属性) 比值",
         options = {
             { description = "25%", data = 0.25 },
             { description = "50%", data = 0.50 },
@@ -69,13 +69,14 @@ configuration_options = {
             { description = "禁用", data = false },
         },
         default = true,
-    },{
+    },
+    {
         name = "BUFF_STAFF_SPEED",
         label = "增强速度",
-        hover = "提高的速度",
+        hover = "湛青/五彩/锻造法杖提高的速度",
         options = {
-            { description = "50", data = 0.5 },
-            { description = "75", data = 0.75 },
+            { description = "50",  data = 0.5 },
+            { description = "75",  data = 0.75 },
             { description = "100", data = 1 },
             { description = "150", data = 1.5 },
             { description = "300", data = 3 },
@@ -85,7 +86,7 @@ configuration_options = {
     {
         name = "BUFF_STAFF_MULT",
         label = "增强效率",
-        hover = "提高的效率",
+        hover = "湛青/锻造法杖提高的工作效率",
         options = {
             { description = "1.33/2(默认)", data = 1 },
             { description = "2/4", data = 2 },
@@ -143,5 +144,25 @@ configuration_options = {
             { description = "15", data = 15 },
         },
         default = 5,
+    },
+    {
+        name = "FLOWERPOT_PHYSICS",
+        label = "移除花盆碰撞",
+        hover = "移除花盆碰撞",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "AUTO_AMULET",
+        label = "终极自动护符",
+        hover = "终极自动护符",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
     },
 }

@@ -43,7 +43,6 @@ end
 
 --#endregion
 
-PrefabFiles = {}
 GLOBAL.TaxuePatch = { cfg = {} }
 local TaxuePatch = GLOBAL.TaxuePatch
 for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
@@ -59,14 +58,31 @@ local patchComment = patchStr .. patchVersionStr
 local modPath = "../mods/" .. modname .. "/"
 local taxueName = "Taxue1.00"
 local taxueLoaded = false
+local taxueEnabled = false
 for _, name in pairs(KnownModIndex:GetModNames()) do
     if string.gsub(KnownModIndex:GetModFancyName(name), "%s+", "") == "踏雪" then
+        local taxueInfo = KnownModIndex.savedata.known_mods[name]
         taxueLoaded = true
+        taxueEnabled = taxueInfo.enabled
         taxueName = name
         break
     end
 end
 local taxuePath = "../mods/" .. taxueName .. "/"
+local prefabs = {}
+PrefabFiles = {}
+
+if taxueEnabled and cfg.AUTO_AMULET then
+    print("自动维修护符")
+    table.insert(PrefabFiles, "taxue_ultimate_armor_auto_amulet")
+    Recipe("taxue_ultimate_armor_auto_amulet",
+        {
+            Ingredient("chest_essence", 10, "images/inventoryimages/chest_essence.xml"),
+            Ingredient("thulecite", 20),
+            Ingredient("greengem", 10)
+        },
+        RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
+end
 
 local PATCHS = {
     ["scripts/patchlib.lua"] = { mode = "override" },
@@ -113,6 +129,10 @@ local PATCHS = {
     ["scripts/prefabs/taxue_staff.lua"] = {
         md5 = "0d0a6c6f63616c2066756e6374696f6e",
         lines = {}
+    },
+    ["scripts/prefabs/taxue_flowerpot.lua"] = {
+        md5 = "0d0a0d0a6c6f63616c2066756e637469",
+        lines = {}
     }
 }
 
@@ -123,6 +143,15 @@ local function patchFile(filePath, data)
     local isPatched = false
     local sameVersion = false
     local originPath = taxuePath .. filePath
+    local lineHex
+    if data.lines then
+        local md5 = Md5.new()
+        for _, line in ipairs(data.lines) do
+            md5:update(tostring(line.index))
+        end
+        lineHex = Md5.tohex(md5:finish())
+    end
+    local versionStr = patchVersionStr .. (lineHex and ("." .. lineHex) or "")
     local file, error = io.open(originPath, "r")
     if file then
         local line = file:read("*l")
@@ -131,7 +160,7 @@ local function patchFile(filePath, data)
             isPatched = true
             --判断patch版本是否一致
             fileVersionStr = line:sub(#patchStr + 1):trim()
-            sameVersion = fileVersionStr == patchVersionStr
+            sameVersion = fileVersionStr == versionStr
             if not sameVersion or data.mode == "unpatch" then
                 --如果不一致,读取去除patch的内容
                 line = file:read("*l")
@@ -178,11 +207,12 @@ local function patchFile(filePath, data)
         --如果md5相同
     elseif md5Same then
         --插入patch版本
-        table.insert(contents, patchComment)
+        table.insert(contents, patchStr .. versionStr)
         --如果是文件覆写模式,直接覆盖原文件
         if data.mode == "override" then
             print("patching " .. filePath .. " mode override")
-            local patchFile, error = io.open(modPath .. filePath, "r")
+            local targetPath = modPath .. (data.file or filePath)
+            local patchFile, error = io.open(targetPath, "r")
             if not patchFile then return error end
             local patchLine = patchFile:read("*l")
             while patchLine do
@@ -274,13 +304,18 @@ local function test()
     patchFile("scripts/patchlib.lua", { mode = "override" })
 end
 
-local function patchAll()
+local function patchAll(unpatch)
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
-            if data.lines and #data.lines == 0 then
+            if unpatch or (data.lines and #data.lines == 0) then
                 data.mode = "unpatch"
             end
-            patchFile(path, data)
+            if data.mode == "file" then
+                local target, err = io.open(taxuePath .. path, "wb")
+                if target then target:write(io.open(modPath .. data.path, "rb"):read("*a")) end
+            else
+                patchFile(path, data)
+            end
         end
     end
 end
@@ -330,15 +365,24 @@ if cfg.BUFF_STAFF then
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 507, content = [[    inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 544, content = [[            inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 552, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 611, content = [[
-            local mult1 = ({1.33, 2, 3, 4, 5, 6})[cfg.BUFF_STAFF_MULT]
-            local mult2 = ({2, 4, 6, 8, 10, 12})[cfg.BUFF_STAFF_MULT]
+    addPatch("scripts/prefabs/taxue_staff.lua", {
+        index = 611,
+        content = [[
+            local list1 = {1.33, 2, 3, 4, 5, 6}
+            local list2 = {2, 4, 6, 8, 10, 12}
+            local mult1 = list1[TaxuePatch.cfg.BUFF_STAFF_MULT]
+            local mult2 = list2[TaxuePatch.cfg.BUFF_STAFF_MULT]
             inst.work_efficiency = name == "blue_staff" and mult1 or mult2
-            ]] })
+            ]]
+    })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff",cfg.BUFF_STAFF_SPEED,nil),     --彩虹法杖-冰箱背包升级]]) })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff",cfg.BUFF_STAFF_SPEED,nil),            --湛青法杖-武器升级]]) })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff",cfg.BUFF_STAFF_SPEED,nil),     --锻造法杖]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),     --彩虹法杖-冰箱背包升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),            --湛青法杖-武器升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),     --锻造法杖]]) })
+end
+
+if cfg.FLOWERPOT_PHYSICS then
+    addPatch("scripts/prefabs/taxue_flowerpot.lua", { index = 246 })
 end
 
 -- getMd5()

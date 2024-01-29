@@ -178,29 +178,29 @@ local function giveItem(inst, item)
     item.components.inventoryitem:OnDropped(true)
 end
 
-local function giveStackedItem(inst, item, amount)
-    item = (type(item) == "table") and item or SpawnPrefab(item)
-    if item.components.stackable then
-        local maxsize = item.components.stackable.maxsize
-        local size = amount or item.components.stackable.stacksize
-        local stack_num = math.floor(size / maxsize)
-        local surplus_num = size - maxsize * stack_num
-        if stack_num > 0 then
-            for i = 1, stack_num do
-                local newItem = SpawnPrefab(item.prefab)
-                newItem.components.stackable.stacksize = maxsize
-                giveItem(inst, newItem)
-            end
-        end
-        if surplus_num > 0 then
-            local newItem = SpawnPrefab(item.prefab)
-            newItem.components.stackable.stacksize = surplus_num
-            giveItem(inst, newItem)
-        end
-        item:Remove()
-    else
-        giveItem(inst, item)
+local function getStackedItem(name, amount, maxsize)
+    local items = {}
+    if not maxsize then
+        local tempItem = SpawnPrefab(name)
+        maxsize = tempItem.components.stackable.maxsize
+        tempItem:Remove()
     end
+    local size = amount or 1
+    local stack_num = math.floor(size / maxsize)
+    local surplus_num = size - maxsize * stack_num
+    if stack_num > 0 then
+        for i = 1, stack_num do
+            local newItem = SpawnPrefab(name)
+            newItem.components.stackable.stacksize = maxsize
+            table.insert(items, newItem)
+        end
+    end
+    if surplus_num > 0 then
+        local newItem = SpawnPrefab(name)
+        newItem.components.stackable.stacksize = surplus_num
+        table.insert(items, newItem)
+    end
+    return items
 end
 
 local function addToList(list, entity)
@@ -219,10 +219,52 @@ local function addToList(list, entity)
     end
 end
 
+---spawn a super package
+---@param name? string package display name
+---@param type? string|nil package type
+---@return table package
+function SpawnPackage(name, type)
+    local package = SpawnPrefab("super_package")
+    package.isPatched = true
+    package.name = name or package.name
+    package.type = type
+    package.amount = 0
+    return package
+end
+
+---transform package to patched package
+---@param package table
+---@return table newPackage
+function TransformPackage(package)
+    if package.isPatched then return package end
+    local slots = package.components.container.slots
+    local newPackage = SpawnPackage()
+    for __, v in pairs(slots) do
+        AddItemToSuperPackage(newPackage, v)
+    end
+    for k, v in pairs(package.item_list) do
+        local newItem = SpawnPrefab(k)
+        newItem.components.stackable.stacksize = v
+        AddItemToSuperPackage(newPackage, newItem)
+    end
+    if TableCount(newPackage.item_list) == 1 then
+        for type, _ in pairs(newPackage.item_list) do
+            newPackage.type = type
+        end
+    end
+    newPackage.components.inventoryitem.owner = package.components.inventoryitem.owner
+    package:Remove()
+    return newPackage
+end
+
 ---merge two packages into one
 ---@param package table
 ---@param packageM table
+---@return table package
 function MergePackage(package, packageM)
+    if not package.isPatched then package = TransformPackage(package) end
+    if not packageM.isPatched then packageM = TransformPackage(packageM) end
+    if packageM.amount == 0 then return package end
     if package.hasValue == nil then
         package.hasValue = true
     end
@@ -253,6 +295,7 @@ function MergePackage(package, packageM)
         end
     end
     packageM:Remove()
+    return package
 end
 
 ---将物品添加到超级包裹
@@ -264,7 +307,7 @@ function AddItemToSuperPackage(package, entity, showFx)
     if showFx then SpawnPrefab("small_puff").Transform:SetPosition(entity.Transform:GetWorldPosition()) end
     --fx.Transform:SetScale(0.5,0.5,0.5)
     if not package.isPatched then
-        package = UnpackSuperPackage(package)
+        package = TransformPackage(package)
         if not package then return end
     end
 
@@ -323,16 +366,16 @@ function AddItemToSuperPackage(package, entity, showFx)
 end
 
 ---打开超级包裹
----@param package table 
+---@param package table
 ---@return table|nil
 function UnpackSuperPackage(package)
     if package.isPatched then
+        if package.amount == 0 then return nil end
         local item_list = package.item_list
         if not package.type then
             for itemType, list in pairs(item_list) do
                 local typeName = ItemTypeNameMap[itemType]
-                local newPackage = SpawnPrefab("super_package")
-                newPackage.isPatched = true
+                local newPackage = SpawnPackage()
                 newPackage.name = typeName
                 newPackage.type = itemType
                 newPackage.amount = package.amountIndex[itemType]
@@ -347,61 +390,49 @@ function UnpackSuperPackage(package)
             end
         else
             local list = package.item_list[package.type]
+            local maxAmount = TaxuePatch.cfg.PACKAGE_MAX_AMOUNT
+            local isSingle = TableCount(list) == 1
             for name, items in pairs(list) do
+                local itemList = {}
                 if type(items) == "number" then
-                    giveStackedItem(package, name, items)
+                    local tempItem = SpawnPrefab(name)
+                    local maxsize = tempItem.components.stackable.maxsize
+                    tempItem:Remove()
+                    itemList = getStackedItem(name, items, maxsize)
                 else
-                    local maxAmount = TaxuePatch.cfg.PACKAGE_MAX_AMOUNT
-                    local itemNum = TableCount(items)
-                    if itemNum > maxAmount * 1.5 then
-                        local newPackage = SpawnPrefab("super_package")
-                        newPackage.isPatched = true
-                        newPackage.name = package.name
-                        newPackage.type = package.type
-                        local i = 0
-                        for _, item in pairs(items) do
-                            local item = SpawnSaveRecord(item)
+                    for _, item in pairs(items) do
+                        table.insert(itemList, SpawnSaveRecord(item))
+                    end
+                end
+                local itemNum = #itemList
+                if itemNum > maxAmount * 1.5 then
+                    local packageName = TaxueToChs(name)
+                    local packageType = package.type
+                    local newPackage = SpawnPackage(packageName, packageType)
+                    local i = 0
+                    for _, item in ipairs(itemList) do
+                        if isSingle then
                             if i >= maxAmount and itemNum - i > maxAmount / 2 then
                                 giveItem(package, newPackage)
-                                newPackage = SpawnPrefab("super_package")
-                                newPackage.isPatched = true
-                                newPackage.name = package.name
-                                newPackage.type = package.type
+                                newPackage = SpawnPackage(packageName, packageType)
                                 itemNum = itemNum - i
                                 i = 0
                             end
                             i = i + 1
-                            AddItemToSuperPackage(newPackage, item)
                         end
-                        giveItem(package, newPackage)
-                    else
-                        for _, data in pairs(items) do
-                            local item = SpawnSaveRecord(data)
-                            giveItem(package, item)
-                        end
+                        AddItemToSuperPackage(newPackage, item)
+                    end
+                    giveItem(package, newPackage)
+                else
+                    for _, item in pairs(itemList) do
+                        giveItem(package, item)
                     end
                 end
             end
         end
     else
-        local slots = package.components.container.slots
-        local newPackage = SpawnPrefab("super_package")
-        for __, v in pairs(slots) do
-            AddItemToSuperPackage(newPackage, v)
-        end
-        for k, v in pairs(package.item_list) do
-            local newItem = SpawnPrefab(k)
-            newItem.components.stackable.stacksize = v
-            AddItemToSuperPackage(newPackage, newItem)
-        end
-        if TableCount(newPackage.item_list) == 1 then
-            for type, _ in pairs(newPackage.item_list) do
-                newPackage.type = type
-            end
-        end
-        newPackage.isPatched = true
-        giveItem(package, newPackage)
-        return newPackage
+        local newPackage = TransformPackage(package)
+        giveItem(newPackage, newPackage)
     end
     package:Remove()
 end

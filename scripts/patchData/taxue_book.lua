@@ -1,6 +1,6 @@
 local str551 = [[
     local blackList = { "chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone" }
-    local package = SpawnPrefab("super_package")
+    local package = SpawnPackage()
     local item_list = package.item_list
     local pos = Vector3(inst.Transform:GetWorldPosition())
     local ents = TheSim:FindEntities(pos.x, pos.y, pos.z, 30, nil, { "INLIMBO", "NOCLICK", "catchable", "fire" })
@@ -24,7 +24,6 @@ local str551 = [[
             package.type = type
         end
     end
-    package.isPatched = true
 ]]
 
 local data = {

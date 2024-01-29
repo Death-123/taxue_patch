@@ -81,6 +81,30 @@ local function formatCoins(amount, force)
         return formatNumber(amount) .. "银梅币"
     end
 end
+
+local function secToDays(sec)
+    return sec / TUNING.TOTAL_DAY_TIME
+end
+
+local function formatTime(time, short)
+    if type(time) ~= "number" then return "time format error " .. (time or "") end
+    short = short == nil or short
+    local sec = round(time % 60)
+    local min = math.floor(time / 60 % 60)
+    local hour = math.floor(time / 3600)
+    local days = secToDays(time)
+    local days = days > 0 and days or 0
+    if short then
+        local flag1 = hour > 0
+        local flag2 = flag1 or min > 0
+        return (flag1 and hour .. ":" or "")
+            .. (flag2 and min < 10 and "0" or "") .. (flag2 and min .. ":" or "")
+            .. (flag2 and sec < 10 and "0" or "") .. sec .. "秒"
+            .. ("(%.1f天)"):format(days)
+    else
+        return ("%02d:%02d:%02d(%.f天)"):format(hour, min, sec, days)
+    end
+end
 --#endregion
 
 --#region Info
@@ -160,9 +184,8 @@ local function getItemInfo(target)
     --孵蛋器
     if target.prefab == "hatch_machine" then
         local timetonextspawn = target.components.childspawner.timetonextspawn
-        local dayLeft = timetonextspawn == 0 and 0 or string.format("%0.1f", timetonextspawn / 480)
         if timetonextspawn ~= 0 then
-            Info:Add("剩余时间:" .. math.floor(timetonextspawn) .. "(" .. dayLeft .. "天)")
+            Info:Add("剩余时间: " .. formatTime(timetonextspawn))
         end
     end
     --银行
@@ -186,7 +209,7 @@ local function getItemInfo(target)
             --冰箱
             if owner:HasTag("fridge") then
                 if target:HasTag("frozen") and not owner:HasTag("nocool") then
-                    time = "∞"
+                    time = "∞天"
                 else
                     time = time * 2
                 end
@@ -198,7 +221,7 @@ local function getItemInfo(target)
             --4倍
             if owner:HasTag("taxue_fridge_4x") then
                 if target:HasTag("frozen") and not owner:HasTag("nocool") then
-                    time = "∞"
+                    time = "∞天"
                 else
                     time = time * 4
                 end
@@ -206,20 +229,20 @@ local function getItemInfo(target)
             --6倍
             if owner:HasTag("taxue_fridge_6x") then
                 if target:HasTag("frozen") and not owner:HasTag("nocool") then
-                    time = "∞"
+                    time = "∞天"
                 else
                     time = time * 6
                 end
             end
             --永久
             if owner:HasTag("taxue_fridge_always") then
-                time = "∞"
+                time = "∞天"
             end
         end
-        if time ~= "∞" then
-            time = string.format("%6.1f", time / 480)
+        if time ~= "∞天" then
+            time = formatTime(time)
         end
-        Info:Add("腐烂时间：" .. time .. "天")
+        Info:Add("腐烂时间：" .. time)
     end
     --冰箱
     if target:HasTag("fridge") then
@@ -396,8 +419,13 @@ local function getItemInfo(target)
         Info:Add("额外掉落：" .. target.loot_multiple .. " /" .. target.MAX_MULTIPLE .. "倍")
     end
     --鱼缸
-    if target.prefab == "taxue_fish_tank" then
-        Info:Add("鱼容量：" .. target.components.breeder.volume .. "/" .. target.components.breeder.max_volume .. " 条")
+    if target.prefab == "taxue_fish_tank" and target.components.breeder.seeded then
+        local breeder = target.components.breeder
+        Info:Add(("%s: %d/%d条"):format(TaxueToChs(breeder.product), breeder.volume, breeder.max_volume))
+        if breeder.volume < breeder.max_volume and breeder.breedTask then
+            local timeLeft = GetTaskRemaining(breeder.breedTask)
+            Info:Add("下次生产时间: " .. formatTime(timeLeft))
+        end
     end
     --超级包裹
     if target.prefab == "super_package" then
@@ -647,7 +675,8 @@ AddClassPostConstruct("widgets/hoverer", function(self)
     self.text.SetString = function(text, str)
         if Info.type == "text" then
             local target = TheInput:GetWorldEntityUnderMouse() --获取鼠标所指的实体
-            return old_SetString(text, str .. getItemInfo(target))
+            local success, err, result = pcall(getItemInfo, target)
+            return old_SetString(text, str .. (success and result or err))
         end
         return old_SetString(text, str)
     end
@@ -672,7 +701,10 @@ AddPlayerPostInit(function(inst)
                 for _, index in ipairs(Info.indexs) do
                     self:SetPanelDescription(index, nil)
                 end
-                getItemInfo(self)
+                local success, err = pcall(getItemInfo, self)
+                if not success then
+                    Info:Add(err)
+                end
                 return oldGetPanelDescriptions(self)
             end
         else
