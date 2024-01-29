@@ -252,8 +252,7 @@ function TransformPackage(package)
             newPackage.type = type
         end
     end
-    local pos = Vector3(package.Transform:GetWorldPosition())
-    newPackage.Transform:SetPosition(pos:Get())
+    newPackage.Transform:SetPosition(package.Transform:GetWorldPosition())
     newPackage.components.inventoryitem.owner = package.components.inventoryitem.owner
     package:Remove()
     return newPackage

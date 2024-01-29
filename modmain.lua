@@ -215,9 +215,11 @@ local function patchFile(filePath, data)
         end
         file:close()
     end
+    print("------------------------")
     --如果补丁版本一致,直接返回
     if isPatched and sameVersion and data.mode ~= "unpatch" then
-        print(filePath .. " patch version is same, pass")
+        print(filePath)
+        print("patch version is same, pass")
         return
     end
     --判断md5是否一致
@@ -227,7 +229,8 @@ local function patchFile(filePath, data)
         md5Same = data.md5 == md5
     end
     if data.mode == "unpatch" then
-        print(filePath .. " unpatched")
+        print(filePath)
+        print("unpatched")
         contents = oringinContents
         --如果md5相同
     elseif md5Same then
@@ -235,7 +238,8 @@ local function patchFile(filePath, data)
         table.insert(contents, patchStr .. versionStr)
         --如果是文件覆写模式,直接覆盖原文件
         if data.mode == "override" then
-            print("patching " .. filePath .. " mode override")
+            print("patching " .. filePath)
+            print("mode override")
             local targetPath = modPath .. (data.file or filePath)
             local patchFile, error = io.open(targetPath, "r")
             if not patchFile then return error end
@@ -260,11 +264,11 @@ local function patchFile(filePath, data)
                     if lineNum == index then
                         table.insert(contents, "--patch " .. type)
                         if type == "override" then
-                            print("patching " .. filePath .. " line " .. (linedata.endIndex and index .. " to " .. endIndex or index) .. " type override")
+                            print("patching line " .. (linedata.endIndex and index .. " to " .. endIndex or index) .. " type override")
                             inPatch = true
                             if content then table.insert(contents, content) end
                         elseif type == "add" then
-                            print("patching " .. filePath .. " line " .. index .. " type add")
+                            print("patching line " .. index .. " type add")
                             table.insert(contents, content)
                             table.insert(contents, "--endPatch")
                             i = i + 1
@@ -289,6 +293,7 @@ local function patchFile(filePath, data)
             end
         end
     else
+        print(filePath)
         print("md5 not same, skip")
     end
     --写入原文件
