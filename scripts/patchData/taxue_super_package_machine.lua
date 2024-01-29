@@ -49,7 +49,7 @@ end
 
 local data = {
     mode = "patch",
-    md5 = "6c6f63616c206173736574733d0d0a7b",
+    md5 = "db41fa7eba267504ec68e578a3c31bb1",
     lines = {
         { index = 79,  endIndex = 82,  type = "override", content = str79 },
         { index = 93,  endIndex = 134, type = "override", content = str93 },

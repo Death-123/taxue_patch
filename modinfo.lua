@@ -17,6 +17,20 @@ icon = "modicon.tex"
 
 configuration_options = {
     {
+        name = "MD5_BYTES",
+        label = "md5读取长度",
+        hover = "md5计算时每次读取的字节长度,如果加载mod时内存溢出,可以尝试将此配置改小",
+        options = {
+            { description = "32", data = 32 },
+            { description = "16", data = 16 },
+            { description = "8", data = 8 },
+            { description = "4", data = 4 },
+            { description = "2", data = 2 },
+            { description = "1", data = 1 },
+        },
+        default = 16,
+    },
+    {
         name = "HIGH_EQUIPMENT_PERCENT",
         label = "高属性五彩比值",
         hover = "设定打包时判断高属性五彩装备的 (属性/能掉落的最大属性) 比值",

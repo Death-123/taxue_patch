@@ -1,6 +1,13 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
 local Md5 = require "md5"
 
+GLOBAL.TaxuePatch = { cfg = {} }
+local TaxuePatch = GLOBAL.TaxuePatch
+for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
+    TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
+end
+local cfg = TaxuePatch.cfg
+
 --#region tool functions
 local function mprint(...)
     local msg, argnum = "", select("#", ...)
@@ -41,15 +48,24 @@ function string.trim(s)
     return (s:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
---#endregion
-
-GLOBAL.TaxuePatch = { cfg = {} }
-local TaxuePatch = GLOBAL.TaxuePatch
-for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
-    TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
+local function getFileMd5(path)
+    local file, err = io.open(path, "rb")
+    if file then
+        local md5 = Md5.new()
+        local bytes = 1024 * cfg.MD5_BYTES
+        local line = file:read(bytes)
+        while line do
+            collectgarbage("collect")
+            md5:update(line)
+            line = file:read(bytes)
+        end
+        return Md5.tohex(md5:finish())
+    else
+        return nil, err
+    end
 end
-local cfg = TaxuePatch.cfg
 
+--#endregion
 
 local patchStr = "--patch "
 local patchVersionStr = modinfo.version
@@ -71,6 +87,12 @@ end
 local taxuePath = "../mods/" .. taxueName .. "/"
 local prefabs = {}
 PrefabFiles = {}
+Assets = {
+    Asset("ANIM", "anim/amulets.zip"),
+    Asset("ANIM", "anim/torso_amulets.zip"),
+    Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
+    Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
+}
 
 if taxueEnabled and cfg.AUTO_AMULET then
     print("自动维修护符")
@@ -89,16 +111,16 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     ["scripts/game_changed_taxue.lua"] = {
         mode = "patch",
-        md5 = "2d2de58581e8aeb8e8a792e889b2e4bd",
+        md5 = "a4273af9e4340823862e15a6669c1c7c",
         lines = {
-            { index = 3070, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+            { index = 3065, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
         }
     },
     --#region 打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = require "patchData/taxue_super_package_machine",
     ["scripts/prefabs/taxue_bundle.lua"] = {
         mode = "patch",
-        md5 = "0d0a2d2de789a9e59381e68e89e890bd",
+        md5 = "4e3155d658d26dc07183d50b0f0a1ce8",
         lines = {
             { index = 92, endIndex = 176, type = "override", content = "        UnpackSuperPackage(inst)" }
         }
@@ -108,15 +130,15 @@ local PATCHS = {
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = {
         mode = "patch",
-        md5 = "6c6f63616c20617373657473203d7b0d",
+        md5 = "d1fad116213baf97c67bab84a557662e",
         lines = {
-            { index = 642, type = "override" }
+            { index = 641, type = "override" }
         }
     },
     --移除使用宝石时的保存
     ["scripts/prefabs/taxue_equipment.lua"] = {
         mode = "patch",
-        md5 = "2d2de5a484e79086e8a385e5a487e58f",
+        md5 = "5a77a99d937e8aa9491efc172f8a33e9",
         lines = {
             { index = 292, type = "override" },
             { index = 304, type = "override" },
@@ -127,11 +149,11 @@ local PATCHS = {
     },
     --打包机只能黄金法杖摧毁
     ["scripts/prefabs/taxue_staff.lua"] = {
-        md5 = "0d0a6c6f63616c2066756e6374696f6e",
+        md5 = "36cd0c32a1ed98671601cb15c18e58de",
         lines = {}
     },
     ["scripts/prefabs/taxue_flowerpot.lua"] = {
-        md5 = "0d0a0d0a6c6f63616c2066756e637469",
+        md5 = "744ce77c03038276f59a48add2d5f9db",
         lines = {}
     }
 }
@@ -199,8 +221,11 @@ local function patchFile(filePath, data)
         return
     end
     --判断md5是否一致
-    local fileMd5 = data.md5 and Md5.sumhexa(table.concat(oringinContents, "\n"))
-    local md5Same = fileMd5 == data.md5
+    local md5Same = true
+    if not isPatched and data.md5 then
+        local md5 = getFileMd5(originPath)
+        md5Same = data.md5 == md5
+    end
     if data.mode == "unpatch" then
         print(filePath .. " unpatched")
         contents = oringinContents
@@ -235,7 +260,7 @@ local function patchFile(filePath, data)
                     if lineNum == index then
                         table.insert(contents, "--patch " .. type)
                         if type == "override" then
-                            print("patching " .. filePath .. " line " .. index .. " to " .. endIndex .. " type override")
+                            print("patching " .. filePath .. " line " .. (linedata.endIndex and index .. " to " .. endIndex or index) .. " type override")
                             inPatch = true
                             if content then table.insert(contents, content) end
                         elseif type == "add" then
@@ -263,6 +288,8 @@ local function patchFile(filePath, data)
                 table.insert(contents, "--endPatch")
             end
         end
+    else
+        print("md5 not same, skip")
     end
     --写入原文件
     if #contents > 0 then
@@ -276,17 +303,17 @@ local function patchFile(filePath, data)
     end
 end
 
-local function getMd5()
+local function testAllMd5()
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
             local originPath = taxuePath .. path
-            local file, err = io.open(originPath, "r")
-            if file then
-                local md5 = Md5.sumhexa(file:read("*a"))
-                print(path, "\n\t\t\t\t\t\t\t", md5, data.md5 or "", (md5 == data.md5) and "same" or "")
-                file:close()
+            local md5, err = getFileMd5(originPath)
+            print("-----------------------------")
+            print(path)
+            if md5 then
+                print(md5, data.md5 or "", (md5 == data.md5) and "same" or "")
             else
-                print(path, "\n", err)
+                print(err)
             end
         end
     end
@@ -386,5 +413,5 @@ if cfg.FLOWERPOT_PHYSICS then
     addPatch("scripts/prefabs/taxue_flowerpot.lua", { index = 246 })
 end
 
-getMd5()
--- patchAll()
+-- testAllMd5()
+patchAll()

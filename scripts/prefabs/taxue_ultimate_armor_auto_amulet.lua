@@ -222,12 +222,12 @@ local function OnLoad(inst, _)
     end
 end
 
-local assets = {
-    Asset("ANIM", "anim/amulets.zip"),
-    Asset("ANIM", "anim/torso_amulets.zip"),
-    Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
-    Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
-}
+-- local assets = {
+--     Asset("ANIM", "anim/amulets.zip"),
+--     Asset("ANIM", "anim/torso_amulets.zip"),
+--     Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
+--     Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
+-- }
 
 local function fn()
     local inst = CreateEntity()
@@ -267,4 +267,4 @@ local function fn()
     return inst
 end
 
-return Prefab("common/inventory/taxue_ultimate_armor_auto_amulet", fn, assets, { "sand_puff" })
+return Prefab("common/inventory/taxue_ultimate_armor_auto_amulet", fn, nil, { "sand_puff" })
