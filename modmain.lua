@@ -199,7 +199,7 @@ local function patchFile(filePath, data)
         return
     end
     --判断md5是否一致
-    local fileMd5 = data.md5 and Md5.tohex(table.concat(oringinContents, "\n"))
+    local fileMd5 = data.md5 and Md5.sumhexa(table.concat(oringinContents, "\n"))
     local md5Same = fileMd5 == data.md5
     if data.mode == "unpatch" then
         print(filePath .. " unpatched")
@@ -282,8 +282,8 @@ local function getMd5()
             local originPath = taxuePath .. path
             local file, err = io.open(originPath, "r")
             if file then
-                local md5 = Md5.tohex(file:read("*a"))
-                print(path, "\n\t\t", md5, data.md5 or "", (md5 == data.md5) and "same" or "")
+                local md5 = Md5.sumhexa(file:read("*a"))
+                print(path, "\n\t\t\t\t\t\t\t", md5, data.md5 or "", (md5 == data.md5) and "same" or "")
                 file:close()
             else
                 print(path, "\n", err)
@@ -386,5 +386,5 @@ if cfg.FLOWERPOT_PHYSICS then
     addPatch("scripts/prefabs/taxue_flowerpot.lua", { index = 246 })
 end
 
--- getMd5()
-patchAll()
+getMd5()
+-- patchAll()
