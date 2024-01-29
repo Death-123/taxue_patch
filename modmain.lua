@@ -110,7 +110,7 @@ local PATCHS = {
         mode = "patch",
         md5 = "6c6f63616c20617373657473203d7b0d",
         lines = {
-            { index = 671, type = "override" }
+            { index = 642, type = "override" }
         }
     },
     --移除使用宝石时的保存
@@ -282,7 +282,8 @@ local function getMd5()
             local originPath = taxuePath .. path
             local file, err = io.open(originPath, "r")
             if file then
-                print(path, "\n", Md5.tohex(file:read("*a")))
+                local md5 = Md5.tohex(file:read("*a"))
+                print(path, "\n\t\t", md5, data.md5 or "", (md5 == data.md5) and "same" or "")
                 file:close()
             else
                 print(path, "\n", err)
