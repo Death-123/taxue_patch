@@ -120,17 +120,10 @@ local PATCHS = {
             { index = 3075, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
         }
     },
-    --#region 打包系统
-    ["scripts/prefabs/taxue_super_package_machine.lua"] = require "patchData/taxue_super_package_machine",
-    ["scripts/prefabs/taxue_bundle.lua"] = {
-        mode = "patch",
-        md5 = "4e3155d658d26dc07183d50b0f0a1ce8",
-        lines = {
-            { index = 92, endIndex = 176, type = "override", content = "        UnpackSuperPackage(inst)" }
-        }
-    },
-    ["scripts/prefabs/taxue_book.lua"] = require "patchData/taxue_book",
-    --#endregion
+    --打包系统
+    ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
+    ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "c0012c48eb693c79576bcc90a45d198e", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = {
         mode = "patch",
@@ -152,14 +145,9 @@ local PATCHS = {
         }
     },
     --打包机只能黄金法杖摧毁
-    ["scripts/prefabs/taxue_staff.lua"] = {
-        md5 = "36cd0c32a1ed98671601cb15c18e58de",
-        lines = {}
-    },
-    ["scripts/prefabs/taxue_flowerpot.lua"] = {
-        md5 = "744ce77c03038276f59a48add2d5f9db",
-        lines = {}
-    }
+    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "36cd0c32a1ed98671601cb15c18e58de", lines = {} },
+    ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "e7bee3cf162596b1ef5657161d1942a3", lines = {} },
 }
 
 local function patchFile(filePath, data)
@@ -368,10 +356,10 @@ local function addPatch(key, line)
     table.insert(PATCHS[key].lines, line)
 end
 
-if not cfg.PACKAGE_PATCH then
-    disablePatch("scripts/prefabs/taxue_super_package_machine.lua")
-    disablePatch("scripts/prefabs/taxue_bundle.lua")
-    disablePatch("scripts/prefabs/taxue_book.lua")
+if cfg.PACKAGE_PATCH then
+    PATCHS["scripts/prefabs/taxue_super_package_machine.lua"].lines = require "patchData/taxue_super_package_machine"
+    PATCHS["scripts/prefabs/taxue_bundle.lua"].lines = require "patchData/taxue_bundle"
+    PATCHS["scripts/prefabs/taxue_book.lua"].lines = require "patchData/taxue_book"
 end
 
 if not cfg.CHEST_CAN_HAMMER then
@@ -423,6 +411,45 @@ end
 
 if cfg.FLOWERPOT_PHYSICS then
     addPatch("scripts/prefabs/taxue_flowerpot.lua", { index = 246 })
+end
+
+if cfg.FORTUNE_NUM then
+    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 226, content = [[		TaXueSay("今天真是"..str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
+    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 239, content = [[		TaXueSay(str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
+end
+
+if cfg.DORP_ASH then
+    local special_cooked_prefabs = {
+        ["trunk_summer"] = "trunk_cooked",
+        ["trunk_winter"] = "trunk_cooked",
+    }
+    local function AddSpecialCookedPrefab(prefab, cooked_prefab)
+        special_cooked_prefabs[prefab] = cooked_prefab
+    end
+    local function DropLoot(self, pt)
+        local prefabs = self:GenerateLoot()
+        if not self.inst.components.fueled and self.inst.components.burnable and self.inst.components.burnable:IsBurning() then
+            for k, v in pairs(prefabs) do
+                local cookedAfter = v .. "_cooked"
+                local cookedBefore = "cooked" .. v
+
+                if special_cooked_prefabs[v] then
+                    prefabs[k] = special_cooked_prefabs[v]
+                elseif PrefabExists(cookedAfter) then
+                    prefabs[k] = cookedAfter
+                elseif PrefabExists(cookedBefore) then
+                    prefabs[k] = cookedBefore
+                end
+            end
+        end
+        for _, v in pairs(prefabs) do
+            self:SpawnLootPrefab(v, pt)
+        end
+    end
+    AddComponentPostInit("lootdropper", function(inst)
+        inst.AddSpecialCookedPrefab = AddSpecialCookedPrefab
+        inst.DropLoot = DropLoot
+    end)
 end
 
 -- testAllMd5()

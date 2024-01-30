@@ -1,10 +1,10 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.77.4"
+version = "3.77.6"
 forumthread = ""
 api_version = 6
-priority = -3125
+priority = -3123
 
 dst_compatible = false
 dont_starve_compatible = true
@@ -23,12 +23,30 @@ configuration_options = {
         options = {
             { description = "32", data = 32 },
             { description = "16", data = 16 },
-            { description = "8", data = 8 },
-            { description = "4", data = 4 },
-            { description = "2", data = 2 },
-            { description = "1", data = 1 },
+            { description = "8",  data = 8 },
+            { description = "4",  data = 4 },
+            { description = "2",  data = 2 },
+            { description = "1",  data = 1 },
         },
         default = 16,
+    },
+    {
+        name = "DSC_COLOR",
+        label = "文字颜色",
+        hover = "物品上方显示或信息面板的文字颜色",
+        options = {
+            { description = "海蓝宝石色", data = { 127, 255, 212 } },
+            { description = "品红色", data = { 255, 108, 180 } },
+            { description = "青色", data = { 0, 255, 255 } },
+            { description = "蓝色", data = { 0, 0, 255 } },
+            { description = "绿色", data = { 0, 255, 0 } },
+            { description = "黄色", data = { 255, 255, 0 } },
+            { description = "金色", data = { 255, 215, 0 } },
+            { description = "橙色", data = { 255, 165, 0 } },
+            { description = "粉红色", data = { 255, 20, 147 } },
+            { description = "浅绿色", data = { 144, 238, 144 } },
+        },
+        default = { 127, 255, 212 },
     },
     {
         name = "HIGH_EQUIPMENT_PERCENT",
@@ -43,6 +61,26 @@ configuration_options = {
             { description = "95%", data = 0.95 },
         },
         default = 0.75,
+    },
+    {
+        name = "DORP_ASH",
+        label = "移除掉落物变灰烬",
+        hover = "让着火的怪物掉落物不会变成灰烬",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "FORTUNE_NUM",
+        label = "霉运卷显示数值",
+        hover = "读劵的时候显示霉运值",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
     },
     {
         name = "CHEST_CAN_HAMMER",

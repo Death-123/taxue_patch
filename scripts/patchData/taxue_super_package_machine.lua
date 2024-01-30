@@ -42,19 +42,19 @@ local str93 = [[
         --判断字典型数组是否空
         if TableCount(package.item_list) == 0 and package.components.container:IsEmpty() then
             package:Remove()
+            package = nil
         end
     end)
 end
 ]]
 
-local data = {
-    mode = "patch",
-    md5 = "db41fa7eba267504ec68e578a3c31bb1",
-    lines = {
-        { index = 79,  endIndex = 82,  type = "override", content = str79 },
-        { index = 93,  endIndex = 134, type = "override", content = str93 },
-        { index = 148, endIndex = 151, type = "override" }
-    }
+local lines = {
+    { index = 79,  endIndex = 82,  type = "override", content = str79 },
+    { index = 93,  endIndex = 134, type = "override", content = str93 },
+    { index = 106, type = "override", content = "            package = SpawnPackage()" },
+    { index = 148, endIndex = 151, type = "override" },
+    { index = 166, type = "add", content = "    data.isPatched = inst.isPatched" },
+    { index = 172, type = "add", content = "    inst.isPatched = data.isPatched" },
 }
 
-return data
+return lines

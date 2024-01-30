@@ -4,9 +4,9 @@ local ItemTile = require "widgets/itemtile"
 local OldGDS = ItemTile.GetDescriptionString --原版显示物品描述
 local Text = require "widgets/text"
 
-require "patchlib"
+if TaxuePatch then require "patchlib" end
 
-local textColor = { 255, 108, 180 }
+local textColor = TaxuePatch and TaxuePatch.cfg.DSC_COLOR or { 255, 108, 180 }
 
 --#region tool functions
 
@@ -98,7 +98,7 @@ local function formatTime(time, short)
         local flag1 = hour > 0
         local flag2 = flag1 or min > 0
         return (flag1 and hour .. ":" or "")
-            .. (flag2 and min < 10 and "0" or "") .. (flag2 and min .. ":" or "")
+            .. (flag1 and min < 10 and "0" or "") .. (flag2 and min .. ":" or "")
             .. (flag2 and sec < 10 and "0" or "") .. sec .. "秒"
             .. ("(%.1f天)"):format(days)
     else
@@ -184,7 +184,8 @@ local function getItemInfo(target)
     --孵蛋器
     if target.prefab == "hatch_machine" then
         local timetonextspawn = target.components.childspawner.timetonextspawn
-        if timetonextspawn ~= 0 then
+        if target.egg_name ~= "empty" and timetonextspawn ~= 0 then
+            Info:Add("正在孵化: " .. TaxueToChs(target.egg_name))
             Info:Add("剩余时间: " .. formatTime(timetonextspawn))
         end
     end
@@ -340,7 +341,7 @@ local function getItemInfo(target)
     if target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
-        if interior and TaxuePatch.cfg.SHOW_SHOP then
+        if interior and (TaxuePatch == nil and true or TaxuePatch.cfg.SHOW_SHOP) then
             local shopItemList = {}
             local maxNameLength = 0
             local maxCostLength = 0

@@ -60,7 +60,49 @@ ItemTypeMap = {
     },
     equipment = TaxueList.equipment,
     my_ticket = TaxueList.my_ticket,
-    egg_all = TaxueList.egg_all,
+    egg_all = {
+        "taxue_egg_nomal",
+        "taxue_egg_moose",
+        "taxue_egg_doydoy",
+        "taxue_egg_tallbird",
+        "taxue_egg_colourful",
+		"taxue_egg_golden",
+		"taxue_egg_sakura",
+		"taxue_egg_lacy",
+		"taxue_egg_taxue",
+		"taxue_egg_totoro",
+		"taxue_egg_spotty",
+		"taxue_egg_wave",
+		"taxue_egg_star",
+		"taxue_egg_grassland",
+		"taxue_egg_lightning",
+		"taxue_egg_whiteblue",
+		"taxue_egg_strawberry",
+		"taxue_egg_pineapple",
+		"taxue_egg_lollipop",
+		"taxue_egg_starrysky",
+		"taxue_egg_tigershark",
+		"taxue_egg_charm",
+		"taxue_egg_eddy",
+		"taxue_egg_txxm",
+		"taxue_egg_hatch",
+		"taxue_egg_delicious",
+		"taxue_egg_porcelain",
+		"taxue_egg_rainbow",
+		"taxue_egg_lava",
+		"taxue_egg_decorate",
+		"taxue_egg_harvest",
+		"taxue_egg_lollipop_rare",
+		"taxue_egg_ancient",
+		"taxue_egg_skin",
+		"taxue_egg_melon",
+		"taxue_egg_rock",
+		"taxue_egg_meteor",
+		"taxue_egg_millionclub",
+		"taxue_egg_rose",
+		"taxue_egg_ampullaria_gigas",
+		"taxue_egg_free",
+    },
     treasure_map = TaxueList.treasure_map,
     weapon1 = TaxueList.weapon,
     weapon2 = TaxueList.weapon2,
@@ -229,6 +271,7 @@ function SpawnPackage(name, type)
     package.name = name or package.name
     package.type = type
     package.amount = 0
+    package.hasValue = true
     return package
 end
 
@@ -252,7 +295,7 @@ function TransformPackage(package)
             newPackage.type = type
         end
     end
-    newPackage.Transform:SetPosition(package.Transform:GetWorldPosition())
+    newPackage.Transform:SetPosition(Vector3(package.Transform:GetWorldPosition()):Get())
     newPackage.components.inventoryitem.owner = package.components.inventoryitem.owner
     package:Remove()
     return newPackage
@@ -269,14 +312,18 @@ function MergePackage(package, packageM)
     if package.hasValue == nil then
         package.hasValue = true
     end
-    package.hasValue = package.hasValue and (packageM.hasValue ~= nil)
-    package.taxue_coin_value = package.taxue_coin_value and packageM.taxue_coin_value and package.taxue_coin_value + packageM.taxue_coin_value or packageM.taxue_coin_value or 0
+    package.hasValue = package.hasValue and packageM.hasValue ~= false
+    if package.hasValue then
+        package.taxue_coin_value = package.taxue_coin_value and packageM.taxue_coin_value and package.taxue_coin_value + packageM.taxue_coin_value or package.taxue_coin_value or packageM.taxue_coin_value
+    else
+        package.taxue_coin_value = nil
+    end
     local item_list = package.item_list
     for typeName, list in pairs(packageM.item_list) do
         item_list[typeName] = item_list[typeName] or {}
         package.valueMap = package.valueMap or {}
         package.valueMap[typeName] = package.valueMap[typeName] or { hasValue = true }
-        package.valueMap[typeName].hasValue = package.valueMap[typeName].hasValue and (packageM.valueMap[typeName].hasValue ~= nil)
+        package.valueMap[typeName].hasValue = package.valueMap[typeName].hasValue and packageM.valueMap[typeName].hasValue ~= false
         package.valueMap[typeName].value = package.valueMap[typeName].value and package.valueMap[typeName].value + packageM.valueMap[typeName].value or packageM.valueMap[typeName].value or 0
         for itemName, amount in pairs(list) do
             if type(amount) == "table" then

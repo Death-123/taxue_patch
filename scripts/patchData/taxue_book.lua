@@ -26,12 +26,8 @@ local str551 = [[
             end
 ]]
 
-local data = {
-    mode = "patch",
-        md5 = "c0012c48eb693c79576bcc90a45d198e",
-    lines = {
-        { index = 551, endIndex = 588, type = "override", content = str551 },
-    }
+local lines = {
+    { index = 551, endIndex = 588, type = "override", content = str551 },
 }
 
-return data
+return lines
