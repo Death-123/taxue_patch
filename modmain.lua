@@ -59,6 +59,7 @@ local function getFileMd5(path)
             md5:update(line)
             line = file:read(bytes)
         end
+        collectgarbage("collect")
         return Md5.tohex(md5:finish())
     else
         return nil, err
@@ -87,23 +88,26 @@ end
 local taxuePath = "../mods/" .. taxueName .. "/"
 local prefabs = {}
 PrefabFiles = {}
-Assets = {
-    Asset("ANIM", "anim/amulets.zip"),
-    Asset("ANIM", "anim/torso_amulets.zip"),
-    Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
-    Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
-}
+
 
 if taxueEnabled and cfg.AUTO_AMULET then
     print("自动维修护符")
+    Assets = {
+        Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
+        Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
+    }
     table.insert(PrefabFiles, "taxue_ultimate_armor_auto_amulet")
-    Recipe("taxue_ultimate_armor_auto_amulet",
-        {
-            Ingredient("chest_essence", 10, "images/inventoryimages/chest_essence.xml"),
-            Ingredient("thulecite", 20),
-            Ingredient("greengem", 10)
-        },
-        RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
+    AddPlayerPostInit(function()
+        if GetPlayer().prefab == "taxue" then
+            Recipe("taxue_ultimate_armor_auto_amulet",
+                {
+                    Ingredient("chest_essence", 10, "images/inventoryimages/chest_essence.xml"),
+                    Ingredient("thulecite", 20),
+                    Ingredient("greengem", 10)
+                },
+                RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
+        end
+    end)
 end
 
 local PATCHS = {
@@ -113,7 +117,7 @@ local PATCHS = {
         mode = "patch",
         md5 = "a4273af9e4340823862e15a6669c1c7c",
         lines = {
-            { index = 3065, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+            { index = 3075, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
         }
     },
     --#region 打包系统
@@ -207,6 +211,9 @@ local function patchFile(filePath, data)
                 end
             end
         else
+            if data.mode == "unpatch" then
+                return
+            end
             --如果未被patch,直接读取文件内容
             while line do
                 table.insert(oringinContents, line)
