@@ -51,7 +51,7 @@ end
 local lines = {
     { index = 79,  endIndex = 82,  type = "override", content = str79 },
     { index = 93,  endIndex = 134, type = "override", content = str93 },
-    { index = 106, type = "override", content = "            package = SpawnPackage()" },
+    { index = 88, type = "override", content = "            package = SpawnPackage()" },
     { index = 148, endIndex = 151, type = "override" },
     { index = 166, type = "add", content = "    data.isPatched = inst.isPatched" },
     { index = 172, type = "add", content = "    inst.isPatched = data.isPatched" },

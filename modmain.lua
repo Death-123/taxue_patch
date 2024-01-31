@@ -115,9 +115,9 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     ["scripts/game_changed_taxue.lua"] = {
         mode = "patch",
-        md5 = "a4273af9e4340823862e15a6669c1c7c",
+        md5 = "117d742c942fb6b54f8e544958d911ca",
         lines = {
-            { index = 3075, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+            { index = 3065, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
         }
     },
     --打包系统
@@ -135,7 +135,7 @@ local PATCHS = {
     --移除使用宝石时的保存
     ["scripts/prefabs/taxue_equipment.lua"] = {
         mode = "patch",
-        md5 = "5a77a99d937e8aa9491efc172f8a33e9",
+        md5 = "d56e0e8e57c5835b8a91ac9e3e7bf6bc",
         lines = {
             { index = 292, type = "override" },
             { index = 304, type = "override" },
@@ -147,7 +147,7 @@ local PATCHS = {
     --打包机只能黄金法杖摧毁
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "36cd0c32a1ed98671601cb15c18e58de", lines = {} },
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "e7bee3cf162596b1ef5657161d1942a3", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
 }
 
 local function patchFile(filePath, data)
@@ -219,8 +219,9 @@ local function patchFile(filePath, data)
     end
     --判断md5是否一致
     local md5Same = true
+    local md5
     if not isPatched and data.md5 then
-        local md5 = getFileMd5(originPath)
+        md5 = getFileMd5(originPath)
         md5Same = data.md5 == md5
     end
     if data.mode == "unpatch" then
@@ -289,7 +290,7 @@ local function patchFile(filePath, data)
         end
     else
         print(filePath)
-        print("md5 not same, skip")
+        print((md5 and md5 .. " " or "") .. "md5 not same, skip")
     end
     --写入原文件
     if #contents > 0 then
