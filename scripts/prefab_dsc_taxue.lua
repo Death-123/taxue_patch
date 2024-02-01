@@ -10,7 +10,9 @@ local textColor = TaxuePatch and TaxuePatch.cfg.DSC_COLOR or { 255, 108, 180 }
 
 --#region tool functions
 
---获取装备颜色
+---获取装备颜色
+---@param position string
+---@return string name
 local function GetEquipmentName(position)
     local slots = { "equipment_purple", "equipment_red", "equipment_yellow", "equipment_blue", "equipment_green" }
     local color = { "粉色", "红色", "黄色", "蓝色", "绿色" }
@@ -21,6 +23,10 @@ local function GetEquipmentName(position)
     end
 end
 
+---如果字符串开头是strStart
+---@param str string
+---@param strStart string
+---@return boolean
 function string.startWith(str, strStart)
     return str:sub(1, #strStart) == strStart
 end
@@ -35,6 +41,10 @@ local buffNameMap = {
     taxue_bramble_eggroll = "荆刺蛋卷",
 }
 
+---将字符串以delimiter分割
+---@param input string
+---@param delimiter string
+---@return string[]
 function string.split(input, delimiter)
     input = tostring(input)
     delimiter = tostring(delimiter)
@@ -48,6 +58,10 @@ function string.split(input, delimiter)
     return arr
 end
 
+---格式化数字
+---@param number number
+---@param formatStr? string
+---@return string
 local function formatNumber(number, formatStr)
     local number = tonumber(number)
     local a = math.floor(number)
@@ -73,6 +87,10 @@ local function formatNumber(number, formatStr)
     return string.reverse(table.concat(str)) .. string.sub(string.format(formatStr, b), 2)
 end
 
+---格式化梅币
+---@param amount number
+---@param force? boolean
+---@return string
 local function formatCoins(amount, force)
     local amountMod100 = math.floor(amount / 100)
     if force or amount <= amountMod100 * 100 then
@@ -82,10 +100,17 @@ local function formatCoins(amount, force)
     end
 end
 
+---将秒数转换为游戏内天数
+---@param sec number
+---@return number
 local function secToDays(sec)
     return sec / TUNING.TOTAL_DAY_TIME
 end
 
+---格式化时间
+---@param time number
+---@param short? boolean
+---@return string
 local function formatTime(time, short)
     if type(time) ~= "number" then return "time format error " .. (time or "") end
     short = short == nil or short
@@ -99,7 +124,7 @@ local function formatTime(time, short)
         local flag2 = flag1 or min > 0
         return (flag1 and hour .. ":" or "")
             .. (flag1 and min < 10 and "0" or "") .. (flag2 and min .. ":" or "")
-            .. (flag2 and sec < 10 and "0" or "") .. sec .. "秒"
+            .. (flag2 and sec < 10 and "0" or "") .. sec .. (flag2 and "" or "秒")
             .. ("(%.1f天)"):format(days)
     else
         return ("%02d:%02d:%02d(%.f天)"):format(hour, min, sec, days)
@@ -319,9 +344,7 @@ local function getItemInfo(target)
     end
     --永动机
     if target.prefab == "taxue_perpetual_machine" then
-        if target.lv == 0 then
-            Info:Add("正在休眠")
-        else
+        if target.lv then
             Info:Add("当前等级: " .. target.lv .. " / 7 级")
         end
         if target.day then
@@ -559,9 +582,13 @@ local function getItemInfo(target)
             Info:Add("其他物品数量:" .. formatNumber(container_num) .. "/∞个")
         end
     end
-    --炼药台
-    if target.prefab == "taxue_agentia_station" and target.components.melter.cooking == true then
+    --炼药台/炼煤炉
+    if target.components and target.components.melter and target.components.melter.cooking == true then
+        local timeleft = GetTaskRemaining(target.components.melter.task)
         Info:Add("正在炼制:" .. TaxueToChs(target.components.melter.product))
+        if timeleft > 0 then
+            Info:Add("剩余时间: " .. formatTime(timeleft))
+        end
     end
     --特殊装备
     --显示信息（参数：1字符串，2物品特有属性-用于判断,3需要乘的系数-方便显示百分比，4保留小数点,5前显示字符，6后显示字符）

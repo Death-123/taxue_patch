@@ -49,6 +49,7 @@ function string.trim(s)
 end
 
 local function getFileMd5(path)
+    if not cfg.MD5_BYTES then return nil end
     local file, err = io.open(path, "rb")
     if file then
         local md5 = Md5.new()
@@ -56,6 +57,7 @@ local function getFileMd5(path)
         local line = file:read(bytes)
         while line do
             collectgarbage("collect")
+            print("calculating md5, chunk size: " .. cfg.MD5_BYTES .. ", memory usage: " .. collectgarbage("count"))
             md5:update(line)
             line = file:read(bytes)
         end
@@ -91,7 +93,6 @@ PrefabFiles = {}
 
 
 if taxueEnabled and cfg.AUTO_AMULET then
-    print("自动维修护符")
     Assets = {
         Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
         Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
@@ -117,7 +118,7 @@ local PATCHS = {
         mode = "patch",
         md5 = "117d742c942fb6b54f8e544958d911ca",
         lines = {
-            { index = 3065, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+            { index = 3069, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
         }
     },
     --打包系统
@@ -125,13 +126,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     ["scripts/prefabs/taxue_book.lua"] = { md5 = "c0012c48eb693c79576bcc90a45d198e", lines = {} },
     --箱子可以被锤
-    ["scripts/prefabs/taxue_locked_chest.lua"] = {
-        mode = "patch",
-        md5 = "d1fad116213baf97c67bab84a557662e",
-        lines = {
-            { index = 641, type = "override" }
-        }
-    },
+    ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --移除使用宝石时的保存
     ["scripts/prefabs/taxue_equipment.lua"] = {
         mode = "patch",
@@ -220,7 +215,7 @@ local function patchFile(filePath, data)
     --判断md5是否一致
     local md5Same = true
     local md5
-    if not isPatched and data.md5 then
+    if not isPatched and data.md5 and cfg.MD5_BYTES then
         md5 = getFileMd5(originPath)
         md5Same = data.md5 == md5
     end
@@ -248,6 +243,7 @@ local function patchFile(filePath, data)
         else
             print("patching " .. filePath)
             local patchLines = data.lines
+            table.sort(patchLines, function(a, b) return a.index < b.index end)
             local i = 1
             local index, type, endIndex, content
             local inPatch = false
@@ -357,20 +353,31 @@ local function addPatch(key, line)
     table.insert(PATCHS[key].lines, line)
 end
 
+--打包系统
 if cfg.PACKAGE_PATCH then
     PATCHS["scripts/prefabs/taxue_super_package_machine.lua"].lines = require "patchData/taxue_super_package_machine"
     PATCHS["scripts/prefabs/taxue_bundle.lua"].lines = require "patchData/taxue_bundle"
     PATCHS["scripts/prefabs/taxue_book.lua"].lines = require "patchData/taxue_book"
 end
 
-if not cfg.CHEST_CAN_HAMMER then
-    disablePatch("scripts/prefabs/taxue_locked_chest.lua")
+--箱子可以被锤
+if cfg.CHEST_CAN_HAMMER then
+    addPatch("scripts/prefabs/taxue_locked_chest.lua", {
+        index = 641,
+        type = "override",
+        content = [[
+        local function onhammered(inst) inst.components.container:DropEverything() inst.components.container.onclosefn(inst) end
+        inst.components.workable:SetOnFinishCallback(onhammered)
+        ]]
+    })
 end
 
+--宝石保存
 if not cfg.DISABLE_GEM_SAVE then
     disablePatch("scripts/prefabs/taxue_equipment.lua")
 end
 
+--打包机防破坏
 if cfg.PACKAGE_STAFF then
     addPatch("scripts/prefabs/taxue_staff.lua",
         {
@@ -389,6 +396,7 @@ if cfg.PACKAGE_STAFF then
     addPatch("scripts/game_changed_taxue.lua", { index = 3305, type = "add", content = [[AddPrefabPostInit("super_package_machine",function (inst) inst:RemoveComponent("workable") end)]] })
 end
 
+--法杖增强
 if cfg.BUFF_STAFF then
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 491, content = [[    inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 507, content = [[    inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
@@ -410,15 +418,18 @@ if cfg.BUFF_STAFF then
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),     --锻造法杖]]) })
 end
 
+--花盆碰撞
 if cfg.FLOWERPOT_PHYSICS then
     addPatch("scripts/prefabs/taxue_flowerpot.lua", { index = 246 })
 end
 
+--霉运卷
 if cfg.FORTUNE_NUM then
     addPatch("scripts/prefabs/taxue_other_items.lua", { index = 226, content = [[		TaXueSay("今天真是"..str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
     addPatch("scripts/prefabs/taxue_other_items.lua", { index = 239, content = [[		TaXueSay(str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
 end
 
+--灰烬掉落
 if cfg.DORP_ASH then
     local special_cooked_prefabs = {
         ["trunk_summer"] = "trunk_cooked",

@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.79.1"
+version = "3.79.3"
 forumthread = ""
 api_version = 6
 priority = -3123
@@ -19,7 +19,7 @@ configuration_options = {
     {
         name = "MD5_BYTES",
         label = "md5读取长度",
-        hover = "md5计算时每次读取的字节长度,如果加载mod时内存溢出,可以尝试将此配置改小",
+        hover = "md5计算时每次读取的字节长度,如果加载mod时内存溢出,可以尝试将此配置改小,如果禁用,请确保补丁版本匹配,并且踏雪文件没有被改动",
         options = {
             { description = "32", data = 32 },
             { description = "16", data = 16 },
@@ -27,6 +27,9 @@ configuration_options = {
             { description = "4",  data = 4 },
             { description = "2",  data = 2 },
             { description = "1",  data = 1 },
+            { description = "1/4",  data = 1 / 4 },
+            { description = "1/16",  data = 1 / 16 },
+            { description = "禁用",  data = false },
         },
         default = 16,
     },

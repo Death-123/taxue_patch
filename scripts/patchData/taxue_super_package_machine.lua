@@ -10,7 +10,6 @@ local str79 = [[
     end
     if package and not package.isPatched then
         package = TransformPackage(package)
-        inst.components.container:GiveItem(package)
     end
     inst.isPatched = true
 ]]

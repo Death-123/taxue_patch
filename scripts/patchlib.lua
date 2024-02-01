@@ -295,8 +295,23 @@ function TransformPackage(package)
             newPackage.type = type
         end
     end
-    newPackage.Transform:SetPosition(Vector3(package.Transform:GetWorldPosition()):Get())
-    newPackage.components.inventoryitem.owner = package.components.inventoryitem.owner
+    local owner = package.components.inventoryitem.owner
+    if owner then
+        newPackage.components.inventoryitem.owner = owner
+        local slots
+        if owner == GetPlayer() then
+            slots = owner.components.inventory.itemslots
+        else
+            slots = owner.components.container.slots
+        end
+        for i, slot in pairs(slots) do
+            if slot == package then
+                slots[i] =newPackage
+            end
+        end
+    else
+        newPackage.Transform:SetPosition(Vector3(package.Transform:GetWorldPosition()):Get())
+    end
     package:Remove()
     return newPackage
 end
@@ -479,8 +494,7 @@ function UnpackSuperPackage(package)
             end
         end
     else
-        local newPackage = TransformPackage(package)
-        giveItem(newPackage, newPackage)
+        TransformPackage(package)
     end
     package:Remove()
 end
