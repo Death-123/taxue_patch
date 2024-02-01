@@ -76,8 +76,18 @@ configuration_options = {
         default = true,
     },
     {
+        name = "FORTUNE_PATCH",
+        label = "梅运券使用方式修改",
+        hover = "读劵时会将劵填装到玩家上,当填装的劵大于0,可以将鼠标放在右上角状态栏查看运势",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
         name = "FORTUNE_NUM",
-        label = "霉运卷显示数值",
+        label = "梅运券显示数值",
         hover = "读劵的时候显示霉运值",
         options = {
             { description = "启用", data = true },

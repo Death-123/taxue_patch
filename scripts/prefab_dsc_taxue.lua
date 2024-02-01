@@ -75,13 +75,15 @@ local function formatNumber(number, formatStr)
             table.insert(str, ",")
         end
     end
-    local formatStr = "%.f"
-    if b >= 0.01 then
-        local c = math.floor(b * 10) / 10
-        if b - c < 0.01 then
-            formatStr = "%.1f"
-        else
-            formatStr = "%.2f"
+    if not formatStr then
+        formatStr = "%.f"
+        if b >= 0.01 then
+            local c = math.floor(b * 10) / 10
+            if b - c < 0.01 then
+                formatStr = "%.1f"
+            else
+                formatStr = "%.2f"
+            end
         end
     end
     return string.reverse(table.concat(str)) .. string.sub(string.format(formatStr, b), 2)
@@ -92,8 +94,8 @@ end
 ---@param force? boolean
 ---@return string
 local function formatCoins(amount, force)
-    local amountMod100 = math.floor(amount / 100)
-    if force or amount <= amountMod100 * 100 then
+    local amount100 = math.floor(amount / 100)
+    if force or amount <= amount100 * 100 or amount100 >= 10 then
         return formatNumber(amount / 100) .. "梅币"
     else
         return formatNumber(amount) .. "银梅币"
@@ -193,6 +195,99 @@ local function getItemInfo(target)
     if not target then return Info.data end
     Info:clear()
     local player = GetPlayer()
+
+    local hoverOnStatus = player.HUD.controls.status.focus
+    if hoverOnStatus then
+        local last = math.sqrt((player.EXP_PER * player.EXP_PER) / 4 - player.EXP_ONE * player.EXP_PER + player.EXP_ONE * player.EXP_ONE + 2 * player.EXP_PER * player.exp) - (player.EXP_PER / 2) --末项
+        local num = math.floor((last - player.EXP_ONE) / player.EXP_PER + 1)                                                                                                                       --当前项数=等级
+        local need_exp = player.EXP_ONE + player.EXP_PER * (num - 1) +
+        player.EXP_PER                                                                                                                                                                             --当前等级所需经验
+        local surplus_exp = need_exp -
+        (player.exp - (player.EXP_ONE + (player.EXP_ONE + player.EXP_PER * (num - 1))) * num / 2)                                                                                                  --还差多少经验升级
+        local already_exp = need_exp -
+        surplus_exp                                                                                                                                                                                --当前等级经验值
+        local difficulty = GetPlayer().difficulty and GetPlayer().difficulty or "人物你都没选"
+        local delicious_value = "无美味称号"
+        if player:HasTag("nausea") then
+            delicious_value = "恶心至极"
+        end
+        if player:HasTag("delicious_small") then
+            delicious_value = "美味初成"
+        end
+        if player:HasTag("delicious_nomal") then
+            delicious_value = "美味专家"
+        end
+        if player:HasTag("delicious_big") then
+            delicious_value = "美味大师"
+        end
+        if player:HasTag("delicious_huge") then
+            delicious_value = "美味巅峰"
+        end
+        local title = "身无分文"
+        local title_list = {
+            { 1000000000, "顶级富豪" },
+            { 100000000, "亿万富翁" },
+            { 10000000, "千万富翁" },
+            { 1000000, "百万富翁" },
+            { 500000, "特富阶级" },
+            { 100000, "富人阶级" },
+            { 50000, "中产阶级" },
+            { 20000, "小产阶级" },
+            { 10000, "万元户" },
+            { 3000, "小康水平" },
+            { 1000, "温饱户" },
+            { 500, "困难户" },
+            { 300, "贫困户" },
+            { 100, "赤贫户" },
+            { 0, "特困户" },
+        }
+        for __, v in ipairs(title_list) do
+            if player.bank_value > v[1] then
+                title = v[2]
+                break
+            end
+        end
+        local modifier = GetPlayer().components.combat.attack_damage_modifiers["taxue"] --攻击系数
+
+        Info:Add("难度:" .. difficulty)
+        Info:Add("人物生存天数:" .. player.taxue_day_num)
+        Info:Add("人物等级:" .. player.level)
+        Info:Add("经验值:" .. formatNumber(already_exp) .. "/" .. formatNumber(need_exp))
+        Info:Add("魅力值:" .. formatNumber(player.charm_value) .. "-" .. (player.charm_switch and "开启" or "关闭"))
+        Info:Add("战斗力:" .. formatNumber(player.combat_capacity) .. ",攻击系数:" .. string.format("%.2f", 1 + modifier))
+        Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. delicious_value)
+        Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. title)
+        Info:Add("已收获利息:" .. formatCoins(player.interest_num))
+        if TaxuePatch and TaxuePatch.cfg.FORTUNE_PATCH then
+            local str = ""
+            if player.fortune_day and player.fortune_day > 0 then
+                local fortune_list = {
+                    { 1.8, "巅峰运势" },
+                    { 1.5, "极品欧皇" },
+                    { 1.2, "普通欧皇" },
+                    { 1.1, "超级好运" },
+                    { 1.05, "运气不错" },
+                    { 0.95, "普普通通" },
+                    { 0.85, "有点小霉" },
+                    { 0.7, "倒了大霉" },
+                    { 0.4, "霉上加霉" },
+                    { 0.2, "梅老板附体" },
+                }
+                for __, v in ipairs(fortune_list) do
+                    if player.badluck_num >= v[1] then
+                        str = ", 今日运势: " .. v[2]
+                        break
+                    end
+                end
+                if TaxuePatch.cfg.FORTUNE_NUM then
+                    str = str .. ("(%.2f)"):format(player.badluck_num)
+                end
+            end
+            Info:Add("梅运券已装载: " .. (player.fortune_day or 0) .. str)
+        end
+
+        return Info.data
+    end
 
     --人物Buff
     if target.components.taxuebuff then

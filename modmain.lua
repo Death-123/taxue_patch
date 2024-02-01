@@ -127,22 +127,16 @@ local PATCHS = {
     ["scripts/prefabs/taxue_book.lua"] = { md5 = "c0012c48eb693c79576bcc90a45d198e", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
-    --移除使用宝石时的保存
-    ["scripts/prefabs/taxue_equipment.lua"] = {
-        mode = "patch",
-        md5 = "d56e0e8e57c5835b8a91ac9e3e7bf6bc",
-        lines = {
-            { index = 292, type = "override" },
-            { index = 304, type = "override" },
-            { index = 330, type = "override" },
-            { index = 348, type = "override" },
-            { index = 426, type = "override" },
-        }
-    },
-    --打包机只能黄金法杖摧毁
+    --宝石保存
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d56e0e8e57c5835b8a91ac9e3e7bf6bc", lines = {} },
+    --打包机防破坏,法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "36cd0c32a1ed98671601cb15c18e58de", lines = {} },
+    --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
+    --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
+    --梅运券修改
+    ["scripts/prefabs/taxue.lua"] = { md5 = "ffaca9b7cb0d6fa623266d2f96e744dd", lines = {} },
 }
 
 local function patchFile(filePath, data)
@@ -353,6 +347,12 @@ local function addPatch(key, line)
     table.insert(PATCHS[key].lines, line)
 end
 
+local function addPatchs(key, lines)
+    for _, line in ipairs(lines) do
+        table.insert(PATCHS[key].lines, line)
+    end
+end
+
 --打包系统
 if cfg.PACKAGE_PATCH then
     PATCHS["scripts/prefabs/taxue_super_package_machine.lua"].lines = require "patchData/taxue_super_package_machine"
@@ -373,8 +373,14 @@ if cfg.CHEST_CAN_HAMMER then
 end
 
 --宝石保存
-if not cfg.DISABLE_GEM_SAVE then
-    disablePatch("scripts/prefabs/taxue_equipment.lua")
+if cfg.DISABLE_GEM_SAVE then
+    addPatchs("scripts/prefabs/taxue_equipment.lua", {
+        { index = 292, type = "override" },
+        { index = 304, type = "override" },
+        { index = 330, type = "override" },
+        { index = 348, type = "override" },
+        { index = 426, type = "override" },
+    })
 end
 
 --打包机防破坏
@@ -423,8 +429,21 @@ if cfg.FLOWERPOT_PHYSICS then
     addPatch("scripts/prefabs/taxue_flowerpot.lua", { index = 246 })
 end
 
---霉运卷
-if cfg.FORTUNE_NUM then
+--梅运券修改
+if cfg.FORTUNE_PATCH then
+    addPatchs("scripts/prefabs/taxue.lua", {
+        {index = 167, type = "add", content = [[    data.fortune_day = inst.fortune_day]]},
+        {index = 216, type = "add", content = [[    if data.fortune_day then inst.fortune_day = data.fortune_day end]]},
+        {index = 244, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]]},
+    })
+    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 204, endIndex = 227, content = [[
+        local amount = inst.components.stackable.stacksize
+        GetPlayer().fortune_day = GetPlayer().fortune_day and GetPlayer().fortune_day + amount or amount
+        TaXueSay("已装载梅运券: " .. amount)
+        inst:Remove()
+    ]] })
+--梅运券显示
+elseif cfg.FORTUNE_NUM then
     addPatch("scripts/prefabs/taxue_other_items.lua", { index = 226, content = [[		TaXueSay("今天真是"..str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
     addPatch("scripts/prefabs/taxue_other_items.lua", { index = 239, content = [[		TaXueSay(str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
 end
