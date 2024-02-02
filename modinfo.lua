@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.79.3"
+version = "3.79.5"
 forumthread = ""
 api_version = 6
 priority = -3123
@@ -23,15 +23,25 @@ configuration_options = {
         options = {
             { description = "32", data = 32 },
             { description = "16", data = 16 },
-            { description = "8",  data = 8 },
-            { description = "4",  data = 4 },
-            { description = "2",  data = 2 },
-            { description = "1",  data = 1 },
-            { description = "1/4",  data = 1 / 4 },
-            { description = "1/16",  data = 1 / 16 },
-            { description = "禁用",  data = false },
+            { description = "8", data = 8 },
+            { description = "4", data = 4 },
+            { description = "2", data = 2 },
+            { description = "1", data = 1 },
+            { description = "1/4", data = 1 / 4 },
+            { description = "1/16", data = 1 / 16 },
+            { description = "禁用", data = false },
         },
         default = 16,
+    },
+    {
+        name = "TAXUE_FIX",
+        label = "踏雪优化",
+        hover = "优化部分踏雪功能",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
     },
     {
         name = "DSC_COLOR",
@@ -138,15 +148,17 @@ configuration_options = {
     {
         name = "BUFF_STAFF_SPEED",
         label = "增强速度",
-        hover = "湛青/五彩/锻造法杖提高的速度",
+        hover = "湛青/五彩/锻造法杖提高的速度,五彩法杖提高的速度为湛青的7/5倍",
         options = {
-            { description = "50",  data = 0.5 },
-            { description = "75",  data = 0.75 },
-            { description = "100", data = 1 },
-            { description = "150", data = 1.5 },
-            { description = "300", data = 3 },
+            { description = "20%(默认)", data = 0.2 },
+            { description = "35%", data = 0.35 },
+            { description = "50%", data = 0.5 },
+            { description = "75%", data = 0.75 },
+            { description = "100%", data = 1 },
+            { description = "150%", data = 1.5 },
+            { description = "300%", data = 3 },
         },
-        default = 0.5,
+        default = 0.2,
     },
     {
         name = "BUFF_STAFF_MULT",
@@ -161,6 +173,20 @@ configuration_options = {
             { description = "6/12", data = 6 },
         },
         default = 1,
+    },
+    {
+        name = "GREEN_AMULET",
+        label = "超级绿护符修复次数",
+        hover = "修改超级建造护符添加绿宝石增加的耐久",
+        options = {
+            { description = "禁用", data = false },
+            { description = "5", data = 5 },
+            { description = "6", data = 6 },
+            { description = "7", data = 7 },
+            { description = "8", data = 8 },
+            { description = "10", data = 10 },
+        },
+        default = false,
     },
     {
         name = "SHOW_SHOP",
@@ -181,6 +207,17 @@ configuration_options = {
             { description = "禁用", data = false },
         },
         default = true,
+    },
+    {
+        name = "SELL_PAVILION",
+        label = "修改售货亭",
+        hover = "金砖模式会在卖出后梅币大于500时,将售货亭内梅币转换为金砖,代替银行模式会同时拥有银行的功能",
+        options = {
+            { description = "禁用", data = false },
+            { description = "金砖", data = "goldBrick" },
+            { description = "银行", data = "bank" },
+        },
+        default = "goldBrick",
     },
     {
         name = "PACKAGE_MAX_AMOUNT",

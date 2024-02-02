@@ -566,7 +566,7 @@ local function getItemInfo(target)
                 if lineNum > maxLineNum then
                     Info:Add("...")
                 end
-                Info:Add(("%d种物品,物品总数量: %d"):format(lineNum, totalAmount))
+                Info:Add(("%d种物品,物品总数量: %s"):format(lineNum, formatNumber(totalAmount)))
             else
                 local lineNum = 0
                 local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
@@ -580,7 +580,7 @@ local function getItemInfo(target)
                                 if typeName == order then
                                     if lineNum <= maxLineNum then
                                         local valueStr = target.valueMap[typeName].hasValue and "/总价值" .. formatCoins(target.valueMap[typeName].value) or "/无法售出"
-                                        Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%d"):format(TableCount(target.item_list[typeName]), amount)) .. valueStr)
+                                        Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%d"):format(TableCount(target.item_list[typeName]), formatNumber(amount))) .. valueStr)
                                     end
                                     lineNum = lineNum + 1
                                     break
@@ -594,7 +594,7 @@ local function getItemInfo(target)
                 else
                     lineNum = TableCount(target.item_list)
                 end
-                Info:Add(("%d类物品,物品总数量: %d"):format(lineNum, totalAmount))
+                Info:Add(("%d类物品,物品总数量: %d"):format(lineNum, formatNumber(totalAmount)))
             end
         else
             local num = 0

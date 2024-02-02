@@ -112,15 +112,12 @@ if taxueEnabled and cfg.AUTO_AMULET then
 end
 
 local PATCHS = {
+    --库
     ["scripts/patchlib.lua"] = { mode = "override" },
+    --面板兼容
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
-    ["scripts/game_changed_taxue.lua"] = {
-        mode = "patch",
-        md5 = "117d742c942fb6b54f8e544958d911ca",
-        lines = {
-            { index = 3069, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
-        }
-    },
+    --踏雪优化
+    ["scripts/game_changed_taxue.lua"] = { md5 = "117d742c942fb6b54f8e544958d911ca", lines = {} },
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
@@ -137,6 +134,11 @@ local PATCHS = {
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
     --梅运券修改
     ["scripts/prefabs/taxue.lua"] = { md5 = "ffaca9b7cb0d6fa623266d2f96e744dd", lines = {} },
+    --售货亭修改
+    ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
+    ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
+    --超级建造护符
+    ["scripts/prefabs/taxue_greenamulet.lua"] = { md5 = "9cd5d16770da66120739a4b260f23b4d", lines = {} },
 }
 
 local function patchFile(filePath, data)
@@ -200,9 +202,9 @@ local function patchFile(filePath, data)
         file:close()
     end
     print("------------------------")
+    print(filePath)
     --如果补丁版本一致,直接返回
     if isPatched and sameVersion and data.mode ~= "unpatch" then
-        print(filePath)
         print("patch version is same, pass")
         return
     end
@@ -214,7 +216,6 @@ local function patchFile(filePath, data)
         md5Same = data.md5 == md5
     end
     if data.mode == "unpatch" then
-        print(filePath)
         print("unpatched")
         contents = oringinContents
         --如果md5相同
@@ -223,8 +224,7 @@ local function patchFile(filePath, data)
         table.insert(contents, patchStr .. versionStr)
         --如果是文件覆写模式,直接覆盖原文件
         if data.mode == "override" then
-            print("patching " .. filePath)
-            print("mode override")
+            print("patch mode override")
             local targetPath = modPath .. (data.file or filePath)
             local patchFile, error = io.open(targetPath, "r")
             if not patchFile then return error end
@@ -235,7 +235,6 @@ local function patchFile(filePath, data)
             end
             patchFile:close()
         else
-            print("patching " .. filePath)
             local patchLines = data.lines
             table.sort(patchLines, function(a, b) return a.index < b.index end)
             local i = 1
@@ -279,7 +278,6 @@ local function patchFile(filePath, data)
             end
         end
     else
-        print(filePath)
         print((md5 and md5 .. " " or "") .. "md5 not same, skip")
     end
     --写入原文件
@@ -353,6 +351,24 @@ local function addPatchs(key, lines)
     end
 end
 
+--踏雪优化
+if cfg.TAXUE_FIX then
+    --空格收菜
+    addPatchs("scripts/game_changed_taxue.lua", {
+        { index = 3069, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    })
+    --夜明珠扔地上发光
+    addPatchs("scripts/prefabs/taxue_equipment.lua", {
+        { index = 488, content = "            inst.components.inventoryitem:SetOnDroppedFn(function(self, dropper) commonlight(inst, 0.7, .5, inst.equip_value, true) end) --发光函数" },
+    })
+end
+
+--售货亭修改
+if cfg.SELL_PAVILION then
+    addPatch("scripts/prefabs/taxue_sell_pavilion.lua", {index = 45, endIndex = 112, content = [[   SellPavilionSellItems(inst)]]})
+    addPatch("scripts/prefabs/taxue_portable_sell_pavilion.lua", {index = 33, endIndex = 99, content = [[   SellPavilionSellItems(inst)]]})
+end
+
 --打包系统
 if cfg.PACKAGE_PATCH then
     PATCHS["scripts/prefabs/taxue_super_package_machine.lua"].lines = require "patchData/taxue_super_package_machine"
@@ -418,10 +434,17 @@ if cfg.BUFF_STAFF then
             inst.work_efficiency = name == "blue_staff" and mult1 or mult2
             ]]
     })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),     --彩虹法杖-冰箱背包升级]]) })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),            --湛青法杖-武器升级]]) })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff",TaxuePatch.cfg.BUFF_STAFF_SPEED,nil),     --锻造法杖]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER, inst.work_efficiency)      --敲]] })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED / 5 * 7, nil),     --彩虹法杖-冰箱背包升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),            --湛青法杖-武器升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),     --锻造法杖]]) })
+end
+
+if cfg.GREEN_AMULET then
+    addPatch("scripts/prefabs/taxue_greenamulet.lua", {index = 59, endIndex = 60, content = [[
+            self.inst.time = self.inst.time + TaxuePatch.cfg.GREEN_AMULET * stacksize
+            GetPlayer().components.talker:Say("耐久+"..(TaxuePatch.cfg.GREEN_AMULET * stacksize).."次")        
+    ]]})
 end
 
 --花盆碰撞
@@ -432,20 +455,24 @@ end
 --梅运券修改
 if cfg.FORTUNE_PATCH then
     addPatchs("scripts/prefabs/taxue.lua", {
-        {index = 167, type = "add", content = [[    data.fortune_day = inst.fortune_day]]},
-        {index = 216, type = "add", content = [[    if data.fortune_day then inst.fortune_day = data.fortune_day end]]},
-        {index = 244, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]]},
+        { index = 167, type = "add", content = [[    data.fortune_day = inst.fortune_day]] },
+        { index = 216, type = "add", content = [[    if data.fortune_day then inst.fortune_day = data.fortune_day end]] },
+        { index = 244, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]] },
     })
-    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 204, endIndex = 227, content = [[
+    addPatch("scripts/prefabs/taxue_other_items.lua", {
+        index = 204,
+        endIndex = 227,
+        content = [[
         local amount = inst.components.stackable.stacksize
         GetPlayer().fortune_day = GetPlayer().fortune_day and GetPlayer().fortune_day + amount or amount
         TaXueSay("已装载梅运券: " .. amount)
         inst:Remove()
-    ]] })
---梅运券显示
+    ]]
+    })
+    --梅运券显示
 elseif cfg.FORTUNE_NUM then
-    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 226, content = [[		TaXueSay("今天真是"..str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
-    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 239, content = [[		TaXueSay(str..("\n霉运值: %.2f"):format(reader.badluck_num))]] })
+    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 226, content = [[		TaXueSay("今天真是"..str..("\n梅运值: %.2f"):format(reader.badluck_num))]] })
+    addPatch("scripts/prefabs/taxue_other_items.lua", { index = 239, content = [[		TaXueSay(str..("\n梅运值: %.2f"):format(reader.badluck_num))]] })
 end
 
 --灰烬掉落
@@ -483,5 +510,5 @@ if cfg.DORP_ASH then
     end)
 end
 
--- testAllMd5()
-patchAll()
+testAllMd5()
+-- patchAll()

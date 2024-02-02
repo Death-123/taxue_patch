@@ -66,42 +66,42 @@ ItemTypeMap = {
         "taxue_egg_doydoy",
         "taxue_egg_tallbird",
         "taxue_egg_colourful",
-		"taxue_egg_golden",
-		"taxue_egg_sakura",
-		"taxue_egg_lacy",
-		"taxue_egg_taxue",
-		"taxue_egg_totoro",
-		"taxue_egg_spotty",
-		"taxue_egg_wave",
-		"taxue_egg_star",
-		"taxue_egg_grassland",
-		"taxue_egg_lightning",
-		"taxue_egg_whiteblue",
-		"taxue_egg_strawberry",
-		"taxue_egg_pineapple",
-		"taxue_egg_lollipop",
-		"taxue_egg_starrysky",
-		"taxue_egg_tigershark",
-		"taxue_egg_charm",
-		"taxue_egg_eddy",
-		"taxue_egg_txxm",
-		"taxue_egg_hatch",
-		"taxue_egg_delicious",
-		"taxue_egg_porcelain",
-		"taxue_egg_rainbow",
-		"taxue_egg_lava",
-		"taxue_egg_decorate",
-		"taxue_egg_harvest",
-		"taxue_egg_lollipop_rare",
-		"taxue_egg_ancient",
-		"taxue_egg_skin",
-		"taxue_egg_melon",
-		"taxue_egg_rock",
-		"taxue_egg_meteor",
-		"taxue_egg_millionclub",
-		"taxue_egg_rose",
-		"taxue_egg_ampullaria_gigas",
-		"taxue_egg_free",
+        "taxue_egg_golden",
+        "taxue_egg_sakura",
+        "taxue_egg_lacy",
+        "taxue_egg_taxue",
+        "taxue_egg_totoro",
+        "taxue_egg_spotty",
+        "taxue_egg_wave",
+        "taxue_egg_star",
+        "taxue_egg_grassland",
+        "taxue_egg_lightning",
+        "taxue_egg_whiteblue",
+        "taxue_egg_strawberry",
+        "taxue_egg_pineapple",
+        "taxue_egg_lollipop",
+        "taxue_egg_starrysky",
+        "taxue_egg_tigershark",
+        "taxue_egg_charm",
+        "taxue_egg_eddy",
+        "taxue_egg_txxm",
+        "taxue_egg_hatch",
+        "taxue_egg_delicious",
+        "taxue_egg_porcelain",
+        "taxue_egg_rainbow",
+        "taxue_egg_lava",
+        "taxue_egg_decorate",
+        "taxue_egg_harvest",
+        "taxue_egg_lollipop_rare",
+        "taxue_egg_ancient",
+        "taxue_egg_skin",
+        "taxue_egg_melon",
+        "taxue_egg_rock",
+        "taxue_egg_meteor",
+        "taxue_egg_millionclub",
+        "taxue_egg_rose",
+        "taxue_egg_ampullaria_gigas",
+        "taxue_egg_free",
     },
     treasure_map = TaxueList.treasure_map,
     weapon1 = TaxueList.weapon,
@@ -306,7 +306,7 @@ function TransformPackage(package)
         end
         for i, slot in pairs(slots) do
             if slot == package then
-                slots[i] =newPackage
+                slots[i] = newPackage
             end
         end
     else
@@ -329,7 +329,8 @@ function MergePackage(package, packageM)
     end
     package.hasValue = package.hasValue and packageM.hasValue ~= false
     if package.hasValue then
-        package.taxue_coin_value = package.taxue_coin_value and packageM.taxue_coin_value and package.taxue_coin_value + packageM.taxue_coin_value or package.taxue_coin_value or packageM.taxue_coin_value
+        package.taxue_coin_value = package.taxue_coin_value and packageM.taxue_coin_value and package.taxue_coin_value + packageM.taxue_coin_value or package.taxue_coin_value or
+            packageM.taxue_coin_value
     else
         package.taxue_coin_value = nil
     end
@@ -497,4 +498,100 @@ function UnpackSuperPackage(package)
         TransformPackage(package)
     end
     package:Remove()
+end
+
+---删除容器内物品
+---@param container table
+---@param itemList table[]
+function RemoveSlotsItems(container, itemList)
+    for slot, _ in pairs(itemList) do
+        container:RemoveItemBySlot(slot):Remove()
+    end
+end
+
+---售货亭卖东西
+---@param inst table
+function SellPavilionSellItems(inst)
+    local container = inst.components.container
+    local slots = container.slots
+
+    local diamond = nil
+    local playSound = false
+    local coinList = {}
+    local coins = 0
+    for slot, item in pairs(slots) do
+        local amount = 1
+        if item and item.components.stackable then
+            amount = item.components.stackable.stacksize
+        end
+        if item and item.taxue_coin_value then
+            --物品价值
+            local taxue_coin_value = item.taxue_coin_value
+            --有耐久，根据耐久百分比替换价值
+            if item.components.finiteuses then
+                local percent = item.components.finiteuses:GetPercent()
+                taxue_coin_value = taxue_coin_value * percent
+            end
+            --有护甲值
+            if item.components.armor then
+                local percent = item.components.armor:GetPercent()
+                taxue_coin_value = taxue_coin_value * percent
+            end
+
+            coins = coins + taxue_coin_value * amount
+
+            --移除物品
+            container:RemoveItemBySlot(slot):Remove()
+        elseif item and item.prefab == "taxue_coin" then
+            coinList[slot] = item
+        elseif item and item.prefab == "taxue_coin_silver" then
+            coinList[slot] = item
+        elseif item and item.prefab == "taxue_coin_copper" then
+            coinList[slot] = item
+        elseif item and TaxuePatch.cfg.SELL_PAVILION == "bank" and item.prefab == "taxue_diamond" then
+            diamond = item
+        end
+    end
+    print("总硬币价值：", coins)
+    local tempCoins = 0
+    for slot, coin in pairs(coinList) do
+        local amount = coin.components.stackable.stacksize
+        if coin.prefab == "taxue_coin" then
+            tempCoins = tempCoins + amount * 100
+        elseif coin.prefab == "taxue_coin_silver" then
+            tempCoins = tempCoins + amount
+        elseif coin.prefab == "taxue_coin_copper" then
+            tempCoins = tempCoins + amount * 0.01
+        end
+    end
+
+    --如果是银行模式并且有钻石,存银行
+    if diamond and coins + tempCoins > 0 then
+        container:RemoveItem(diamond):Remove()
+        RemoveSlotsItems(container, coinList)
+        GetPlayer().bank_value = GetPlayer().bank_value + (coins + tempCoins) / 100
+        playSound = true
+    --如果不是禁用,并且金额大于500梅币
+    elseif TaxuePatch.cfg.SELL_PAVILION and coins + tempCoins >= 50000 then
+        RemoveSlotsItems(container, coinList)
+        local goldBrick = SpawnPrefab("gold_brick")
+        goldBrick.taxue_coin_value = coins + tempCoins
+        container:GiveItem(goldBrick)
+        playSound = true
+        --否则,生成梅币
+    else
+        local gold = math.floor(coins / 100)
+        coins = coins - gold * 100
+        local silver = math.floor(coins)
+        local copper = math.floor((coins - silver) * 100 + 0.5)
+
+        TaxueGiveItem(inst, "taxue_coin", gold)          --刷金币
+        TaxueGiveItem(inst, "taxue_coin_silver", silver) --刷银币
+        TaxueGiveItem(inst, "taxue_coin_copper", copper) --刷铜币
+
+        if gold + silver + copper > 0 then
+            playSound = true
+        end
+    end
+    if playSound then inst.SoundEmitter:PlaySound("money/sfx/money") end
 end

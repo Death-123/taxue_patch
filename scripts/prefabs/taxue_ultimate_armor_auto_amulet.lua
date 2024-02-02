@@ -159,7 +159,7 @@ local function OwnerUnEquip(_, data)
     -- 武器
     if eslot == EQUIPSLOTS.HANDS and equip and equip:HasTag("ListenDurableConsume") then
         equip:RemoveTag("ListenDurableConsume")
-        equip:RemoveEventCallback("armorhit", ListenFueledChange)
+        equip:RemoveEventCallback("percentusedchange", ListenFueledChange)
     end
 end
 
