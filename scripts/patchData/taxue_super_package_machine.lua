@@ -18,27 +18,11 @@ local str93 = [[
         local blackList = {"chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone", "blooming_armor", "blooming_headwear"}
         local pos = Vector3(inst.Transform:GetWorldPosition())
         local ents = TheSim:FindEntities(pos.x, pos.y, pos.z, range, nil, { "INLIMBO", "NOCLICK", "catchable", "fire" })
-        for __, v in pairs(ents) do
-            local item = v.components.inventoryitem
-            if item and item.canbepickedup and item.cangoincontainer and not v:HasTag("doydoy") and not v:HasTag("taxue_ultimate_weapon") and not table.contains(blackList, v.prefab) then
-                if v:HasTag("loaded_package") and v.loaded_item_list then
-                    for _, name in pairs(v.loaded_item_list) do
-                        AddItemToSuperPackage(package, SpawnPrefab(name), true)
-                    end
-                    v:Remove()
-                else
-                    AddItemToSuperPackage(package, v, true)
-                end
-            end
+        local function testFn(ent)
+            local item = ent.components.inventoryitem
+            return item and item.canbepickedup and item.cangoincontainer and not ent:HasTag("doydoy") and not ent:HasTag("taxue_ultimate_weapon") and not table.contains(blackList, ent.prefab)
         end
-        if TableCount(package.item_list) == 1 then
-            for type, _ in pairs(package.item_list) do
-                package.type = type
-            end
-        else
-            package.type = nil
-            package.name = TaxueToChs(package.prefab)
-        end
+        PackAllEntities(package, ents, testFn)
         --判断字典型数组是否空
         if TableCount(package.item_list) == 0 and package.components.container:IsEmpty() then
             package:Remove()

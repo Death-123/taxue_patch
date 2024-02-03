@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.79.6"
+version = "3.79.7"
 forumthread = ""
 api_version = 6
 priority = -3123
@@ -60,20 +60,6 @@ configuration_options = {
             { description = "浅绿色", data = { 144, 238, 144 } },
         },
         default = { 127, 255, 212 },
-    },
-    {
-        name = "HIGH_EQUIPMENT_PERCENT",
-        label = "高属性五彩比值",
-        hover = "设定打包时判断高属性五彩装备的 (属性/能掉落的最大属性) 比值",
-        options = {
-            { description = "25%", data = 0.25 },
-            { description = "50%", data = 0.50 },
-            { description = "75%", data = 0.75 },
-            { description = "85%", data = 0.85 },
-            { description = "90%", data = 0.90 },
-            { description = "95%", data = 0.95 },
-        },
-        default = 0.75,
     },
     {
         name = "DORP_ASH",
@@ -199,6 +185,17 @@ configuration_options = {
         default = true,
     },
     {
+        name = "SELL_PAVILION",
+        label = "修改售货亭",
+        hover = "金砖模式会在卖出后梅币大于500时,将售货亭内梅币转换为金砖,代替银行模式会同时拥有银行的功能",
+        options = {
+            { description = "禁用", data = false },
+            { description = "金砖", data = "goldBrick" },
+            { description = "银行", data = "bank" },
+        },
+        default = "goldBrick",
+    },
+    {
         name = "PACKAGE_PATCH",
         label = "修改打包系统",
         hover = "你值得拥有",
@@ -209,15 +206,34 @@ configuration_options = {
         default = true,
     },
     {
-        name = "SELL_PAVILION",
-        label = "修改售货亭",
-        hover = "金砖模式会在卖出后梅币大于500时,将售货亭内梅币转换为金砖,代替银行模式会同时拥有银行的功能",
+        name = "OPEN_TREASURES",
+        label = "打包开宝藏",
+        hover = "打包书和打包机打包时会开宝藏,并将物品包进包裹",
         options = {
+            { description = "启用", data = true },
             { description = "禁用", data = false },
-            { description = "金砖", data = "goldBrick" },
-            { description = "银行", data = "bank" },
         },
-        default = "goldBrick",
+        default = true,
+    },
+    {
+        name = "DESTORY_CHEST",
+        label = "打包拆宝藏箱",
+        hover = "打包书和打包机开宝藏时,会将箱子一并拆除,并将物品包进包裹",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "DESTORY_STATUE",
+        label = "打包拆宝藏雕像",
+        hover = "打包书和打包机开宝藏时,会将雕像一并拆除,并将物品包进包裹",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
     },
     {
         name = "PACKAGE_MAX_AMOUNT",
@@ -232,6 +248,20 @@ configuration_options = {
             { description = "100", data = 100 },
         },
         default = 16,
+    },
+    {
+        name = "HIGH_EQUIPMENT_PERCENT",
+        label = "高属性五彩比值",
+        hover = "设定打包时判断高属性五彩装备的 (属性/能掉落的最大属性) 比值",
+        options = {
+            { description = "25%", data = 0.25 },
+            { description = "50%", data = 0.50 },
+            { description = "75%", data = 0.75 },
+            { description = "85%", data = 0.85 },
+            { description = "90%", data = 0.90 },
+            { description = "95%", data = 0.95 },
+        },
+        default = 0.75,
     },
     {
         name = "PACKAGE_DES_MAX_LINES",

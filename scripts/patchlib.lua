@@ -197,6 +197,8 @@ ItemTypeNameMap = {
     others = "其他"
 }
 
+local cfg = TaxuePatch.cfg
+
 ---count table
 ---@param table table
 ---@return integer
@@ -205,6 +207,22 @@ TableCount = function(table)
     for _, _ in pairs(table) do count = count + 1 end
     return count
 end
+
+---计算概率次数结果
+---@param chance number
+---@param times integer
+---@return integer
+function GetChanceResult(chance, times)
+    local result = 0
+    for _ = 1, times do
+        if math.random() < chance then
+            result = result + 1
+        end
+    end
+    return result
+end
+
+TaxuePatch.GetChanceResult = GetChanceResult
 
 local function giveItem(inst, item)
     local owner = inst.components.inventoryitem.owner
@@ -430,7 +448,7 @@ function AddItemToSuperPackage(package, entity, showFx)
     for type, list in pairs(ItemTypeMap) do
         if table.contains(list, entity.prefab) then
             if type == "equipment" then
-                local isHigh = entity.equip_value >= TaxuePatch.cfg.HIGH_EQUIPMENT_PERCENT * entity.MAX_EQUIP_VALUE
+                local isHigh = entity.equip_value >= cfg.HIGH_EQUIPMENT_PERCENT * entity.MAX_EQUIP_VALUE
                 type = isHigh and "equipmentHigh" or "equipmentLow"
             end
             if not item_list[type] then
@@ -458,6 +476,40 @@ function AddItemToSuperPackage(package, entity, showFx)
     entity:Remove()
 end
 
+function PackAllEntities(package, entities, testFn)
+    local treasures = {}
+    for _, ent in ipairs(entities) do
+        if cfg.OPEN_TREASURES and ent:HasTag("taxue_treasure") then
+            table.insert(treasures, ent)
+        end
+        if testFn(ent) then
+            if ent:HasTag("loaded_package") and ent.loaded_item_list then
+                for _, name in pairs(ent.loaded_item_list) do
+                    AddItemToSuperPackage(package, SpawnPrefab(name), true)
+                end
+                ent:Remove()
+            else
+                AddItemToSuperPackage(package, ent, true)
+            end
+            if TableCount(package.item_list) == 1 then
+                local type, _ = next(package.item_list)
+                package.name = ItemTypeNameMap[type]
+                package.type = type
+            else
+                package.type = nil
+                package.name = TaxueToChs(package.prefab)
+            end
+        end
+    end
+    if next(treasures) then
+        AddTreasuresToPackage(package, treasures)
+    end
+end
+
+function OpenPackageItems(itemList)
+    
+end
+
 ---打开超级包裹
 ---@param package table
 ---@return table|nil
@@ -483,7 +535,7 @@ function UnpackSuperPackage(package)
             end
         else
             local list = package.item_list[package.type]
-            local maxAmount = TaxuePatch.cfg.PACKAGE_MAX_AMOUNT
+            local maxAmount = cfg.PACKAGE_MAX_AMOUNT
             local isSingle = TableCount(list) == 1
             for name, items in pairs(list) do
                 local itemList = {}
@@ -493,8 +545,14 @@ function UnpackSuperPackage(package)
                     tempItem:Remove()
                     itemList = getStackedItem(name, items, maxsize)
                 else
-                    for _, item in pairs(items) do
-                        table.insert(itemList, SpawnSaveRecord(item))
+                    for value, item in pairs(items) do
+                        if item.prefab then
+                            table.insert(itemList, SpawnSaveRecord(item))
+                        else
+                            for _, item_ in ipairs(item) do
+                                table.insert(itemList, SpawnSaveRecord(item_))
+                            end
+                        end
                     end
                 end
                 local itemNum = #itemList
@@ -577,7 +635,7 @@ function SellPavilionSellItems(inst)
             coinList[slot] = item
         elseif item and item.prefab == "taxue_coin_copper" then
             coinList[slot] = item
-        elseif item and TaxuePatch.cfg.SELL_PAVILION == "bank" and item.prefab == "taxue_diamond" then
+        elseif item and cfg.SELL_PAVILION == "bank" and item.prefab == "taxue_diamond" then
             diamond = item
         end
     end
@@ -601,7 +659,7 @@ function SellPavilionSellItems(inst)
         GetPlayer().bank_value = GetPlayer().bank_value + (coins + tempCoins) / 100
         playSound = true
         --如果不是禁用,并且金额大于500梅币
-    elseif TaxuePatch.cfg.SELL_PAVILION and coins + tempCoins >= 50000 then
+    elseif cfg.SELL_PAVILION and coins + tempCoins >= 50000 then
         RemoveSlotsItems(container, coinList)
         local goldBrick = SpawnPrefab("gold_brick")
         goldBrick.taxue_coin_value = coins + tempCoins
@@ -628,39 +686,34 @@ end
 ---开宝藏
 ---@param treasures table[]
 ---@return table loots
-function OpenTreasure(treasures)
+function OpenTreasures(treasures)
     treasures[1].SoundEmitter:PlaySound("dontstarve_DLC002/common/loot_reveal")
 
-    local treasure = treasures[1]
-    local number = TableCount(treasures)
-    local loots = { boneshard = 2 * number }
-    loots["obsidian"] = 0
-    local lootTable = LootTables[treasure.prefab]
-    local obsidianTimes = treasure.components.workable.workleft
-    local chanceChest = 0
-    local chanceStatue = 0
-    local chest
+    local loots = { boneshard = 2 * #treasures }
 
-    for i = 1, obsidianTimes * number do
-        if math.random() <= 0.2 then
-            loots["obsidian"] = loots["obsidian"] + 1
-        end
-    end
+    loots["obsidian"] = 0
 
     for _, treasure in pairs(treasures) do
-        for _, entry in ipairs(lootTable) do
+        for i = 1, treasure.components.workable.workleft do
+            if math.random() <= 0.2 then
+                loots["obsidian"] = loots["obsidian"] + 1
+            end
+        end
+
+        for _, entry in ipairs(LootTables[treasure.prefab]) do
             local prefab = entry[1]
             local chance = entry[2]
             if math.random() <= chance then
-                table.insert(loots, prefab)
+                loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
             end
         end
 
         local books = { "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone", "book_gardening",
-            "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone" }                               --原版书籍
-        local statue = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
+            "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone" }                                --原版书籍
+        local statues = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
         if math.random() <= 0.1 then
-            SpawnPrefab(books[math.random(#books)])
+            local book = books[math.random(#books)]
+            loots[book] = loots[book] and loots[book] + 1 or 1
         end
 
         if treasure.prefab == "taxue_buriedtreasure_monster" then --怪物宝藏
@@ -669,33 +722,69 @@ function OpenTreasure(treasures)
             if monster then
                 monster.Transform:SetPosition(treasure.Transform:GetWorldPosition())
             end
-            treasure:Remove()
-            return loots
-        end
+        else
+            local chanceChest = 0
+            local chanceStatue = 0
+            local chest
+            if treasure.prefab == "taxue_buriedtreasure" then
+                chanceChest = 0.5
+                chanceStatue = 0.2
+                chest = "taxue_treasurechest"
+            elseif treasure.prefab == "taxue_buriedtreasure_luxury" then
+                chanceChest = 0.3
+                chanceStatue = 0.3
+                chest = "taxue_pandoraschest"
+            end
 
-        if treasure.prefab == "taxue_buriedtreasure" then
-            chanceChest = 0.5
-            chanceStatue = 0.2
-            chest = "taxue_treasurechest"
-        elseif treasure.prefab == "taxue_buriedtreasure_luxury" then
-            chanceChest = 0.3
-            chanceStatue = 0.3
-            chest = "taxue_pandoraschest"
-        end
-
-        if math.random() <= chanceChest then
-            local chest = SpawnPrefab(chest)
-            for __, v in ipairs(treasure.advance_list) do
-                local item = SpawnPrefab(v)                                                                        --预制表内的物品
-                if item ~= nil then
-                    chest.components.container:GiveItem(item)                                                      --刷物品进箱子
+            if math.random() <= chanceChest then
+                if cfg.DESTORY_CHEST then
+                    loots.boards = loots.boards and loots.boards + 1 or 1
+                    for __, prefab in ipairs(treasure.advance_list) do
+                        loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
+                    end
+                else
+                    local chest = SpawnPrefab(chest)
+                    for __, v in ipairs(treasure.advance_list) do
+                        local item = SpawnPrefab(v)
+                        if item ~= nil then
+                            chest.components.container:GiveItem(item)
+                        end
+                    end
+                    chest.Transform:SetPosition(treasure.Transform:GetWorldPosition())
                 end
-            end                                                                                                    --添加物品
-            chest.Transform:SetPosition(treasure.Transform:GetWorldPosition())                                     --生成花栗箱子
-        elseif math.random() <= chanceStatue then
-            SpawnPrefab(statue[math.random(#statue)]).Transform:SetPosition(treasure.Transform:GetWorldPosition()) --生成随机雕像
+            elseif math.random() <= chanceStatue then
+                local statue = SpawnPrefab(statues[math.random(#statues)])
+                if cfg.DESTORY_STATUE then
+                    local dorps = statue.components.lootdropper:GetAllLoot()
+                    for _, prefab in ipairs(dorps) do
+                        loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
+                        statue:Remove()
+                    end
+                else
+                    statue.Transform:SetPosition(treasure.Transform:GetWorldPosition()) --生成随机雕像
+                end
+            end
         end
         treasure:Remove()
     end
     return loots
+end
+
+---开启所有宝藏并将物品添加进包裹
+---@param package table
+---@param treasures table[]
+function AddTreasuresToPackage(package, treasures)
+    local loots = OpenTreasures(treasures)
+    for name, amount in pairs(loots) do
+        local prefab = SpawnPrefab(name)
+        if prefab and prefab.components.stackable then
+            prefab.components.stackable.stacksize = amount
+            AddItemToSuperPackage(package, prefab)
+        else
+            prefab:Remove()
+            for _ = 1, amount do
+                AddItemToSuperPackage(package, SpawnPrefab(name))
+            end
+        end
+    end
 end

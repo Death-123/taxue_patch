@@ -26,6 +26,7 @@ local function mprint(...)
     return print(prefix .. "[" .. ModInfoname(modname) .. "]:", msg)
 end
 local print = mprint
+TaxuePatch.print = print
 
 function string.startWith(str, strStart)
     return str:sub(1, #strStart) == strStart
@@ -117,15 +118,19 @@ local PATCHS = {
     --面板兼容
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
+    --空格收菜
     ["scripts/game_changed_taxue.lua"] = { md5 = "117d742c942fb6b54f8e544958d911ca", lines = {} },
+    --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "6194bdd97527df825238da2ba3d27ec8", lines = {} },
+    --修复宝藏不出普通蛋
+    ["scripts/prefabs/taxue_treasure.lua"] = {md5 = nil, lines = {}},
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     ["scripts/prefabs/taxue_book.lua"] = { md5 = "c0012c48eb693c79576bcc90a45d198e", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
-    --宝石保存
+    --宝石保存,夜明珠地上发光
     ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d56e0e8e57c5835b8a91ac9e3e7bf6bc", lines = {} },
     --打包机防破坏,法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "36cd0c32a1ed98671601cb15c18e58de", lines = {} },
@@ -370,10 +375,16 @@ if cfg.TAXUE_FIX then
     })
     --夜明珠扔地上发光
     addPatchs("scripts/prefabs/taxue_equipment.lua", {
-        { index = 488, content = "            inst.components.inventoryitem:SetOnDroppedFn(function(self, dropper) commonlight(inst, 0.7, .5, inst.equip_value, true) end) --发光函数" },
+        { index = 489, type = "add", content = "            inst.components.inventoryitem:SetOnDroppedFn(function(self, dropper) if self.Light then self.Light:SetRadius(inst.equip_value) end end) --发光函数" },
     })
     --修复难度未初始化的崩溃
     addPatch("scripts/widgets/taxue_level.lua", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
+    --修复宝藏普通蛋不生成
+    addPatchs("scripts/prefabs/taxue_treasure.lua",{
+        {index = 24, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
+        {index = 59, content = [[    {"taxue_egg_nomal",0.05},   --普通蛋]]},
+        {index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
+    })
 end
 
 --售货亭修改
