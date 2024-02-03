@@ -118,6 +118,7 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     ["scripts/game_changed_taxue.lua"] = { md5 = "117d742c942fb6b54f8e544958d911ca", lines = {} },
+    ["scripts/widgets/taxue_level.lua"] = { md5 = "6194bdd97527df825238da2ba3d27ec8", lines = {} },
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
@@ -296,13 +297,23 @@ local function testAllMd5()
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
             local originPath = taxuePath .. path
-            local md5, err = getFileMd5(originPath)
-            print("-----------------------------")
-            print(path)
-            if md5 then
-                print(md5, data.md5 or "", (md5 == data.md5) and "same" or "")
-            else
-                print(err)
+            local isPatched = false
+            local file, error = io.open(originPath, "r")
+            if file then
+                local line = file:read("*l")
+                if line:startWith(patchStr) then
+                    isPatched = true
+                end
+            end
+            if not isPatched then          
+                local md5, err = getFileMd5(originPath)
+                print("-----------------------------")
+                print(path)
+                if md5 then
+                    print(md5, data.md5 or "", (md5 == data.md5) and "same" or "")
+                else
+                    print(err)
+                end
             end
         end
     end
@@ -361,12 +372,14 @@ if cfg.TAXUE_FIX then
     addPatchs("scripts/prefabs/taxue_equipment.lua", {
         { index = 488, content = "            inst.components.inventoryitem:SetOnDroppedFn(function(self, dropper) commonlight(inst, 0.7, .5, inst.equip_value, true) end) --发光函数" },
     })
+    --修复难度未初始化的崩溃
+    addPatch("scripts/widgets/taxue_level.lua", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
 end
 
 --售货亭修改
 if cfg.SELL_PAVILION then
-    addPatch("scripts/prefabs/taxue_sell_pavilion.lua", {index = 45, endIndex = 112, content = [[   SellPavilionSellItems(inst)]]})
-    addPatch("scripts/prefabs/taxue_portable_sell_pavilion.lua", {index = 33, endIndex = 99, content = [[   SellPavilionSellItems(inst)]]})
+    addPatch("scripts/prefabs/taxue_sell_pavilion.lua", { index = 45, endIndex = 112, content = [[   SellPavilionSellItems(inst)]] })
+    addPatch("scripts/prefabs/taxue_portable_sell_pavilion.lua", { index = 33, endIndex = 99, content = [[   SellPavilionSellItems(inst)]] })
 end
 
 --打包系统
@@ -441,10 +454,14 @@ if cfg.BUFF_STAFF then
 end
 
 if cfg.GREEN_AMULET then
-    addPatch("scripts/prefabs/taxue_greenamulet.lua", {index = 59, endIndex = 60, content = [[
+    addPatch("scripts/prefabs/taxue_greenamulet.lua", {
+        index = 59,
+        endIndex = 60,
+        content = [[
             self.inst.time = self.inst.time + TaxuePatch.cfg.GREEN_AMULET * stacksize
-            GetPlayer().components.talker:Say("耐久+"..(TaxuePatch.cfg.GREEN_AMULET * stacksize).."次")        
-    ]]})
+            GetPlayer().components.talker:Say("耐久+"..(TaxuePatch.cfg.GREEN_AMULET * stacksize).."次")
+    ]]
+    })
 end
 
 --花盆碰撞
@@ -510,5 +527,5 @@ if cfg.DORP_ASH then
     end)
 end
 
-testAllMd5()
--- patchAll()
+-- testAllMd5()
+patchAll()

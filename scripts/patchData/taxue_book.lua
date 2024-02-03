@@ -13,6 +13,7 @@ local str551 = [[
                         for _, name in pairs(v.loaded_item_list) do
                             AddItemToSuperPackage(package, SpawnPrefab(name), true)
                         end
+                        v:Remove()
                     else
                         AddItemToSuperPackage(package, v, true)
                     end

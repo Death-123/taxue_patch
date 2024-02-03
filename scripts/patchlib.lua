@@ -245,10 +245,16 @@ local function getStackedItem(name, amount, maxsize)
     return items
 end
 
-local function addToList(list, entity)
-    local name = entity.prefab
-    if entity.components.stackable then
-        local amount = entity.components.stackable.stacksize
+local function addToList(list, entity, number)
+    local amount = 1
+    local name = entity
+    if type(entity) == "string" then
+        amount = number or 1
+    else
+        name = entity.prefab
+        amount = entity.components.stackable and entity.components.stackable.stacksize or 1
+    end
+    if type(entity) == "string" or entity.components.stackable then
         if list[name] then
             list[name] = list[name] + amount
         else
@@ -258,6 +264,28 @@ local function addToList(list, entity)
         list[name] = list[name] or {}
         local data = entity:GetSaveRecord()
         table.insert(list[name], data)
+    end
+end
+
+local function processPackageData(package, itemType, amount, value)
+    package.amount = package.amount or 0
+    if package.hasValue == nil then package.hasValue = true end
+    package.amountIndex = package.amountIndex or {}
+    package.amountIndex[itemType] = package.amountIndex[itemType] or 0
+    package.valueMap = package.valueMap or {}
+    package.valueMap[itemType] = package.valueMap[itemType] or { hasValue = true, value = 0 }
+
+    package.amount = amount and package.amount + amount or package.amount
+    package.amountIndex[itemType] = amount and package.amountIndex[itemType] + amount or package.amountIndex[itemType]
+
+    package.hasValue = package.hasValue and (value ~= nil)
+    package.valueMap[itemType].hasValue = package.valueMap[itemType].hasValue and (value ~= nil)
+    package.valueMap[itemType].value = value and package.valueMap[itemType].value + value or package.valueMap[itemType].value
+
+    if package.hasValue then
+        package.taxue_coin_value = package.taxue_coin_value and package.taxue_coin_value + value or value
+    else
+        package.taxue_coin_value = nil
     end
 end
 
@@ -271,7 +299,9 @@ function SpawnPackage(name, type)
     package.name = name or package.name
     package.type = type
     package.amount = 0
+    package.amountIndex = {}
     package.hasValue = true
+    package.valueMap = {}
     return package
 end
 
@@ -280,15 +310,31 @@ end
 ---@return table newPackage
 function TransformPackage(package)
     if package.isPatched then return package end
+
     local slots = package.components.container.slots
     local newPackage = SpawnPackage()
-    for __, v in pairs(slots) do
+    for _, v in pairs(slots) do
         AddItemToSuperPackage(newPackage, v)
     end
     for k, v in pairs(package.item_list) do
-        local newItem = SpawnPrefab(k)
-        newItem.components.stackable.stacksize = v
-        AddItemToSuperPackage(newPackage, newItem)
+        if type(v) == "table" then
+            for name, items in pairs(v) do
+                if type(items) == "number" then
+                    local item = SpawnPrefab(name)
+                    item.components.stackable.stacksize = items
+                    AddItemToSuperPackage(newPackage, item)
+                else
+                    for _, data in ipairs(items) do
+                        local item = SpawnSaveRecord(data)
+                        AddItemToSuperPackage(newPackage, item)
+                    end
+                end
+            end
+        else
+            local newItem = SpawnPrefab(k)
+            newItem.components.stackable.stacksize = v
+            AddItemToSuperPackage(newPackage, newItem)
+        end
     end
     if TableCount(newPackage.item_list) == 1 then
         for type, _ in pairs(newPackage.item_list) do
@@ -324,9 +370,6 @@ function MergePackage(package, packageM)
     if not package.isPatched then package = TransformPackage(package) end
     if not packageM.isPatched then packageM = TransformPackage(packageM) end
     if packageM.amount == 0 then return package end
-    if package.hasValue == nil then
-        package.hasValue = true
-    end
     package.hasValue = package.hasValue and packageM.hasValue ~= false
     if package.hasValue then
         package.taxue_coin_value = package.taxue_coin_value and packageM.taxue_coin_value and package.taxue_coin_value + packageM.taxue_coin_value or package.taxue_coin_value or
@@ -338,19 +381,21 @@ function MergePackage(package, packageM)
     for typeName, list in pairs(packageM.item_list) do
         item_list[typeName] = item_list[typeName] or {}
         package.valueMap = package.valueMap or {}
-        package.valueMap[typeName] = package.valueMap[typeName] or { hasValue = true }
+        package.valueMap[typeName] = package.valueMap[typeName] or { hasValue = true, value = 0 }
         package.valueMap[typeName].hasValue = package.valueMap[typeName].hasValue and packageM.valueMap[typeName].hasValue ~= false
         package.valueMap[typeName].value = package.valueMap[typeName].value and package.valueMap[typeName].value + packageM.valueMap[typeName].value or packageM.valueMap[typeName].value or 0
-        for itemName, amount in pairs(list) do
-            if type(amount) == "table" then
+        for itemName, number in pairs(list) do
+            local amount
+            if type(number) == "table" then
                 item_list[typeName][itemName] = item_list[typeName][itemName] or {}
                 local i = 0
-                for _, v in ipairs(amount) do
+                for _, v in ipairs(number) do
                     table.insert(item_list[typeName][itemName], v)
                     i = i + 1
                 end
                 amount = i
             else
+                amount = number
                 item_list[typeName][itemName] = item_list[typeName][itemName] and item_list[typeName][itemName] + amount or amount
             end
             package.amount = package.amount and package.amount + amount or amount
@@ -408,23 +453,7 @@ function AddItemToSuperPackage(package, entity, showFx)
 
     local amount = entity.components.stackable and entity.components.stackable.stacksize or 1
     local coinValue = entity.taxue_coin_value and entity.taxue_coin_value * amount
-    if package.hasValue == nil then
-        package.hasValue = true
-    end
-    package.hasValue = package.hasValue and (coinValue ~= nil)
-    package.valueMap = package.valueMap or {}
-    package.valueMap[itemType] = package.valueMap[itemType] or { hasValue = true }
-    if package.hasValue then
-        package.taxue_coin_value = package.taxue_coin_value and package.taxue_coin_value + coinValue or coinValue
-    else
-        package.taxue_coin_value = nil
-    end
-    package.valueMap[itemType].hasValue = package.valueMap[itemType].hasValue and (coinValue ~= nil)
-    package.valueMap[itemType].value = package.valueMap[itemType].value and package.valueMap[itemType].value + (coinValue or 0) or coinValue or 0
-
-    package.amountIndex = package.amountIndex or {}
-    package.amount = package.amount and package.amount + amount or amount
-    package.amountIndex[itemType] = package.amountIndex[itemType] and package.amountIndex[itemType] + amount or amount
+    processPackageData(package, itemType, amount, coinValue)
 
     entity:Remove()
 end
@@ -448,7 +477,7 @@ function UnpackSuperPackage(package)
                 newPackage.hasValue = package.valueMap[itemType].hasValue
                 newPackage.valueMap = newPackage.valueMap or {}
                 newPackage.valueMap[itemType] = package.valueMap[itemType]
-                newPackage.taxue_coin_value = newPackage.hasValue and package.valueMap[itemType].value or nil
+                newPackage.taxue_coin_value = newPackage.hasValue and package.valueMap[itemType] and package.valueMap[itemType].value or nil
                 newPackage.item_list[itemType] = list
                 giveItem(package, newPackage)
             end
@@ -571,7 +600,7 @@ function SellPavilionSellItems(inst)
         RemoveSlotsItems(container, coinList)
         GetPlayer().bank_value = GetPlayer().bank_value + (coins + tempCoins) / 100
         playSound = true
-    --如果不是禁用,并且金额大于500梅币
+        --如果不是禁用,并且金额大于500梅币
     elseif TaxuePatch.cfg.SELL_PAVILION and coins + tempCoins >= 50000 then
         RemoveSlotsItems(container, coinList)
         local goldBrick = SpawnPrefab("gold_brick")
@@ -594,4 +623,79 @@ function SellPavilionSellItems(inst)
         end
     end
     if playSound then inst.SoundEmitter:PlaySound("money/sfx/money") end
+end
+
+---开宝藏
+---@param treasures table[]
+---@return table loots
+function OpenTreasure(treasures)
+    treasures[1].SoundEmitter:PlaySound("dontstarve_DLC002/common/loot_reveal")
+
+    local treasure = treasures[1]
+    local number = TableCount(treasures)
+    local loots = { boneshard = 2 * number }
+    loots["obsidian"] = 0
+    local lootTable = LootTables[treasure.prefab]
+    local obsidianTimes = treasure.components.workable.workleft
+    local chanceChest = 0
+    local chanceStatue = 0
+    local chest
+
+    for i = 1, obsidianTimes * number do
+        if math.random() <= 0.2 then
+            loots["obsidian"] = loots["obsidian"] + 1
+        end
+    end
+
+    for _, treasure in pairs(treasures) do
+        for _, entry in ipairs(lootTable) do
+            local prefab = entry[1]
+            local chance = entry[2]
+            if math.random() <= chance then
+                table.insert(loots, prefab)
+            end
+        end
+
+        local books = { "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone", "book_gardening",
+            "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone" }                               --原版书籍
+        local statue = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
+        if math.random() <= 0.1 then
+            SpawnPrefab(books[math.random(#books)])
+        end
+
+        if treasure.prefab == "taxue_buriedtreasure_monster" then --怪物宝藏
+            local str = treasure.advance_list[1] or "spider"
+            local monster = SpawnPrefab(str)
+            if monster then
+                monster.Transform:SetPosition(treasure.Transform:GetWorldPosition())
+            end
+            treasure:Remove()
+            return loots
+        end
+
+        if treasure.prefab == "taxue_buriedtreasure" then
+            chanceChest = 0.5
+            chanceStatue = 0.2
+            chest = "taxue_treasurechest"
+        elseif treasure.prefab == "taxue_buriedtreasure_luxury" then
+            chanceChest = 0.3
+            chanceStatue = 0.3
+            chest = "taxue_pandoraschest"
+        end
+
+        if math.random() <= chanceChest then
+            local chest = SpawnPrefab(chest)
+            for __, v in ipairs(treasure.advance_list) do
+                local item = SpawnPrefab(v)                                                                        --预制表内的物品
+                if item ~= nil then
+                    chest.components.container:GiveItem(item)                                                      --刷物品进箱子
+                end
+            end                                                                                                    --添加物品
+            chest.Transform:SetPosition(treasure.Transform:GetWorldPosition())                                     --生成花栗箱子
+        elseif math.random() <= chanceStatue then
+            SpawnPrefab(statue[math.random(#statue)]).Transform:SetPosition(treasure.Transform:GetWorldPosition()) --生成随机雕像
+        end
+        treasure:Remove()
+    end
+    return loots
 end

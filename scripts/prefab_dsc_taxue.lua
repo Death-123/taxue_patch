@@ -558,7 +558,7 @@ local function getItemInfo(target)
                     if maxLineNum > 0 then
                         amount = type(amount) == "number" and amount or TableCount(amount)
                         if lineNum <= maxLineNum then
-                            Info:Add(TaxueToChs(name) .. ((": %d个"):format(amount)))
+                            Info:Add(TaxueToChs(name) .. ((": %s个"):format(formatNumber(amount))))
                         end
                     end
                     lineNum = lineNum + 1
@@ -580,7 +580,7 @@ local function getItemInfo(target)
                                 if typeName == order then
                                     if lineNum <= maxLineNum then
                                         local valueStr = target.valueMap[typeName].hasValue and "/总价值" .. formatCoins(target.valueMap[typeName].value) or "/无法售出"
-                                        Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%d"):format(TableCount(target.item_list[typeName]), formatNumber(amount))) .. valueStr)
+                                        Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%s"):format(TableCount(target.item_list[typeName]), formatNumber(amount))) .. valueStr)
                                     end
                                     lineNum = lineNum + 1
                                     break
@@ -594,11 +594,15 @@ local function getItemInfo(target)
                 else
                     lineNum = TableCount(target.item_list)
                 end
-                Info:Add(("%d类物品,物品总数量: %d"):format(lineNum, formatNumber(totalAmount)))
+                Info:Add(("%d类物品,物品总数量: %s"):format(lineNum, formatNumber(totalAmount)))
             end
         else
             local num = 0
             for __, v in pairs(target.item_list) do
+                if type(v) == "table" then
+                    Info:Add("包裹数据异常")
+                    return Info.data
+                end
                 num = num + v
             end
             local k2, v2
