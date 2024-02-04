@@ -571,7 +571,7 @@ local function getItemInfo(target)
                 getNameStr = function(name) return TaxueToChs(name) end
 
                 singleItem = TableCount(list) == 1 and next(list)
-                if singleItem then
+                if singleItem and type(list[singleItem]) == "table" then
                     amountMap = amountMap[singleItem].sub
                     valueMap = valueMap[singleItem].sub
                     list = list[singleItem]
@@ -579,7 +579,7 @@ local function getItemInfo(target)
                     getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
                     showLines = table.containskey(ItemDataMap, singleItem)
 
-                    singleData = TableCount(list) == 1 and next(list)
+                    singleData = showLines and TableCount(list) == 1 and next(list)
                     if singleData then
                         amountMap = amountMap[singleData]
                         valueMap = valueMap[singleData]
