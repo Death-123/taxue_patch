@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.79.7"
+version = "3.80.1"
 forumthread = ""
 api_version = 6
 priority = -3123
@@ -274,6 +274,7 @@ configuration_options = {
             { description = "5",  data = 5 },
             { description = "10", data = 10 },
             { description = "15", data = 15 },
+            { description = "20", data = 20 },
         },
         default = 5,
     },

@@ -476,13 +476,16 @@ function AddItemToSuperPackage(package, entity, showFx)
     entity:Remove()
 end
 
+---打包所有实体
+---@param package table
+---@param entities table[]
+---@param testFn function
 function PackAllEntities(package, entities, testFn)
     local treasures = {}
     for _, ent in ipairs(entities) do
         if cfg.OPEN_TREASURES and ent:HasTag("taxue_treasure") then
             table.insert(treasures, ent)
-        end
-        if testFn(ent) then
+        elseif testFn(ent) then
             if ent:HasTag("loaded_package") and ent.loaded_item_list then
                 for _, name in pairs(ent.loaded_item_list) do
                     AddItemToSuperPackage(package, SpawnPrefab(name), true)
@@ -491,23 +494,23 @@ function PackAllEntities(package, entities, testFn)
             else
                 AddItemToSuperPackage(package, ent, true)
             end
-            if TableCount(package.item_list) == 1 then
-                local type, _ = next(package.item_list)
-                package.name = ItemTypeNameMap[type]
-                package.type = type
-            else
-                package.type = nil
-                package.name = TaxueToChs(package.prefab)
-            end
         end
     end
     if next(treasures) then
         AddTreasuresToPackage(package, treasures)
     end
+    if TableCount(package.item_list) == 1 then
+        local type, _ = next(package.item_list)
+        package.name = ItemTypeNameMap[type]
+        package.type = type
+    else
+        package.type = nil
+        package.name = TaxueToChs(package.prefab)
+    end
 end
 
 function OpenPackageItems(itemList)
-    
+
 end
 
 ---打开超级包裹
