@@ -201,11 +201,11 @@ local function getItemInfo(target)
         local last = math.sqrt((player.EXP_PER * player.EXP_PER) / 4 - player.EXP_ONE * player.EXP_PER + player.EXP_ONE * player.EXP_ONE + 2 * player.EXP_PER * player.exp) - (player.EXP_PER / 2) --末项
         local num = math.floor((last - player.EXP_ONE) / player.EXP_PER + 1)                                                                                                                       --当前项数=等级
         local need_exp = player.EXP_ONE + player.EXP_PER * (num - 1) +
-        player.EXP_PER                                                                                                                                                                             --当前等级所需经验
+            player.EXP_PER                                                                                                                                                                         --当前等级所需经验
         local surplus_exp = need_exp -
-        (player.exp - (player.EXP_ONE + (player.EXP_ONE + player.EXP_PER * (num - 1))) * num / 2)                                                                                                  --还差多少经验升级
+            (player.exp - (player.EXP_ONE + (player.EXP_ONE + player.EXP_PER * (num - 1))) * num / 2)                                                                                              --还差多少经验升级
         local already_exp = need_exp -
-        surplus_exp                                                                                                                                                                                --当前等级经验值
+            surplus_exp                                                                                                                                                                            --当前等级经验值
         local difficulty = GetPlayer().difficulty and GetPlayer().difficulty or "人物你都没选"
         local delicious_value = "无美味称号"
         if player:HasTag("nausea") then
@@ -550,52 +550,82 @@ local function getItemInfo(target)
     if target.prefab == "super_package" then
         if target.isPatched then
             local totalAmount = target.amount
-            local itemsType = target.type
             local maxLineNum = TaxuePatch.cfg.PACKAGE_DES_MAX_LINES
-            if itemsType then
-                local lineNum = 0
-                for name, amount in pairs(target.item_list[itemsType]) do
-                    if maxLineNum > 0 then
-                        amount = type(amount) == "number" and amount or TableCount(amount)
-                        if lineNum <= maxLineNum then
-                            Info:Add(TaxueToChs(name) .. ((": %s个"):format(formatNumber(amount))))
-                        end
+            local singleType = target.type
+            local singleItem
+            local singleData
+            local list = target.item_list
+            local amountMap = target.amountMap
+            local valueMap = target.valueMap
+            local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
+                "gem", "egg_all", "book2", "book3", "book1", "golden_food", "treasure_map", "weapon1",
+                "weapon2", "armor1", "armor2", "key", "agentia_all", "others" }
+            local getNameStr = function(name) return ItemTypeNameMap[name] end
+            local showLines
+
+            if singleType then
+                list = list[singleType]
+                amountMap = amountMap[singleType].sub
+                valueMap = valueMap[singleType].sub
+                orders = ItemTypeMap[singleType] or { "noOrder" }
+                getNameStr = function(name) return TaxueToChs(name) end
+
+                singleItem = TableCount(list) == 1 and next(list)
+                if singleItem then
+                    amountMap = amountMap[singleItem].sub
+                    valueMap = valueMap[singleItem].sub
+                    list = list[singleItem]
+                    orders = { "noOrder" }
+                    getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
+                    showLines = table.containskey(ItemDataMap, singleItem)
+
+                    singleData = TableCount(list) == 1 and next(list)
+                    if singleData then
+                        amountMap = amountMap[singleData]
+                        valueMap = valueMap[singleData]
+                        list = list[singleData]
+                        showLines = false
                     end
-                    lineNum = lineNum + 1
                 end
-                if lineNum > maxLineNum then
-                    Info:Add("...")
-                end
-                Info:Add(("%d种物品,物品总数量: %s"):format(lineNum, formatNumber(totalAmount)))
-            else
-                local lineNum = 0
-                local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
-                    "gem", "egg_all", "book2", "book3", "book1", "golden_food", "treasure_map", "weapon1",
-                    "weapon2", "armor1", "armor2", "key", "agentia_all", "others"
-                }
-                if maxLineNum > 0 then
-                    if target.amountIndex then
-                        for _, order in pairs(orders) do
-                            for typeName, amount in pairs(target.amountIndex) do
-                                if typeName == order then
-                                    if lineNum <= maxLineNum then
-                                        local valueStr = target.valueMap[typeName].hasValue and "/总价值" .. formatCoins(target.valueMap[typeName].value) or "/无法售出"
-                                        Info:Add(ItemTypeNameMap[order] .. ((": 种类%d/总数%s"):format(TableCount(target.item_list[typeName]), formatNumber(amount))) .. valueStr)
-                                    end
-                                    lineNum = lineNum + 1
-                                    break
-                                end
-                            end
-                        end
-                        if lineNum > maxLineNum then
-                            Info:Add("...")
-                        end
-                    end
-                else
-                    lineNum = TableCount(target.item_list)
-                end
-                Info:Add(("%d类物品,物品总数量: %s"):format(lineNum, formatNumber(totalAmount)))
             end
+
+            local lineNum = 0
+            if maxLineNum > 0 then
+                local lineNumFlag = false
+                for _, order in pairs(orders) do
+                    for name, subList in pairs(list) do
+                        if (showLines == nil or showLines) and (order == "noOrder" or name == order) then
+                            if lineNum <= maxLineNum then
+                                local nameStr = order == "noOrder" and getNameStr(name) or getNameStr(order)
+                                local valueStr = valueMap[name].hasValue and "/总价值:" .. formatCoins(valueMap[name].value) or "/无法售出"
+                                local numberStr
+                                if type(subList) == "number" then
+                                    numberStr = (": 数量%s"):format(formatNumber(subList))
+                                elseif showLines ~= nil then
+                                    numberStr = (": 数量%s"):format(formatNumber(amountMap[name].amount))
+                                else
+                                    numberStr = ((": 种类%d/总数%s"):format(TableCount(subList), formatNumber(amountMap[name].amount)))
+                                end
+                                Info:Add(nameStr .. numberStr .. valueStr)
+                                lineNum = lineNum + 1
+                            else
+                                Info:Add("...")
+                                lineNumFlag = true
+                                break
+                            end
+                            if order ~= "noOrder" then break end
+                        end
+                    end
+                    if lineNumFlag then break end
+                end
+            end
+            local str
+            if showLines == nil or showLines then
+                str = ("%d%s物品,物品总数量: %s"):format(TableCount(list), singleType and "种" or "类", formatNumber(totalAmount))
+            else
+                str = ("物品数量: %s"):format(formatNumber(totalAmount))
+            end
+            Info:Add(str)
         else
             local num = 0
             for __, v in pairs(target.item_list) do
@@ -622,19 +652,19 @@ local function getItemInfo(target)
     end
     --点树成精
     if target.prefab == "book_touch_leif" then
-        Info:Add("树精数量:" .. target.leif_num .. "只")
+        Info:Add("树精数量: " .. target.leif_num .. "只")
     end
     --点蛛成精
     if target.prefab == "book_touch_spiderqueen" then
-        Info:Add("蜘蛛女王数量:" .. target.spiderqueen_num .. "只")
+        Info:Add("蜘蛛女王数量: " .. target.spiderqueen_num .. "只")
     end
     --点怪成金
     if target.prefab == "book_touch_golden" then
-        Info:Add("点金数量:" .. target.golden_num .. "只")
+        Info:Add("点金数量: " .. target.golden_num .. "只")
     end
     --灌铅包裹
     if target.loaded_item_list then
-        Info:Add("物品数量:" .. #target.loaded_item_list .. "个")
+        Info:Add("物品数量: " .. #target.loaded_item_list .. "个")
     end
     --赌狗劵
     if target.prefab == "gamble_ticket" then
@@ -642,15 +672,15 @@ local function getItemInfo(target)
     end
     --掉包券
     if target.prefab == "substitute_ticket" then
-        Info:Add("掉包物品:" .. TaxueToChs(target.substitute_item))
+        Info:Add("掉包物品: " .. TaxueToChs(target.substitute_item))
     end
     --定向商店刷新券
     if target.prefab == "shop_refresh_ticket_directed" then
-        Info:Add("刷新物品:" .. TaxueToChs(target.refresh_item))
+        Info:Add("刷新物品: " .. TaxueToChs(target.refresh_item))
     end
     --重铸器
     if target.prefab == "taxue_recasting_machine" then
-        Info:Add("重铸成功率:" .. string.format("%6.2f", GetPlayer().recasting_num * 100) .. "%")
+        Info:Add("重铸成功率: " .. string.format("%6.2f", GetPlayer().recasting_num * 100) .. "%")
     end
     --超级打包机
     if target.prefab == "super_package_machine" then

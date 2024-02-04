@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.80.1"
+version = "3.80.2"
 forumthread = ""
 api_version = 6
 priority = -3123
@@ -16,6 +16,16 @@ icon_atlas = "modicon.xml"
 icon = "modicon.tex"
 
 configuration_options = {
+    {
+        name = "PATCH_ENABLE",
+        label = "补丁启用",
+        hover = "关闭补丁前请禁用此选项加载一次",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
     {
         name = "MD5_BYTES",
         label = "md5读取长度",

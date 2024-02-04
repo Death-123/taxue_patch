@@ -4,10 +4,10 @@ local datalist = {
     "name",
     "type",
     "amount",
-    "amountIndex",
+    "amountMap",
     "hasValue",
-    "taxue_coin_value",
     "valueMap",
+    "taxue_coin_value",
 }
 ]]
 

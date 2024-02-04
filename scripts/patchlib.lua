@@ -197,6 +197,30 @@ ItemTypeNameMap = {
     others = "其他"
 }
 
+ItemDataMap = {
+    refreshticket_ticket = "refresh_num",          --刷券券
+    loot_ticket = "loot_multiple",                 --战利品券
+    book_touch_leif = "leif_num",                  --点树成精
+    book_touch_spiderqueen = "spiderqueen_num",    --点蛛成精
+    book_touch_golden = "golden_num",              --点怪成金
+    gamble_ticket = "gamble_multiple",             --赌狗劵
+    substitute_ticket = "substitute_item",         --掉包券
+    shop_refresh_ticket_directed = "refresh_item", --定向商店刷新券
+    interest_ticket = "interest"                   --利息券
+}
+
+DataStrMap = {
+    refreshticket_ticket = "可刷新数量：%s个", --刷券券
+    loot_ticket = "额外掉落：%s倍", --战利品券
+    book_touch_leif = "树精数量: %s只", --点树成精
+    book_touch_spiderqueen = "蜘蛛女王数量: %s只", --点蛛成精
+    book_touch_golden = "点金数量: %s只", --点怪成金
+    gamble_ticket = "额外掉落: %s倍", --赌狗劵
+    substitute_ticket = "掉包物品: %s", --掉包券
+    shop_refresh_ticket_directed = "刷新物品: %s", --定向商店刷新券
+    interest_ticket = "利息上限: %s梅币" --利息券
+}
+
 local cfg = TaxuePatch.cfg
 
 ---count table
@@ -263,7 +287,7 @@ local function getStackedItem(name, amount, maxsize)
     return items
 end
 
-local function addToList(list, entity, number)
+local function addToList(list, entity, number, data)
     local amount = 1
     local name = entity
     if type(entity) == "string" then
@@ -273,37 +297,57 @@ local function addToList(list, entity, number)
         amount = entity.components.stackable and entity.components.stackable.stacksize or 1
     end
     if type(entity) == "string" or entity.components.stackable then
-        if list[name] then
-            list[name] = list[name] + amount
-        else
-            list[name] = amount
-        end
+        list[name] = list[name] and list[name] + amount or amount
     else
         list[name] = list[name] or {}
-        local data = entity:GetSaveRecord()
-        table.insert(list[name], data)
+        local listItem = list[name]
+        if data then
+            list[name][data] = list[name][data] or {}
+            listItem = list[name][data]
+        end
+        local saveData = entity:GetSaveRecord()
+        table.insert(listItem, saveData)
     end
 end
 
-local function processPackageData(package, itemType, amount, value)
+local function processPackageData(package, itemType, itemName, amount, value, data)
     package.amount = package.amount or 0
-    if package.hasValue == nil then package.hasValue = true end
-    package.amountIndex = package.amountIndex or {}
-    package.amountIndex[itemType] = package.amountIndex[itemType] or 0
-    package.valueMap = package.valueMap or {}
-    package.valueMap[itemType] = package.valueMap[itemType] or { hasValue = true, value = 0 }
-
     package.amount = amount and package.amount + amount or package.amount
-    package.amountIndex[itemType] = amount and package.amountIndex[itemType] + amount or package.amountIndex[itemType]
 
+    package.amountMap = package.amountMap or {}
+    package.amountMap[itemType] = package.amountMap[itemType] or { amount = 0, sub = {} }
+    local aIndex = package.amountMap[itemType]
+    aIndex.amount = amount and aIndex.amount + amount or aIndex.amount
+
+    if package.hasValue == nil then package.hasValue = true end
     package.hasValue = package.hasValue and (value ~= nil)
-    package.valueMap[itemType].hasValue = package.valueMap[itemType].hasValue and (value ~= nil)
-    package.valueMap[itemType].value = value and package.valueMap[itemType].value + value or package.valueMap[itemType].value
-
     if package.hasValue then
         package.taxue_coin_value = package.taxue_coin_value and package.taxue_coin_value + value or value
     else
         package.taxue_coin_value = nil
+    end
+
+    package.valueMap = package.valueMap or {}
+    package.valueMap[itemType] = package.valueMap[itemType] or { hasValue = true, value = 0, sub = {} }
+    local vIndex = package.valueMap[itemType]
+    vIndex.hasValue = vIndex.hasValue and (value ~= nil)
+    vIndex.value = value and vIndex.value + value or vIndex.value
+
+    for _, i in pairs({ itemName, data }) do
+        if i then
+            aIndex.sub = aIndex.sub or {}
+            aIndex.sub[i] = aIndex.sub[i] or { amount = 0 }
+            aIndex = aIndex.sub[i]
+
+            aIndex.amount = amount and aIndex.amount + amount or aIndex.amount
+
+            vIndex.sub = vIndex.sub or {}
+            vIndex.sub[i] = vIndex.sub[i] or { hasValue = true, value = 0 }
+            vIndex = vIndex.sub[i]
+
+            vIndex.hasValue = vIndex.hasValue and (value ~= nil)
+            vIndex.value = value and vIndex.value + value or vIndex.value
+        end
     end
 end
 
@@ -317,7 +361,7 @@ function SpawnPackage(name, type)
     package.name = name or package.name
     package.type = type
     package.amount = 0
-    package.amountIndex = {}
+    package.amountMap = {}
     package.hasValue = true
     package.valueMap = {}
     return package
@@ -342,9 +386,16 @@ function TransformPackage(package)
                     item.components.stackable.stacksize = items
                     AddItemToSuperPackage(newPackage, item)
                 else
-                    for _, data in ipairs(items) do
-                        local item = SpawnSaveRecord(data)
-                        AddItemToSuperPackage(newPackage, item)
+                    for _, itemData in pairs(items) do
+                        if itemData.prefab then
+                            local item = SpawnSaveRecord(itemData)
+                            AddItemToSuperPackage(newPackage, item)
+                        else
+                            for _, itemData in pairs(itemData) do
+                                local item = SpawnSaveRecord(itemData)
+                                AddItemToSuperPackage(newPackage, item)
+                            end
+                        end
                     end
                 end
             end
@@ -371,6 +422,7 @@ function TransformPackage(package)
         for i, slot in pairs(slots) do
             if slot == package then
                 slots[i] = newPackage
+                break
             end
         end
     else
@@ -388,37 +440,32 @@ function MergePackage(package, packageM)
     if not package.isPatched then package = TransformPackage(package) end
     if not packageM.isPatched then packageM = TransformPackage(packageM) end
     if packageM.amount == 0 then return package end
-    package.hasValue = package.hasValue and packageM.hasValue ~= false
-    if package.hasValue then
-        package.taxue_coin_value = package.taxue_coin_value and packageM.taxue_coin_value and package.taxue_coin_value + packageM.taxue_coin_value or package.taxue_coin_value or
-            packageM.taxue_coin_value
-    else
-        package.taxue_coin_value = nil
-    end
+
     local item_list = package.item_list
-    for typeName, list in pairs(packageM.item_list) do
-        item_list[typeName] = item_list[typeName] or {}
-        package.valueMap = package.valueMap or {}
-        package.valueMap[typeName] = package.valueMap[typeName] or { hasValue = true, value = 0 }
-        package.valueMap[typeName].hasValue = package.valueMap[typeName].hasValue and packageM.valueMap[typeName].hasValue ~= false
-        package.valueMap[typeName].value = package.valueMap[typeName].value and package.valueMap[typeName].value + packageM.valueMap[typeName].value or packageM.valueMap[typeName].value or 0
-        for itemName, number in pairs(list) do
-            local amount
-            if type(number) == "table" then
-                item_list[typeName][itemName] = item_list[typeName][itemName] or {}
-                local i = 0
-                for _, v in ipairs(number) do
-                    table.insert(item_list[typeName][itemName], v)
-                    i = i + 1
+    for itemType, list1 in pairs(packageM.item_list) do
+        item_list[itemType] = item_list[itemType] or {}
+        for itemName, list2 in pairs(list1) do
+            if type(list2) == "table" then
+                item_list[itemType][itemName] = item_list[itemType][itemName] or {}
+                for data, list3 in pairs(list2) do
+                    if list3.prefab then
+                        table.insert(item_list[itemType][itemName], list3)
+                        local value = packageM.valueMap[itemType].sub[itemName].hasValue and packageM.valueMap[itemType].sub[itemName].value / #list2 or nil
+                        processPackageData(package, itemType, itemName, 1, value)
+                    else
+                        for _, item in pairs(list3) do
+                            item_list[itemType][itemName][data] = item_list[itemType][itemName][data] or {}
+                            table.insert(item_list[itemType][itemName][data], item)
+                            local value = packageM.valueMap[itemType].sub[itemName].hasValue and packageM.valueMap[itemType].sub[itemName].sub[data].value / #list3 or nil
+                            processPackageData(package, itemType, itemName, 1, value, data)
+                        end
+                    end
                 end
-                amount = i
             else
-                amount = number
-                item_list[typeName][itemName] = item_list[typeName][itemName] and item_list[typeName][itemName] + amount or amount
+                item_list[itemType][itemName] = item_list[itemType][itemName] and item_list[itemType][itemName] + list2 or list2
+                local value = packageM.valueMap[itemType].sub[itemName].hasValue and packageM.valueMap[itemType].sub[itemName].value or nil
+                processPackageData(package, itemType, itemName, list2, value)
             end
-            package.amount = package.amount and package.amount + amount or amount
-            package.amountIndex = package.amountIndex or {}
-            package.amountIndex[typeName] = package.amountIndex[typeName] and package.amountIndex[typeName] + amount or amount
         end
     end
     packageM:Remove()
@@ -443,7 +490,6 @@ function AddItemToSuperPackage(package, entity, showFx)
         MergePackage(package, entity)
         return
     end
-    local added = false
     local itemType
     for type, list in pairs(ItemTypeMap) do
         if table.contains(list, entity.prefab) then
@@ -451,27 +497,35 @@ function AddItemToSuperPackage(package, entity, showFx)
                 local isHigh = entity.equip_value >= cfg.HIGH_EQUIPMENT_PERCENT * entity.MAX_EQUIP_VALUE
                 type = isHigh and "equipmentHigh" or "equipmentLow"
             end
-            if not item_list[type] then
-                item_list[type] = {}
-            end
-            addToList(item_list[type], entity)
             itemType = type
-            added = true
             break
         end
     end
-    if not added then
-        if not item_list.others then
-            item_list.others = {}
-        end
-        local list = item_list.others
-        addToList(list, entity)
-        itemType = "others"
+    itemType = itemType or "others"
+    local data
+    if table.containskey(ItemDataMap, entity.prefab) then
+        data = entity[ItemDataMap[entity.prefab]]
     end
+    item_list[itemType] = item_list[itemType] or {}
+    addToList(item_list[itemType], entity, nil, data)
 
     local amount = entity.components.stackable and entity.components.stackable.stacksize or 1
     local coinValue = entity.taxue_coin_value and entity.taxue_coin_value * amount
-    processPackageData(package, itemType, amount, coinValue)
+
+    local specialValueMap = {
+        taxue_coin = 100,
+        taxue_coin_silver = 1,
+        taxue_coin_copper = 0.01
+    }
+
+    for name, value in pairs(specialValueMap) do
+        if entity.prefab == name then
+            coinValue = value * amount
+            break
+        end
+    end
+
+    processPackageData(package, itemType, entity.prefab, amount, coinValue, data)
 
     entity:Remove()
 end
@@ -509,10 +563,6 @@ function PackAllEntities(package, entities, testFn)
     end
 end
 
-function OpenPackageItems(itemList)
-
-end
-
 ---打开超级包裹
 ---@param package table
 ---@return table|nil
@@ -526,9 +576,9 @@ function UnpackSuperPackage(package)
                 local newPackage = SpawnPackage()
                 newPackage.name = typeName
                 newPackage.type = itemType
-                newPackage.amount = package.amountIndex[itemType]
-                newPackage.amountIndex = newPackage.amountIndex or {}
-                newPackage.amountIndex[itemType] = package.amountIndex[itemType]
+                newPackage.amount = package.amountMap[itemType].amount
+                newPackage.amountMap = newPackage.amountMap or {}
+                newPackage.amountMap[itemType] = package.amountMap[itemType]
                 newPackage.hasValue = package.valueMap[itemType].hasValue
                 newPackage.valueMap = newPackage.valueMap or {}
                 newPackage.valueMap[itemType] = package.valueMap[itemType]
@@ -540,27 +590,42 @@ function UnpackSuperPackage(package)
             local list = package.item_list[package.type]
             local maxAmount = cfg.PACKAGE_MAX_AMOUNT
             local isSingle = TableCount(list) == 1
-            for name, items in pairs(list) do
+            for itemName, items in pairs(list) do
                 local itemList = {}
                 if type(items) == "number" then
-                    local tempItem = SpawnPrefab(name)
+                    local tempItem = SpawnPrefab(itemName)
                     local maxsize = tempItem.components.stackable.maxsize
                     tempItem:Remove()
-                    itemList = getStackedItem(name, items, maxsize)
+                    itemList = getStackedItem(itemName, items, maxsize)
                 else
+                    local isSingleData = TableCount(items) == 1
+                    local newPackage
                     for value, item in pairs(items) do
                         if item.prefab then
                             table.insert(itemList, SpawnSaveRecord(item))
-                        else
+                        elseif isSingleData or package.amountMap[package.type].amount < maxAmount then
                             for _, item_ in ipairs(item) do
                                 table.insert(itemList, SpawnSaveRecord(item_))
                             end
+                        elseif isSingle then
+                            local packageName = TaxueToChs(itemName) .. "  " .. DataStrMap[itemName]:format(type(value) == "number" and value or TaxueToChs(value))
+                            local newPackage = SpawnPackage(packageName, package.type)
+                            for _, item_ in ipairs(item) do
+                                AddItemToSuperPackage(newPackage, SpawnSaveRecord(item_))
+                            end
+                            giveItem(package, newPackage)
+                        else
+                            newPackage = newPackage or SpawnPackage(TaxueToChs(itemName), package.type)
+                            for _, item_ in ipairs(item) do
+                                AddItemToSuperPackage(newPackage, SpawnSaveRecord(item_))
+                            end
                         end
                     end
+                    if newPackage then giveItem(package, newPackage) end
                 end
                 local itemNum = #itemList
                 if itemNum > maxAmount * 1.5 then
-                    local packageName = TaxueToChs(name)
+                    local packageName = TaxueToChs(itemName)
                     local packageType = package.type
                     local newPackage = SpawnPackage(packageName, packageType)
                     local i = 0
@@ -586,6 +651,14 @@ function UnpackSuperPackage(package)
         end
     else
         TransformPackage(package)
+    end
+    local owner = package.components.inventoryitem.owner
+    if owner then
+        if owner == GetPlayer() then
+            owner.components.inventory:RemoveItem(package, true)
+        else
+            owner.components.container:RemoveItem(package, true)
+        end
     end
     package:Remove()
 end
@@ -689,8 +762,11 @@ end
 ---开宝藏
 ---@param treasures table[]
 ---@return table loots
+---@return integer[] numbers
 function OpenTreasures(treasures)
     treasures[1].SoundEmitter:PlaySound("dontstarve_DLC002/common/loot_reveal")
+
+    local numbers = {}
 
     local loots = { boneshard = 2 * #treasures }
 
@@ -740,6 +816,7 @@ function OpenTreasures(treasures)
             end
 
             if math.random() <= chanceChest then
+                numbers[chest] = numbers[chest] and numbers[chest] + 1 or 1
                 if cfg.DESTORY_CHEST then
                     loots.boards = loots.boards and loots.boards + 1 or 1
                     for __, prefab in ipairs(treasure.advance_list) do
@@ -756,6 +833,7 @@ function OpenTreasures(treasures)
                     chest.Transform:SetPosition(treasure.Transform:GetWorldPosition())
                 end
             elseif math.random() <= chanceStatue then
+                numbers["statue"] = numbers["statue"] and numbers["statue"] + 1 or 1
                 local statue = SpawnPrefab(statues[math.random(#statues)])
                 if cfg.DESTORY_STATUE then
                     local dorps = statue.components.lootdropper:GetAllLoot()
@@ -768,16 +846,17 @@ function OpenTreasures(treasures)
                 end
             end
         end
+        numbers[treasure.prefab] = numbers[treasure.prefab] and numbers[treasure.prefab] + 1 or 1
         treasure:Remove()
     end
-    return loots
+    return loots, numbers
 end
 
 ---开启所有宝藏并将物品添加进包裹
 ---@param package table
 ---@param treasures table[]
 function AddTreasuresToPackage(package, treasures)
-    local loots = OpenTreasures(treasures)
+    local loots, numbers = OpenTreasures(treasures)
     for name, amount in pairs(loots) do
         local prefab = SpawnPrefab(name)
         if prefab and prefab.components.stackable then
@@ -790,4 +869,10 @@ function AddTreasuresToPackage(package, treasures)
             end
         end
     end
+    local str = "这波打包了:/n"
+    for name, number in pairs(numbers) do
+        local name = name == "statue" and "雕像" or TaxueToChs(name)
+        str = str .. name .. number .. "个/n"
+    end
+    TaXueSay(str)
 end

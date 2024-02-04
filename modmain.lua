@@ -55,7 +55,7 @@ function string.compare(s1, s2)
             local n1 = s1:byte(i)
             local n2 = s2:byte(i)
             if n1 ~= n2 then
-                return n2 and n1 > n2 or true
+                return n2 == nil or n1 > n2
             end
         end
         return false
@@ -137,6 +137,8 @@ local PATCHS = {
     ["scripts/widgets/taxue_level.lua"] = { md5 = "6194bdd97527df825238da2ba3d27ec8", lines = {} },
     --修复宝藏不出普通蛋
     ["scripts/prefabs/taxue_treasure.lua"] = {md5 = "aaa243d80a6aeb6125febef8bf6953a1", lines = {}},
+    --按键排序
+    ["scripts/press_key_taxue.lua"] = {md5 = "86a1c8cb703fe4d310f289c059c5bfef", lines = {}},
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
@@ -354,7 +356,7 @@ end
 local function patchAll(unpatch)
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
-            if unpatch or (data.lines and #data.lines == 0) then
+            if not cfg.PATCH_ENABLE or unpatch or (data.lines and #data.lines == 0) then
                 data.mode = "unpatch"
             end
             if data.mode == "file" then
@@ -399,6 +401,22 @@ if cfg.TAXUE_FIX then
         {index = 24, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
         {index = 59, content = [[    {"taxue_egg_nomal",0.05},   --普通蛋]]},
         {index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
+    })
+    addPatchs("scripts/press_key_taxue.lua", {
+        {index = 297, endIndex = 299, content = [[
+            if item1.prefab == name and item2.prefab == name then
+                if type(value1) == "number" then
+                    return value1 < value2
+                else
+                    return value2:compare(value1)
+                end
+            end
+        ]]},
+        {index = 312, content = [[
+            or CanSort(item1,item2,"substitute_ticket",item1.substitute_item,item2.substitute_item)   --掉包券
+            or CanSort(item1,item2,"shop_refresh_ticket_directed",item1.refresh_item,item2.refresh_item)   --定向商店刷新
+            or CanSort(item1,item2,"book_touch_leif",item1.leif_num,item2.leif_num)) then   --点树成精
+        ]]}
     })
 end
 
@@ -479,6 +497,7 @@ if cfg.BUFF_STAFF then
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),     --锻造法杖]]) })
 end
 
+--超级建造护符耐久
 if cfg.GREEN_AMULET then
     addPatch("scripts/prefabs/taxue_greenamulet.lua", {
         index = 59,
