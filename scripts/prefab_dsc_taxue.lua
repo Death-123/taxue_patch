@@ -192,8 +192,8 @@ end
 --#endregion
 
 local function getItemInfo(target)
-    if not target then return Info.data end
     Info:clear()
+    if not target then return Info.data end
     local player = GetPlayer()
 
     local hoverOnStatus = player.HUD.controls.status.focus
@@ -841,7 +841,7 @@ end)
 
 AddPlayerPostInit(function(inst)
     inst:DoTaskInTime(0.1, function()
-        if DYCInfoPanel and DYCInfoPanel.objectDetailWindow then
+        if (DYCInfoPanel and DYCInfoPanel.objectDetailWindow) or (DYCLegendary and DYCLegendary.objectDetailWindow) then
             local oldSetObjectDetail = DYCInfoPanel.objectDetailWindow.SetObjectDetail
             DYCInfoPanel.objectDetailWindow.SetObjectDetail = function(self, page)
                 for _, item in ipairs(page.lines) do
