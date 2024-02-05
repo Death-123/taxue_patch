@@ -371,8 +371,6 @@ end
 ---@param package table
 ---@return table newPackage
 function TransformPackage(package)
-    if package.isPatched then return package end
-
     local slots = package.components.container.slots
     local newPackage = SpawnPackage()
     for _, v in pairs(slots) do
@@ -413,15 +411,18 @@ function TransformPackage(package)
     local owner = package.components.inventoryitem.owner
     if owner then
         newPackage.components.inventoryitem.owner = owner
-        local slots
+        local container, slots
         if owner == GetPlayer() then
-            slots = owner.components.inventory.itemslots
+            container = owner.components.inventory
+            slots = container.itemslots
         else
-            slots = owner.components.container.slots
+            container = owner.components.container
+            slots = container.slots
         end
-        for i, slot in pairs(slots) do
-            if slot == package then
-                slots[i] = newPackage
+        for i, item in pairs(slots) do
+            if item == package then
+                container:RemoveItemBySlot(i)
+                container:GiveItem(newPackage, i)
                 break
             end
         end
@@ -567,7 +568,7 @@ end
 ---@param package table
 ---@return table|nil
 function UnpackSuperPackage(package)
-    if package.isPatched then
+    if package.isPatched and package.amountMap then
         if package.amount == 0 then return nil end
         local item_list = package.item_list
         if not package.type then
@@ -762,11 +763,11 @@ end
 ---开宝藏
 ---@param treasures table[]
 ---@return table loots
----@return integer[] numbers
+---@return table[] numbers
 function OpenTreasures(treasures)
     treasures[1].SoundEmitter:PlaySound("dontstarve_DLC002/common/loot_reveal")
 
-    local numbers = {}
+    local numbers = { {}, {} }
 
     local loots = { boneshard = 2 * #treasures }
 
@@ -816,7 +817,7 @@ function OpenTreasures(treasures)
             end
 
             if math.random() <= chanceChest then
-                numbers[chest] = numbers[chest] and numbers[chest] + 1 or 1
+                numbers[2][chest] = numbers[2][chest] and numbers[2][chest] + 1 or 1
                 if cfg.DESTORY_CHEST then
                     loots.boards = loots.boards and loots.boards + 1 or 1
                     for __, prefab in ipairs(treasure.advance_list) do
@@ -833,7 +834,7 @@ function OpenTreasures(treasures)
                     chest.Transform:SetPosition(treasure.Transform:GetWorldPosition())
                 end
             elseif math.random() <= chanceStatue then
-                numbers["statue"] = numbers["statue"] and numbers["statue"] + 1 or 1
+                numbers[2]["statue"] = numbers[2]["statue"] and numbers[2]["statue"] + 1 or 1
                 local statue = SpawnPrefab(statues[math.random(#statues)])
                 if cfg.DESTORY_STATUE then
                     local dorps = statue.components.lootdropper:GetAllLoot()
@@ -846,7 +847,7 @@ function OpenTreasures(treasures)
                 end
             end
         end
-        numbers[treasure.prefab] = numbers[treasure.prefab] and numbers[treasure.prefab] + 1 or 1
+        numbers[1][treasure.prefab] = numbers[1][treasure.prefab] and numbers[1][treasure.prefab] + 1 or 1
         treasure:Remove()
     end
     return loots, numbers
@@ -869,10 +870,17 @@ function AddTreasuresToPackage(package, treasures)
             end
         end
     end
-    local str = "这波打包了:/n"
-    for name, number in pairs(numbers) do
-        local name = name == "statue" and "雕像" or TaxueToChs(name)
-        str = str .. name .. number .. "个/n"
+    local str = "这波打包了:\n"
+    for _, line in pairs(numbers) do
+        for name, number in pairs(line) do
+            local name = name == "statue" and "雕像" or TaxueToChs(name)
+            str = str .. name .. number .. "个 "
+        end
+        str = str .. "\n"
     end
-    TaXueSay(str)
+    package:AddComponent("talker")
+    package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255, 1)
+    package.components.talker.offset = Vector3(0, 100, 0)
+    package.components.talker:Say(str, 10)
+    package:RemoveComponent("talker")
 end

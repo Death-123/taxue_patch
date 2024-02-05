@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.80.2"
+version = "3.80.4"
 forumthread = ""
 api_version = 6
 priority = -3123
@@ -175,14 +175,14 @@ configuration_options = {
         label = "超级绿护符修复次数",
         hover = "修改超级建造护符添加绿宝石增加的耐久",
         options = {
-            { description = "禁用", data = false },
+            { description = "禁用", data = 4 },
             { description = "5", data = 5 },
             { description = "6", data = 6 },
             { description = "7", data = 7 },
             { description = "8", data = 8 },
             { description = "10", data = 10 },
         },
-        default = false,
+        default = 4,
     },
     {
         name = "SHOW_SHOP",

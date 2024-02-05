@@ -139,6 +139,11 @@ local PATCHS = {
     ["scripts/prefabs/taxue_treasure.lua"] = {md5 = "aaa243d80a6aeb6125febef8bf6953a1", lines = {}},
     --按键排序
     ["scripts/press_key_taxue.lua"] = {md5 = "86a1c8cb703fe4d310f289c059c5bfef", lines = {}},
+    --入箱丢包修复
+    ["scripts/public_method_taxue.lua"] = {md5 = "0ac6775af4ac0ceff981a8286954274e", lines = {}},
+    --种子机修复
+    ["scripts/prefabs/taxue_seeds_machine.lua"] = {md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {}},
+
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
@@ -402,6 +407,7 @@ if cfg.TAXUE_FIX then
         {index = 59, content = [[    {"taxue_egg_nomal",0.05},   --普通蛋]]},
         {index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
     })
+    --按键排序
     addPatchs("scripts/press_key_taxue.lua", {
         {index = 297, endIndex = 299, content = [[
             if item1.prefab == name and item2.prefab == name then
@@ -418,6 +424,10 @@ if cfg.TAXUE_FIX then
             or CanSort(item1,item2,"book_touch_leif",item1.leif_num,item2.leif_num)) then   --点树成精
         ]]}
     })
+    --入箱丢包修复
+    addPatch("scripts/public_method_taxue.lua", {index = 147, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]]})
+    --种子机修复
+    addPatchs("scripts/prefabs/taxue_seeds_machine.lua", require "patchData/taxue_seeds_machine")
 end
 
 --售货亭修改
