@@ -143,6 +143,8 @@ local PATCHS = {
     ["scripts/public_method_taxue.lua"] = { md5 = "0ac6775af4ac0ceff981a8286954274e", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
+    --鱼缸卡顿优化
+    ["scripts/prefabs/taxue_fish_tank.lua"] = { md5 = "4512a2847f757c7a2355f3f620a286a8", lines = {} },
 
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
@@ -446,6 +448,23 @@ if cfg.TAXUE_FIX then
             entity:Remove()
 		end
     ]]
+    })
+    --鱼缸卡顿优化
+    addPatchs("scripts/prefabs/taxue_fish_tank.lua", {
+        {index = 46, content = [[
+            if not inst.components.workable then
+                inst:AddComponent("workable")
+            elseif inst.components.workable.action == ACTIONS.DIG then
+                return
+            end
+        ]]},
+        {index = 55, content = [[
+            if not inst.components.workable then
+                inst:AddComponent("workable")
+            elseif inst.components.workable.action == ACTIONS.HAMMER then
+                return
+            end
+        ]]},
     })
 end
 
