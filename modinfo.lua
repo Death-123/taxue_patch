@@ -1,7 +1,7 @@
 name = "    踏雪补丁"
 description = "踏雪mod补丁"
 author = "Death"
-version = "3.80.4"
+version = "3.80.5"
 forumthread = ""
 api_version = 6
 priority = -3123

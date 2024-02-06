@@ -842,11 +842,12 @@ end)
 AddPlayerPostInit(function(inst)
     inst:DoTaskInTime(0.1, function()
         if (DYCInfoPanel and DYCInfoPanel.objectDetailWindow) or (DYCLegendary and DYCLegendary.objectDetailWindow) then
-            local oldSetObjectDetail = DYCInfoPanel.objectDetailWindow.SetObjectDetail
-            DYCInfoPanel.objectDetailWindow.SetObjectDetail = function(self, page)
+            local dyc = DYCLegendary and DYCLegendary or DYCInfoPanel
+            local oldSetObjectDetail = dyc.objectDetailWindow.SetObjectDetail
+            dyc.objectDetailWindow.SetObjectDetail = function(self, page)
                 for _, item in ipairs(page.lines) do
                     if item.component == 'custom' then
-                        item.color = DYCInfoPanel.RGBAColor(textColor[1] / 255, textColor[2] / 255, textColor[3] / 255)
+                        item.color = dyc.RGBAColor(textColor[1] / 255, textColor[2] / 255, textColor[3] / 255)
                     end
                 end
                 oldSetObjectDetail(self, page)

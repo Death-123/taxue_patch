@@ -232,6 +232,27 @@ TableCount = function(table)
     return count
 end
 
+---查找周围实体
+---@param inst table
+---@param radius number
+---@param testFn? fun(entity: table): boolean
+---@param tags? string[]
+---@param notags? string[]
+---@return table[]
+function GetNearByEntities(inst, radius, testFn, tags, notags)
+    if not inst or not inst:IsValid() then return {} end
+    local pos = Vector3(inst.Transform:GetWorldPosition())
+    local notags = notags or { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
+    local list = {}
+    local ents = TheSim:FindEntities(pos.x, pos.y, pos.z, radius, tags, notags)
+    for _, entity in pairs(ents) do
+        if entity ~= inst and entity:IsValid() and (not testFn or testFn(entity)) then
+            table.insert(list, entity)
+        end
+    end
+    return list
+end
+
 ---计算概率次数结果
 ---@param chance number
 ---@param times integer

@@ -1,5 +1,5 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
-local Md5 = require "md5"
+local md5lib = package.loadlib(MODROOT .. "/scripts/md5lib.dll", "luaopen_md5lib")()
 
 GLOBAL.TaxuePatch = { cfg = {} }
 local TaxuePatch = GLOBAL.TaxuePatch
@@ -66,17 +66,17 @@ local function getFileMd5(path)
     if not cfg.MD5_BYTES then return nil end
     local file, err = io.open(path, "rb")
     if file then
-        local md5 = Md5.new()
+        md5lib.init()
         local bytes = 1024 * cfg.MD5_BYTES
         local line = file:read(bytes)
         while line do
             collectgarbage("collect")
             print("calculating md5, chunk size: " .. cfg.MD5_BYTES .. ", memory usage: " .. collectgarbage("count"))
-            md5:update(line)
+            md5lib.update(line)
             line = file:read(bytes)
         end
         collectgarbage("collect")
-        return Md5.tohex(md5:finish())
+        return md5lib.toHex()
     else
         return nil, err
     end
@@ -136,13 +136,13 @@ local PATCHS = {
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "6194bdd97527df825238da2ba3d27ec8", lines = {} },
     --修复宝藏不出普通蛋
-    ["scripts/prefabs/taxue_treasure.lua"] = {md5 = "aaa243d80a6aeb6125febef8bf6953a1", lines = {}},
+    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "aaa243d80a6aeb6125febef8bf6953a1", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = {md5 = "86a1c8cb703fe4d310f289c059c5bfef", lines = {}},
+    ["scripts/press_key_taxue.lua"] = { md5 = "86a1c8cb703fe4d310f289c059c5bfef", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = {md5 = "0ac6775af4ac0ceff981a8286954274e", lines = {}},
+    ["scripts/public_method_taxue.lua"] = { md5 = "0ac6775af4ac0ceff981a8286954274e", lines = {} },
     --种子机修复
-    ["scripts/prefabs/taxue_seeds_machine.lua"] = {md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {}},
+    ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
 
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
@@ -158,7 +158,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
-    --梅运券修改
+    --梅运券修改,利息券连地上一起读
     ["scripts/prefabs/taxue.lua"] = { md5 = "ffaca9b7cb0d6fa623266d2f96e744dd", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
@@ -177,11 +177,11 @@ local function patchFile(filePath, data)
     local originPath = taxuePath .. filePath
     local lineHex
     if data.lines then
-        local md5 = Md5.new()
+        md5lib.init()
         for _, line in ipairs(data.lines) do
-            md5:update(tostring(line.index))
+            md5lib.update(tostring(line.index))
         end
-        lineHex = Md5.tohex(md5:finish())
+        lineHex = md5lib.toHex()
     end
     local versionStr = patchVersionStr .. (lineHex and ("." .. lineHex) or "")
     local file, error = io.open(originPath, "r")
@@ -331,7 +331,7 @@ local function testAllMd5()
                     isPatched = true
                 end
             end
-            if not isPatched then          
+            if not isPatched then
                 local md5, err = getFileMd5(originPath)
                 print("-----------------------------")
                 print(path)
@@ -346,16 +346,14 @@ local function testAllMd5()
 end
 
 local function test()
-    patchFile("modmain.lua", {
-        mode = "unpatch",
-        md5 = "474c4f42414c2e7365746d6574617461",
-        lines = {
-            { index = 2,   type = "add",   content = "--test1" },
-            { index = 3,   endIndex = 5,   type = "override",  content = "--test2" },
-            { index = 118, endIndex = 128, type = "override" },
-        }
-    })
-    patchFile("scripts/patchlib.lua", { mode = "override" })
+    for key, value in pairs(md5lib) do
+        print(key, value)
+    end
+    md5lib.init()
+    md5lib.update("a")
+    md5lib.update("b")
+    md5lib.update("c")
+    print(md5lib.toHex())
 end
 
 local function patchAll(unpatch)
@@ -402,14 +400,17 @@ if cfg.TAXUE_FIX then
     --修复难度未初始化的崩溃
     addPatch("scripts/widgets/taxue_level.lua", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
     --修复宝藏普通蛋不生成
-    addPatchs("scripts/prefabs/taxue_treasure.lua",{
-        {index = 24, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
-        {index = 59, content = [[    {"taxue_egg_nomal",0.05},   --普通蛋]]},
-        {index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]]},
+    addPatchs("scripts/prefabs/taxue_treasure.lua", {
+        { index = 24, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]] },
+        { index = 59, content = [[    {"taxue_egg_nomal",0.05},   --普通蛋]] },
+        { index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]] },
     })
     --按键排序
     addPatchs("scripts/press_key_taxue.lua", {
-        {index = 297, endIndex = 299, content = [[
+        {
+            index = 297,
+            endIndex = 299,
+            content = [[
             if item1.prefab == name and item2.prefab == name then
                 if type(value1) == "number" then
                     return value1 < value2
@@ -417,17 +418,35 @@ if cfg.TAXUE_FIX then
                     return value2:compare(value1)
                 end
             end
-        ]]},
-        {index = 312, content = [[
+        ]]
+        },
+        {
+            index = 312,
+            content = [[
             or CanSort(item1,item2,"substitute_ticket",item1.substitute_item,item2.substitute_item)   --掉包券
             or CanSort(item1,item2,"shop_refresh_ticket_directed",item1.refresh_item,item2.refresh_item)   --定向商店刷新
             or CanSort(item1,item2,"book_touch_leif",item1.leif_num,item2.leif_num)) then   --点树成精
-        ]]}
+        ]]
+        }
     })
     --入箱丢包修复
-    addPatch("scripts/public_method_taxue.lua", {index = 147, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]]})
+    addPatchs("scripts/public_method_taxue.lua", {
+        { index = 147, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
+        { index = 205, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
+    })
     --种子机修复
     addPatchs("scripts/prefabs/taxue_seeds_machine.lua", require "patchData/taxue_seeds_machine")
+    --利息券连地上一起读
+    addPatch("scripts/prefabs/taxue_other_items.lua", {
+        index = 62,
+        type = "add",
+        content = [[
+        for _, entity in ipairs(GetNearByEntities(reader, 15, function(entity) return entity.prefab == "interest_ticket" end)) do
+			num = num + entity.interest
+            entity:Remove()
+		end
+    ]]
+    })
 end
 
 --售货亭修改
@@ -582,5 +601,6 @@ if cfg.DORP_ASH then
     end)
 end
 
+-- test()
 -- testAllMd5()
 patchAll()
