@@ -1,5 +1,6 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
-local md5lib = package.loadlib(MODROOT .. "/scripts/md5lib.dll", "luaopen_md5lib")()
+package.cpath = package.cpath .. ";" .. MODROOT .. "/scripts/?.dll"
+local md5lib = require("md5lib")
 
 GLOBAL.TaxuePatch = { cfg = {} }
 local TaxuePatch = GLOBAL.TaxuePatch
