@@ -231,6 +231,40 @@ TableCount = function(table)
     for _, _ in pairs(table) do count = count + 1 end
     return count
 end
+table.TableCount = TableCount
+
+---测试物品是否符合条件
+---@param item table
+---@param test string|string[]|fun(table:table):boolean
+---@return boolean
+function TestItem(item, test)
+    if not item then return false end
+    local testFn
+    if type(test) == "table" then
+        testFn = function(prefab) return table.contains(test, prefab.prefab) end
+    elseif type(test) == "string" then
+        testFn = function(prefab) return prefab.prefab == test end
+    elseif type(test) == "function" then
+        testFn = test
+    else
+        return false
+    end
+    return testFn(item)
+end
+
+---返回slots中找到的第一个符合的物品
+---@param slots table[]
+---@param itemTest string|string[]|fun(table:table):boolean
+---@return table|nil item
+---@return integer|nil slot
+function FindItem(slots, itemTest)
+    if not slots then return nil, nil end
+    for slot, item in pairs(slots) do
+        if TestItem(item, itemTest) then
+            return item, slot
+        end
+    end
+end
 
 ---查找周围实体
 ---@param inst table

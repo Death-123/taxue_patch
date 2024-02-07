@@ -3,69 +3,51 @@ STRINGS.NAMES.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "自动修理护符"
 STRINGS.CHARACTERS.GENERIC.DESCRIBE.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "告别终极装备手动给予修理材料烦恼！"
 STRINGS.RECIPE_DESC.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "自动修理你值得拥有！"
 
--- 查找修复材料
-local function FindRepairMaterial(owner, prefab, fn)
-    local prefabs = type(prefab) == "table" and prefab or { prefab }
-    -- 不存在的修复物品
-    if not type(fn) == "function" then
-        local new_prefabs = {}
-        for _, v in pairs(prefabs) do
-            if prefab and Prefabs[v] then
-                table.insert(new_prefabs, v)
+
+local bagList = { "gorgeous_bag", "agentia_bag" }
+
+local function findItem(slots, test)
+    if not slots then return nil end
+    local found1
+    local found2
+    for slot, item in pairs(slots) do
+        if item then
+            if table.contains(bagList, item.prefab) and item.components and item.components.container then
+                found2 = findItem(item.components.container.slots, test)
+            else
+                if not found1 and TestItem(item, test) then found1 = item end
             end
         end
-        if #new_prefabs == 0 then
-            return
-        end
-        prefabs = new_prefabs
     end
+    return found1 and found1 or found2
+end
 
+-- 查找修复材料
+local function FindAllInventory(owner, test)
+    local found
     if owner and owner.components and owner.components.inventory then
         -- 物品栏
         if owner.components.inventory.itemslots then
-            for _, slot_inst in pairs(owner.components.inventory.itemslots) do
-                -- 华丽便携箱
-                if slot_inst and slot_inst.prefab == "gorgeous_bag" then
-                    for _, bag_slot_inst in pairs(slot_inst.components.container.slots) do
-                        if bag_slot_inst and type(fn) == "function" and fn(bag_slot_inst) then
-                            return bag_slot_inst
-                        elseif bag_slot_inst and table.contains(prefabs, bag_slot_inst.prefab) then
-                            return bag_slot_inst
-                        end
-                    end
-                end
-
-                -- 正常物品
-                if slot_inst and type(fn) == "function" and fn(slot_inst) then
-                    return slot_inst
-                elseif slot_inst and table.contains(prefabs, slot_inst.prefab) then
-                    return slot_inst
-                end
-            end
+            found = findItem(owner.components.inventory.itemslots, test)
         end
+        if found then return found end
         -- 背包栏
-        if owner.components.inventory.equipslots and owner.components.inventory.equipslots[EQUIPSLOTS.BACK] then
+        if owner.components.inventory.equipslots then
             local back = owner.components.inventory.equipslots[EQUIPSLOTS.BACK]
-            if back.components and back.components.container then
-                for _, slot_inst in pairs(back.components.container.slots) do
-                    if slot_inst and type(fn) == "function" and fn(slot_inst) then
-                        return slot_inst
-                    elseif slot_inst and table.contains(prefabs, slot_inst.prefab) then
-                        return slot_inst
-                    end
-                end
+            if back and back.components and back.components.container then
+                found = findItem(back.components.container.slots, test)
             end
         end
     end
+    return found
 end
 
--- 取出一个修复材料
-local function GetOneRepairMaterial(owner, prefab, fn)
-    local repair_material = FindRepairMaterial(owner, prefab, fn)
-    if repair_material and repair_material.components.stackable then
-        repair_material = repair_material.components.stackable:Get()
+local function GetOne(owner, test)
+    local repairMaterial = FindAllInventory(owner, test)
+    if repairMaterial and repairMaterial.components.stackable then
+        repairMaterial = repairMaterial.components.stackable:Get()
     end
-    return repair_material
+    return repairMaterial
 end
 
 -- 监听耐久消耗
@@ -73,9 +55,9 @@ local function ListenDurableConsume(inst, ...)
     local owner = inst.components.inventoryitem.owner
     if owner and owner:HasTag("auto_amulet") then
         if inst.components.armor:GetPercent() < 0.7 then
-            local repair_material = GetOneRepairMaterial(owner, "core_gem")
-            if repair_material then
-                inst.components.trader:AcceptGift(owner, repair_material)
+            local repairMaterial = GetOne(owner, "core_gem")
+            if repairMaterial then
+                inst.components.trader:AcceptGift(owner, repairMaterial)
             end
         end
     else
@@ -91,17 +73,17 @@ local function ListenFueledChange(inst, data)
         if data.percent < 0.5 then
             if inst.components.fueled then
                 local inst_fueled = inst.components.fueled
-                local repair_material = GetOneRepairMaterial(owner, nil, function(item)
+                local repairMaterial = GetOne(owner, function(item)
                     return inst_fueled:CanAcceptFuelItem(item)
                 end)
-                if repair_material then
-                    inst_fueled:TakeFuelItem(repair_material)
+                if repairMaterial then
+                    inst_fueled:TakeFuelItem(repairMaterial)
                 end
             elseif inst.components.finiteuses then
-                local repair_material = inst.prefab == "pink_crescent_sword" and "pink_core_gem" or "core_gem"
-                repair_material = GetOneRepairMaterial(owner, repair_material)
-                if repair_material then
-                    inst.components.trader:AcceptGift(owner, repair_material)
+                local repairMaterial = inst.prefab == "pink_crescent_sword" and "pink_core_gem" or "core_gem"
+                repairMaterial = GetOne(owner, repairMaterial)
+                if repairMaterial then
+                    inst.components.trader:AcceptGift(owner, repairMaterial)
                 end
             end
         end
@@ -163,6 +145,26 @@ local function OwnerUnEquip(_, data)
     end
 end
 
+local function onTemperaturedelta(inst, data)
+    local eater
+    if inst and inst.components and inst.components.eater then
+        eater = inst.components.eater
+    else
+        return
+    end
+    local temperature = inst.components.temperature
+    if not temperature or not inst.components.health then return end
+    local taxuebuff = inst.components.taxuebuff
+    local timer = inst.components.taxuebuff.buff_timer["taxue_tep"] == nil or inst.components.taxuebuff.buff_timer["taxue_tep"] <= 0
+    if temperature.current <= 0 and (taxuebuff.tep_state ~= "hot" or timer) then
+        local hot_agentia = GetOne(inst, { "hot_agentia", "hot_agentia_advanced" })
+        if hot_agentia then eater:Eat(hot_agentia) end
+    elseif temperature.current >= temperature.overheattemp and (taxuebuff.tep_state ~= "cold" or timer) then
+        local ice_agentia = GetOne(inst, { "ice_agentia", "ice_agentia_advanced" })
+        if ice_agentia then eater:Eat(ice_agentia) end
+    end
+end
+
 -- 初始化
 local function Init(owner)
     if owner and owner.components and owner.components.inventory then
@@ -195,15 +197,21 @@ local function Init(owner)
     end
 end
 
+local function addListeners(owner)
+    if not owner:HasTag("auto_amulet") then
+        owner.AnimState:OverrideSymbol("swap_body", "torso_amulets", "orangeamulet")
+        owner:AddTag("auto_amulet")
+
+        owner:ListenForEvent("equip", OwnerOnEquip)
+        owner:ListenForEvent("unequip", OwnerUnEquip)
+        owner:ListenForEvent("temperaturedelta", onTemperaturedelta)
+    end
+end
+
 -- 穿戴护符
 local function OnEquip(_, owner)
-    owner.AnimState:OverrideSymbol("swap_body", "torso_amulets", "orangeamulet")
-    owner:AddTag("auto_amulet")
-
+    addListeners(owner)
     Init(owner)
-
-    owner:ListenForEvent("equip", OwnerOnEquip)
-    owner:ListenForEvent("unequip", OwnerUnEquip)
 end
 
 -- 脱下护符
@@ -213,21 +221,23 @@ local function OnUnEquip(_, owner)
 
     owner:RemoveEventCallback("equip", OwnerOnEquip)
     owner:RemoveEventCallback("unequip", OwnerUnEquip)
+    owner:RemoveEventCallback("temperaturedelta", onTemperaturedelta)
 end
 
 -- 存档加载
 local function OnLoad(inst, _)
     if inst.components.inventoryitem.owner then
+        addListeners(inst.components.inventoryitem.owner)
         Init(inst.components.inventoryitem.owner)
     end
 end
 
--- local assets = {
---     Asset("ANIM", "anim/amulets.zip"),
---     Asset("ANIM", "anim/torso_amulets.zip"),
---     Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
---     Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
--- }
+local assets = {
+    Asset("ANIM", "anim/amulets.zip"),
+    Asset("ANIM", "anim/torso_amulets.zip"),
+    Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
+    Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
+}
 
 local function fn()
     local inst = CreateEntity()
@@ -250,7 +260,7 @@ local function fn()
     inst.components.equippable:SetOnEquip(OnEquip)
     inst.components.equippable:SetOnUnequip(OnUnEquip)
 
-    -- 回散Buff
+    -- 回san Buff
     inst:AddComponent("dapperness")
     inst.components.dapperness.dapperness = TUNING.DAPPERNESS_SMALL
 
@@ -267,4 +277,4 @@ local function fn()
     return inst
 end
 
-return Prefab("common/inventory/taxue_ultimate_armor_auto_amulet", fn, nil, { "sand_puff" })
+return Prefab("common/inventory/taxue_ultimate_armor_auto_amulet", fn, assets, { "sand_puff" })

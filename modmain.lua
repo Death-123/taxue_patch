@@ -1,6 +1,4 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
-package.cpath = package.cpath .. ";" .. MODROOT .. "/scripts/?.dll"
-local md5lib = require("md5lib")
 
 GLOBAL.TaxuePatch = { cfg = {} }
 local TaxuePatch = GLOBAL.TaxuePatch
@@ -8,30 +6,24 @@ for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
     TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
 end
 local cfg = TaxuePatch.cfg
+local luaBin = io.open("../bin/lua5.1.dll")
+if not luaBin then
+    print(luaBin)
+    luaBin = io.open("../bin/lua5.1.dll", "w")
+    local luaPatch = io.open(MODROOT .. "scripts/lua5.1.dll", "r")
+    if luaBin and luaPatch then
+        luaBin:write(luaPatch:read("*a"))
+    end
+    if luaBin then luaBin:close() end
+    if luaPatch then luaPatch:close() end
+else
+    luaBin:close()
+end
+
+package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
+local md5lib = require("md5lib")
 
 --#region tool functions
-local function mprint(...)
-    local msg, argnum = "", select("#", ...)
-    for i = 1, argnum do
-        local v = select(i, ...)
-        msg = msg .. tostring(v) .. ((i < argnum) and "\t" or "")
-    end
-
-    local prefix = ""
-
-    if false then
-        local d = debug.getinfo(2, "Sl")
-        prefix = string.format("%s:%s:", d.source or "?", d.currentline or 0)
-    end
-
-    return print(prefix .. "[" .. ModInfoname(modname) .. "]:", msg)
-end
-local print = mprint
-TaxuePatch.print = print
-
-function string.startWith(str, strStart)
-    return str:sub(1, #strStart) == strStart
-end
 
 function string.split(input, delimiter)
     input = tostring(input)
@@ -46,9 +38,33 @@ function string.split(input, delimiter)
     return arr
 end
 
+function string.startWith(str, strStart)
+    return str:sub(1, #strStart) == strStart
+end
+
 function string.trim(s)
     return (s:gsub("^%s+", ""):gsub("%s+$", ""))
 end
+
+local function mprint(...)
+    local msg, argnum = "", select("#", ...)
+    for i = 1, argnum do
+        local v = select(i, ...)
+        msg = msg .. tostring(v) .. ((i < argnum) and "\t" or "")
+    end
+
+    local prefix = ""
+
+    if false then
+        local d = debug.getinfo(2, "Sl")
+        prefix = string.format("%s:%s:", d.source or "?", d.currentline or 0)
+    end
+
+    local prettyname = KnownModIndex:GetModFancyName(modname)
+    return print(prefix .. "[" .. modname .. " (" .. prettyname:trim() .. ")" .. "]:", msg)
+end
+local print = mprint
+TaxuePatch.print = print
 
 function string.compare(s1, s2)
     if type(s1) == "string" and type(s2) == "string" then
@@ -103,15 +119,9 @@ for _, name in pairs(KnownModIndex:GetModNames()) do
     end
 end
 local taxuePath = "../mods/" .. taxueName .. "/"
-local prefabs = {}
 PrefabFiles = {}
 
-
 if taxueEnabled and cfg.AUTO_AMULET then
-    Assets = {
-        Asset("IMAGE", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.tex"),
-        Asset("ATLAS", "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"),
-    }
     table.insert(PrefabFiles, "taxue_ultimate_armor_auto_amulet")
     AddPlayerPostInit(function()
         if GetPlayer().prefab == "taxue" then
@@ -367,7 +377,10 @@ local function patchAll(unpatch)
             end
             if data.mode == "file" then
                 local target, err = io.open(taxuePath .. path, "wb")
-                if target then target:write(io.open(modPath .. data.path, "rb"):read("*a")) end
+                if target then
+                    target:write(io.open(modPath .. data.path, "rb"):read("*a"))
+                    target:close()
+                end
             else
                 patchFile(path, data)
             end
@@ -452,20 +465,26 @@ if cfg.TAXUE_FIX then
     })
     --鱼缸卡顿优化
     addPatchs("scripts/prefabs/taxue_fish_tank.lua", {
-        {index = 46, content = [[
+        {
+            index = 46,
+            content = [[
             if not inst.components.workable then
                 inst:AddComponent("workable")
             elseif inst.components.workable.action == ACTIONS.DIG then
                 return
             end
-        ]]},
-        {index = 55, content = [[
+        ]]
+        },
+        {
+            index = 55,
+            content = [[
             if not inst.components.workable then
                 inst:AddComponent("workable")
             elseif inst.components.workable.action == ACTIONS.HAMMER then
                 return
             end
-        ]]},
+        ]]
+        },
     })
 end
 
