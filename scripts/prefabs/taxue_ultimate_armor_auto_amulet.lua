@@ -3,7 +3,6 @@ STRINGS.NAMES.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "自动修理护符"
 STRINGS.CHARACTERS.GENERIC.DESCRIBE.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "告别终极装备手动给予修理材料烦恼！"
 STRINGS.RECIPE_DESC.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "自动修理你值得拥有！"
 
-
 local bagList = { "gorgeous_bag", "agentia_bag" }
 
 local function findItem(slots, test)
@@ -73,9 +72,7 @@ local function ListenFueledChange(inst, data)
         if data.percent < 0.5 then
             if inst.components.fueled then
                 local inst_fueled = inst.components.fueled
-                local repairMaterial = GetOne(owner, function(item)
-                    return inst_fueled:CanAcceptFuelItem(item)
-                end)
+                local repairMaterial = GetOne(owner, function(item) return inst_fueled:CanAcceptFuelItem(item) end)
                 if repairMaterial then
                     inst_fueled:TakeFuelItem(repairMaterial)
                 end
@@ -154,12 +151,10 @@ local function onTemperaturedelta(inst, data)
     end
     local temperature = inst.components.temperature
     if not temperature or not inst.components.health then return end
-    local taxuebuff = inst.components.taxuebuff
-    local timer = inst.components.taxuebuff.buff_timer["taxue_tep"] == nil or inst.components.taxuebuff.buff_timer["taxue_tep"] <= 0
-    if temperature.current <= 0 and (taxuebuff.tep_state ~= "hot" or timer) then
+    if temperature.current <= 0 and temperature.maxtemp > 0 then
         local hot_agentia = GetOne(inst, { "hot_agentia", "hot_agentia_advanced" })
         if hot_agentia then eater:Eat(hot_agentia) end
-    elseif temperature.current >= temperature.overheattemp and (taxuebuff.tep_state ~= "cold" or timer) then
+    elseif temperature.current >= temperature.overheattemp and temperature.mintemp < temperature.overheattemp then
         local ice_agentia = GetOne(inst, { "ice_agentia", "ice_agentia_advanced" })
         if ice_agentia then eater:Eat(ice_agentia) end
     end

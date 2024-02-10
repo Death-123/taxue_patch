@@ -290,7 +290,7 @@ local function getItemInfo(target)
     end
 
     --人物Buff
-    if target.components.taxuebuff then
+    if target.components and target.components.taxuebuff then
         local taxuebuff = target.components.taxuebuff
         for name, timer in pairs(taxuebuff.buff_timer) do
             if timer > 0 then
@@ -323,7 +323,7 @@ local function getItemInfo(target)
         Info:Add("今日利率: " .. string.format("%6.2f", interest) .. "%")
     end
     --食物
-    if target.components.perishable then
+    if target.components and target.components.perishable then
         local time = target.components.perishable.perishremainingtime                           --剩余时间（喵）
         local owner = target.components.inventoryitem and target.components.inventoryitem.owner --容器
         if owner then
@@ -386,21 +386,23 @@ local function getItemInfo(target)
         Info:Add("永久保鲜")
     end
     --生物
-    if target.components.health and target.components.health.absorb then
+    if target.components and target.components.health and target.components.health.absorb then
         Info:Add("伤害减免:" .. math.floor(target.components.health.absorb * 100) .. "%")
     end
     --武器
     if target.damage then
         Info:Add("伤害:" .. string.format("%6.2f", target.damage))
     end
-    if target.components.weapon and target.armor_penetration then
-        Info:Add("护甲穿透:" .. math.floor(target.armor_penetration * 100) .. "%")
-    end
-    if target.components.weapon and target.level then
-        Info:Add("等级：" .. target.level)
-    end
-    if target.components.weapon and target.forge_level then
-        Info:Add("锻造等级：" .. target.forge_level)
+    if target.components and target.components.weapon then
+        if target.armor_penetration then
+            Info:Add("护甲穿透:" .. math.floor(target.armor_penetration * 100) .. "%")
+        end
+        if target.level then
+            Info:Add("等级：" .. target.level)
+        end
+        if target.forge_level then
+            Info:Add("锻造等级：" .. target.forge_level)
+        end
     end
     --法杖
     if target.prefab == "armor_penetration_staff" then
@@ -456,7 +458,7 @@ local function getItemInfo(target)
         end
     end
     --踏雪商店
-    if target.prefab:startWith("taxue_shop") then
+    if target.prefab and target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
         if interior and (TaxuePatch == nil and true or TaxuePatch.cfg.SHOW_SHOP) then
@@ -728,7 +730,7 @@ local function getItemInfo(target)
         end
     end
 
-    if target.components.equippable then
+    if target.components and target.components.equippable then
         ShowStr("equipment_unforgettable", 1, 2, "血量上限:", "") --刻骨铭心
         ShowStr("equipment_baby_dragon", 60, 2, "精神回复:", "/分钟") --幼龙
         ShowStr("equipment_light_pearl", 1, 2, "发光范围:", "") --夜明珠

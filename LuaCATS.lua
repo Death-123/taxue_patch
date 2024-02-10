@@ -1,0 +1,38 @@
+---@meta
+
+---@class entityPrefab
+---@field GUID integer
+---@field Transform table
+---@field inlimbo boolean
+---@field parent entityPrefab
+---@field AnimState table
+---@field prefab string
+---@field ininterior boolean
+---@field persists boolean
+---@field name string
+---@field Physics table
+---@field age number
+---@field MiniMapEntity table
+---@field event_listeners table[]
+---@field SoundEmitter table
+---@field origspawnedFrom table
+---@field spawntime number
+---@field addcolourdata table
+---@field components table<string, table>
+---@field pendingtasks table
+---
+---@field IsValid fun(self):boolean
+---@field Remove fun(self)
+---@field AddComponent fun(self, component:string)
+---@field RemoveComponent fun(self, component:string)
+---@field HasTag fun(self, component:string):boolean
+---@field RemoveTag fun(self, component:string)
+---
+---@field taxue_coin_value number|nil
+---@field equip_value number|nil
+---@field MAX_EQUIP_VALUE number|nil
+---@field loaded_item_list table|nil
+---@field advance_list table|nil
+---
+---@field EMCvalue number|nil
+---@field noneexchangeable boolean

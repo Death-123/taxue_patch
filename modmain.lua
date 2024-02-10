@@ -10,7 +10,7 @@ local luaBin = io.open("../bin/lua5.1.dll")
 if not luaBin then
     print(luaBin)
     luaBin = io.open("../bin/lua5.1.dll", "w")
-    local luaPatch = io.open(MODROOT .. "scripts/lua5.1.dll", "r")
+    local luaPatch = io.open(MODROOT .. "scripts/lua5.1.txt", "r")
     if luaBin and luaPatch then
         luaBin:write(luaPatch:read("*a"))
     end
@@ -358,17 +358,6 @@ local function testAllMd5()
     end
 end
 
-local function test()
-    for key, value in pairs(md5lib) do
-        print(key, value)
-    end
-    md5lib.init()
-    md5lib.update("a")
-    md5lib.update("b")
-    md5lib.update("c")
-    print(md5lib.toHex())
-end
-
 local function patchAll(unpatch)
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
@@ -445,8 +434,15 @@ if cfg.TAXUE_FIX then
         ]]
         }
     })
-    --入箱丢包修复
+    --入箱丢包修复,空掉落物崩溃修复
     addPatchs("scripts/public_method_taxue.lua", {
+        {
+            index = 40,
+            content = [[
+        if item.components and item.components.inventoryitem then
+            item.components.inventoryitem:OnDropped(true)
+        end]]
+        },
         { index = 147, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
         { index = 205, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
     })
@@ -496,9 +492,35 @@ end
 
 --打包系统
 if cfg.PACKAGE_PATCH then
-    PATCHS["scripts/prefabs/taxue_super_package_machine.lua"].lines = require "patchData/taxue_super_package_machine"
-    PATCHS["scripts/prefabs/taxue_bundle.lua"].lines = require "patchData/taxue_bundle"
-    PATCHS["scripts/prefabs/taxue_book.lua"].lines = require "patchData/taxue_book"
+    addPatchs("scripts/prefabs/taxue_super_package_machine.lua", require("patchData/taxue_super_package_machine"))
+    addPatchs("scripts/prefabs/taxue_bundle.lua", require("patchData/taxue_bundle"))
+    addPatchs("scripts/prefabs/taxue_book.lua", require("patchData/taxue_book"))
+end
+
+--掉落优化
+if cfg.BETTER_DORP then
+    addPatch("scripts/public_method_taxue.lua", require("patchData/public_method_taxue")[448])
+
+    AddComponentPostInit("lootdropper", function(inst)
+        local oldDropLoot = inst.DropLoot
+        inst.DropLoot = function(self, pt, loots)
+            if loots then
+                oldDropLoot(self, pt, loots)
+            else
+                local prefabs = self:GenerateLoot()
+                self:CheckBurnable(prefabs)
+                local dorpList = {}
+                for _, name in pairs(prefabs) do
+                    dorpList[name] = dorpList[name] and dorpList[name] + 1 or 1
+                end
+
+                local target = self.inst
+                local package = GetNearestPackageMachine(target)
+
+                StackDrops(target, dorpList, package)
+            end
+        end
+    end)
 end
 
 --箱子可以被锤
@@ -540,7 +562,7 @@ if cfg.PACKAGE_STAFF then
             content =
             [[            if target.prefab == "taxue_treasuretrans_monster_machine" or target.prefab == "thumper" or target.prefab == "taxue_slotmachine" or target.prefab == "super_package_machine" then]]
         })
-    addPatch("scripts/game_changed_taxue.lua", { index = 3315, type = "add", content = [[AddPrefabPostInit("super_package_machine",function (inst) inst:RemoveComponent("workable") end)]] })
+    addPatch("scripts/prefabs/taxue_super_package_machine.lua", { index = 219, endIndex = 223 })
 end
 
 --法杖增强
@@ -610,12 +632,13 @@ if cfg.DORP_ASH then
     local special_cooked_prefabs = {
         ["trunk_summer"] = "trunk_cooked",
         ["trunk_winter"] = "trunk_cooked",
+        ["fish_raw"] = "fish_med_cooked",
     }
     local function AddSpecialCookedPrefab(prefab, cooked_prefab)
         special_cooked_prefabs[prefab] = cooked_prefab
     end
-    local function DropLoot(self, pt)
-        local prefabs = self:GenerateLoot()
+    local function CheckBurnable(self, prefabs)
+        -- check burnable
         if not self.inst.components.fueled and self.inst.components.burnable and self.inst.components.burnable:IsBurning() then
             for k, v in pairs(prefabs) do
                 local cookedAfter = v .. "_cooked"
@@ -630,15 +653,22 @@ if cfg.DORP_ASH then
                 end
             end
         end
-        for _, v in pairs(prefabs) do
-            self:SpawnLootPrefab(v, pt)
-        end
     end
     AddComponentPostInit("lootdropper", function(inst)
         inst.AddSpecialCookedPrefab = AddSpecialCookedPrefab
-        inst.DropLoot = DropLoot
+        inst.CheckBurnable = CheckBurnable
     end)
 end
+
+local command = require "command"
+for name, value in pairs(command) do
+    GLOBAL[name] = value
+end
+
+local function test()
+    TaxuePatch.patchlib = require "patchlib"
+end
+TaxuePatch.test = test
 
 -- test()
 -- testAllMd5()

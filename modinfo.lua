@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.6"
+version = "3.80.7"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -172,7 +172,7 @@ configuration_options = {
     },
     {
         name = "GREEN_AMULET",
-        label = "超级绿护符修复次数",
+        label = "超级绿护符次数",
         hover = "修改超级建造护符添加绿宝石增加的耐久",
         options = {
             { description = "禁用", data = 4 },
@@ -286,7 +286,17 @@ configuration_options = {
             { description = "15", data = 15 },
             { description = "20", data = 20 },
         },
-        default = 5,
+        default = 10,
+    },
+    {
+        name = "BETTER_DORP",
+        label = "优化物品掉落",
+        hover = "掉落物合并,当附近有开启的打包机时,直接进打包机",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
     },
     {
         name = "FLOWERPOT_PHYSICS",

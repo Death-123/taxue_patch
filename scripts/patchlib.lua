@@ -234,8 +234,8 @@ end
 table.TableCount = TableCount
 
 ---测试物品是否符合条件
----@param item table
----@param test string|string[]|fun(table:table):boolean
+---@param item entityPrefab
+---@param test string|string[]|fun(item:entityPrefab):boolean
 ---@return boolean
 function TestItem(item, test)
     if not item then return false end
@@ -253,9 +253,9 @@ function TestItem(item, test)
 end
 
 ---返回slots中找到的第一个符合的物品
----@param slots table[]
----@param itemTest string|string[]|fun(table:table):boolean
----@return table|nil item
+---@param slots entityPrefab[]
+---@param itemTest string|string[]|fun(item:entityPrefab):boolean
+---@return entityPrefab|nil item
 ---@return integer|nil slot
 function FindItem(slots, itemTest)
     if not slots then return nil, nil end
@@ -267,12 +267,12 @@ function FindItem(slots, itemTest)
 end
 
 ---查找周围实体
----@param inst table
+---@param inst entityPrefab
 ---@param radius number
----@param testFn? fun(entity: table): boolean
+---@param testFn? string|fun(entity: entityPrefab):boolean
 ---@param tags? string[]
 ---@param notags? string[]
----@return table[]
+---@return entityPrefab[]|table[]
 function GetNearByEntities(inst, radius, testFn, tags, notags)
     if not inst or not inst:IsValid() then return {} end
     local pos = Vector3(inst.Transform:GetWorldPosition())
@@ -280,8 +280,16 @@ function GetNearByEntities(inst, radius, testFn, tags, notags)
     local list = {}
     local ents = TheSim:FindEntities(pos.x, pos.y, pos.z, radius, tags, notags)
     for _, entity in pairs(ents) do
-        if entity ~= inst and entity:IsValid() and (not testFn or testFn(entity)) then
-            table.insert(list, entity)
+        if entity ~= inst and entity:IsValid() then
+            local testResult = true
+            if type(testFn) == "string" then
+                testResult = entity.prefab == testFn
+            elseif type(testFn) == "function" then
+                testResult = testFn(entity)
+            end
+            if testResult then
+                table.insert(list, entity)
+            end
         end
     end
     return list
@@ -406,10 +414,19 @@ local function processPackageData(package, itemType, itemName, amount, value, da
     end
 end
 
+---@class package:entityPrefab
+---@field isPatched boolean
+---@field type string
+---@field amount integer
+---@field amountMap table
+---@field hasValue boolean
+---@field valueMap table
+---@field item_list table<string, table>
+
 ---spawn a super package
 ---@param name? string package display name
 ---@param type? string|nil package type
----@return table package
+---@return package package
 function SpawnPackage(name, type)
     local package = SpawnPrefab("super_package")
     package.isPatched = true
@@ -423,8 +440,8 @@ function SpawnPackage(name, type)
 end
 
 ---transform package to patched package
----@param package table
----@return table newPackage
+---@param package package
+---@return package newPackage
 function TransformPackage(package)
     local slots = package.components.container.slots
     local newPackage = SpawnPackage()
@@ -489,9 +506,9 @@ function TransformPackage(package)
 end
 
 ---merge two packages into one
----@param package table
----@param packageM table
----@return table package
+---@param package package
+---@param packageM package
+---@return package package
 function MergePackage(package, packageM)
     if not package.isPatched then package = TransformPackage(package) end
     if not packageM.isPatched then packageM = TransformPackage(packageM) end
@@ -529,8 +546,8 @@ function MergePackage(package, packageM)
 end
 
 ---将物品添加到超级包裹
----@param package table
----@param entity table
+---@param package package
+---@param entity entityPrefab|package
 ---@param showFx? boolean
 function AddItemToSuperPackage(package, entity, showFx)
     --特效
@@ -544,6 +561,15 @@ function AddItemToSuperPackage(package, entity, showFx)
     local item_list = package.item_list
     if entity.prefab == "super_package" then
         MergePackage(package, entity)
+        return
+    end
+    if entity:HasTag("loaded_package") and entity.loaded_item_list then
+        local loaded_item_list = {}
+        for _, name in pairs(entity.loaded_item_list) do
+            loaded_item_list[name] = loaded_item_list[name] and loaded_item_list[name] + 1 or 1
+        end
+        AddItemsToSuperPackage(package, loaded_item_list)
+        entity:Remove()
         return
     end
     local itemType
@@ -586,24 +612,35 @@ function AddItemToSuperPackage(package, entity, showFx)
     entity:Remove()
 end
 
+---将表中物品添加到超级包裹中
+---@param package package
+---@param items table<string, integer>
+function AddItemsToSuperPackage(package, items)
+    for name, amount in pairs(items) do
+        local prefab = SpawnPrefab(name)
+        if prefab and prefab.components.stackable then
+            prefab.components.stackable.stacksize = amount
+            AddItemToSuperPackage(package, prefab)
+        elseif prefab then
+            prefab:Remove()
+            for _ = 1, amount do
+                AddItemToSuperPackage(package, SpawnPrefab(name))
+            end
+        end
+    end
+end
+
 ---打包所有实体
----@param package table
----@param entities table[]
----@param testFn function
+---@param package package
+---@param entities entityPrefab[]
+---@param testFn fun(entity:entityPrefab):boolean
 function PackAllEntities(package, entities, testFn)
     local treasures = {}
     for _, ent in ipairs(entities) do
         if cfg.OPEN_TREASURES and ent:HasTag("taxue_treasure") then
             table.insert(treasures, ent)
         elseif testFn(ent) then
-            if ent:HasTag("loaded_package") and ent.loaded_item_list then
-                for _, name in pairs(ent.loaded_item_list) do
-                    AddItemToSuperPackage(package, SpawnPrefab(name), true)
-                end
-                ent:Remove()
-            else
-                AddItemToSuperPackage(package, ent, true)
-            end
+            AddItemToSuperPackage(package, ent, true)
         end
     end
     if next(treasures) then
@@ -620,11 +657,10 @@ function PackAllEntities(package, entities, testFn)
 end
 
 ---打开超级包裹
----@param package table
----@return table|nil
+---@param package package
 function UnpackSuperPackage(package)
     if package.isPatched and package.amountMap then
-        if package.amount == 0 then return nil end
+        if package.amount == 0 then return end
         local item_list = package.item_list
         if not package.type then
             for itemType, list in pairs(item_list) do
@@ -721,7 +757,7 @@ end
 
 ---删除容器内物品
 ---@param container table
----@param itemList table[]
+---@param itemList entityPrefab[]
 function RemoveSlotsItems(container, itemList)
     for slot, _ in pairs(itemList) do
         container:RemoveItemBySlot(slot):Remove()
@@ -729,7 +765,7 @@ function RemoveSlotsItems(container, itemList)
 end
 
 ---售货亭卖东西
----@param inst table
+---@param inst entityPrefab
 function SellPavilionSellItems(inst)
     local container = inst.components.container
     local slots = container.slots
@@ -816,7 +852,7 @@ function SellPavilionSellItems(inst)
 end
 
 ---开宝藏
----@param treasures table[]
+---@param treasures entityPrefab[]
 ---@return table loots
 ---@return table[] numbers
 function OpenTreasures(treasures)
@@ -909,8 +945,8 @@ function OpenTreasures(treasures)
 end
 
 ---开启所有宝藏并将物品添加进包裹
----@param package table
----@param treasures table[]
+---@param package package
+---@param treasures entityPrefab[]
 function AddTreasuresToPackage(package, treasures)
     local loots, numbers = OpenTreasures(treasures)
     for name, amount in pairs(loots) do
@@ -918,7 +954,7 @@ function AddTreasuresToPackage(package, treasures)
         if prefab and prefab.components.stackable then
             prefab.components.stackable.stacksize = amount
             AddItemToSuperPackage(package, prefab)
-        else
+        elseif prefab then
             prefab:Remove()
             for _ = 1, amount do
                 AddItemToSuperPackage(package, SpawnPrefab(name))
@@ -938,4 +974,167 @@ function AddTreasuresToPackage(package, treasures)
     package.components.talker.offset = Vector3(0, 100, 0)
     package.components.talker:Say(str, 10)
     package:RemoveComponent("talker")
+end
+
+---将掉落物添加到列表中
+---@param lootDropper table
+---@param dorpList table<string, integer>
+---@param times? integer
+function AddLootsToList(lootDropper, dorpList, times)
+    times = times or 1
+    for _ = 1, times do
+        if lootDropper.numrandomloot and math.random() <= (lootDropper.chancerandomloot or 1) then
+            for k = 1, lootDropper.numrandomloot do
+                local loot = lootDropper:PickRandomLoot()
+                if loot then
+                    dorpList[loot] = dorpList[loot] and dorpList[loot] + 1 or 1
+                end
+            end
+        end
+    end
+
+    if lootDropper.chanceloot then
+        for k, v in pairs(lootDropper.chanceloot) do
+            for _ = 1, times do
+                if math.random() < v.chance then
+                    dorpList[v.prefab] = dorpList[v.prefab] and dorpList[v.prefab] + 1 or 1
+                    lootDropper.droppingchanceloot = true
+                end
+            end
+        end
+    end
+
+    if lootDropper.chanceloottable then
+        local loot_table = LootTables[lootDropper.chanceloottable]
+        if loot_table then
+            for i, entry in ipairs(loot_table) do
+                local prefab = entry[1]
+                local chance = entry[2]
+                if math.random() <= chance then
+                    dorpList[prefab] = dorpList[prefab] and dorpList[prefab] + 1 or 1
+                    lootDropper.droppingchanceloot = true
+                end
+            end
+        end
+    end
+
+    if not lootDropper.droppingchanceloot and lootDropper.ifnotchanceloot then
+        lootDropper.inst:PushEvent("ifnotchanceloot")
+        for k, v in pairs(lootDropper.ifnotchanceloot) do
+            dorpList[v.prefab] = dorpList[v.prefab] and dorpList[v.prefab] + times or times
+        end
+    end
+
+    if lootDropper.loot then
+        for k, v in ipairs(lootDropper.loot) do
+            dorpList[v] = dorpList[v] and dorpList[v] + times or times
+        end
+    end
+
+    local recipename = lootDropper.inst.prefab
+    if lootDropper.inst.recipeproxy then
+        recipename = lootDropper.inst.recipeproxy
+    end
+
+    local recipe = GetRecipe(recipename)
+
+    if recipe then
+        local percent = 1
+
+        if lootDropper.lootpercentoverride then
+            percent = lootDropper.lootpercentoverride(lootDropper.inst)
+        elseif lootDropper.inst.components.finiteuses then
+            percent = lootDropper.inst.components.finiteuses:GetPercent()
+        end
+
+        for k, v in ipairs(recipe.ingredients) do
+            local amt = math.ceil((v.amount * TUNING.HAMMER_LOOT_PERCENT) * percent * times)
+            if lootDropper.inst:HasTag("burnt") then
+                amt = math.ceil((v.amount * TUNING.BURNT_HAMMER_LOOT_PERCENT) * percent)
+            end
+
+            if v.type == "oinc" then
+                local oinc100       = math.floor(amt / 100)
+                local oinc10        = math.floor((amt - (oinc100 * 100)) / 10)
+                local oinc          = amt - (oinc100 * 100) - (oinc10 * 10)
+
+                dorpList["oinc100"] = dorpList["oinc100"] and dorpList["oinc100"] + oinc100 or oinc100
+                dorpList["oinc10"]  = dorpList["oinc10"] and dorpList["oinc10"] + oinc10 or oinc10
+                dorpList["oinc"]    = dorpList["oinc"] and dorpList["oinc"] + oinc or oinc
+            else
+                dorpList[v.type] = dorpList[v.type] and dorpList[v.type] + amt or amt
+            end
+        end
+    end
+
+    if lootDropper.inst:HasTag("burnt") then
+        for _ = 1, times do
+            if math.random() < 0.4 then
+                dorpList["charcoal"] = dorpList["charcoal"] and dorpList["charcoal"] + 1 or 1
+            end
+        end
+    end
+end
+
+---堆叠掉落物
+---@param target entityPrefab
+---@param dorpList table<string, integer>
+---@param package? package
+function StackDrops(target, dorpList, package)
+    if package then
+        AddItemsToSuperPackage(package, dorpList)
+        if next(dorpList) then TaxueFx(target, "small_puff") end
+    else
+        for name, amount in pairs(dorpList) do
+            local item = SpawnPrefab(name)
+            if item and item.components and item.components.stackable then
+                local o = GetNearByEntities(target, 15, name)
+                if #o > 0 and o[1].components and o[1].components.stackable then
+                    local oitem = o[1]
+                    local maxsize = oitem.components.stackable.maxsize
+                    if oitem.components.stackable.stacksize + amount <= maxsize then
+                        oitem.components.stackable.stacksize = oitem.components.stackable.stacksize + amount
+                        amount = 0
+                    elseif oitem.components.stackable.stacksize < maxsize then
+                        amount = amount + oitem.components.stackable.stacksize - maxsize
+                        oitem.components.stackable.stacksize = maxsize
+                    end
+                end
+                if amount > 0 then
+                    item.components.stackable.stacksize = amount
+                    TaxuePrefabDrop(target, item)
+                else
+                    item:Remove()
+                    TaxueFx(target, "small_puff")
+                end
+            elseif item then
+                item:Remove()
+                for _ = 1, amount do
+                    TaxueDrop(target, name)
+                end
+            end
+        end
+    end
+end
+
+---获得距离最近的开启的打包机中的包裹
+---@param target entityPrefab
+---@return package
+function GetNearestPackageMachine(target)
+    local player = GetPlayer()
+    if player.nearestPackageMachine and player.nearestPackageMachine.switch == "on" and player.nearestPackageMachine:GetDistanceSqToInst(target) <= 2500 then
+        return player.nearestPackageMachine:getPackage()
+    elseif not player.lastScanPackage or GetTime() - player.lastScanPackage > 1 then
+        player.lastScanPackage = GetTime()
+        local testFn = function (ent)
+            return ent.prefab == "super_package_machine" and ent.switch == "on"
+        end
+        local packageMachines = GetNearByEntities(target, 50, testFn)
+        if #packageMachines > 0 then
+            player.nearestPackageMachine = packageMachines[1]
+            return packageMachines[1]:getPackage()
+        else
+            player.nearestPackageMachine = nil
+        end
+    end
 end

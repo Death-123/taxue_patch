@@ -1,3 +1,22 @@
+local str47 = [[
+    local function getPackage(inst)
+        if inst.switch == "off" then return nil end
+        local slots = inst.components.container.slots
+        local package = nil
+        for _, v in pairs(slots) do
+            if v.prefab == "super_package" then
+                package = v
+                break
+            end
+        end
+        if package == nil then
+            package = SpawnPackage()
+            inst.components.container:GiveItem(package)
+        end
+        return package
+    end
+]]
+
 local str79 = [[
     if not inst.isPatched and inst.item_list and next(inst.item_list) then
         local tempPackage = SpawnPrefab("super_package")
@@ -12,6 +31,7 @@ local str79 = [[
         package = TransformPackage(package)
     end
     inst.isPatched = true
+    inst.getPackage = getPackage
 ]]
 
 local str93 = [[
@@ -33,12 +53,13 @@ end
 ]]
 
 local lines = {
-    { index = 79,  endIndex = 82,  type = "override", content = str79 },
-    { index = 93,  endIndex = 134, type = "override", content = str93 },
-    { index = 88, type = "override", content = "            package = SpawnPackage()" },
+    { index = 47,  type = "add",   content = str47 },
+    { index = 79,  endIndex = 82,  type = "override",                              content = str79 },
+    { index = 93,  endIndex = 134, type = "override",                              content = str93 },
+    { index = 88,  endIndex = 89,  type = "override",                              content = "            package = inst:getPackage()" },
     { index = 148, endIndex = 151, type = "override" },
-    { index = 166, type = "add", content = "    data.isPatched = inst.isPatched" },
-    { index = 172, type = "add", content = "    inst.isPatched = data.isPatched" },
+    { index = 166, type = "add",   content = "    data.isPatched = inst.isPatched" },
+    { index = 172, type = "add",   content = "    inst.isPatched = data.isPatched" },
 }
 
 return lines
