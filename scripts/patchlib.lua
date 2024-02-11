@@ -1095,9 +1095,11 @@ function StackDrops(target, dorpList, package)
                     if oitem.components.stackable.stacksize + amount <= maxsize then
                         oitem.components.stackable.stacksize = oitem.components.stackable.stacksize + amount
                         amount = 0
+                        TaxueFx(oitem, "small_puff")
                     elseif oitem.components.stackable.stacksize < maxsize then
                         amount = amount + oitem.components.stackable.stacksize - maxsize
                         oitem.components.stackable.stacksize = maxsize
+                        TaxueFx(oitem, "small_puff")
                     end
                 end
                 if amount > 0 then

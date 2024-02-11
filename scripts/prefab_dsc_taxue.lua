@@ -508,7 +508,8 @@ local function getItemInfo(target)
             --添加信息
             for _, item in ipairs(itemList) do
                 if item.name then
-                    local cost = ("%" .. maxCostLength + math.floor(#tostring(maxCostLength) / 4) .. "s"):format(item.cost):gsub(" ", "  ")
+                    local space = (maxCostLength - #item.cost + math.floor(maxCostLength / 4) - math.floor(#item.cost / 4))
+                    local cost = ("%" .. space .. "s"):format("") .. item.cost
                     Info:Add(("%-" .. maxNameLength .. "s: %s%s"):format(item.name, cost, item.costName))
                 end
             end
