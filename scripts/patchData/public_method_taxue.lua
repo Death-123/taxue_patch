@@ -56,11 +56,13 @@ function TaxueOnKilled(player, target)
         combat = math.random() * 0.5 + 1                         --战斗力1~1.5
         charm = math.random() * 1 + 1 + player.charm_value_extra --魅力值1~2
     end
-    player.exp = player.exp + exp                                --经验值
-    player.combat_capacity = player.combat_capacity + combat     --战斗力
-    player.charm_value = player.charm_value + charm              --魅力值
-    local str = ("*经验+%.2f*\n*战斗力+%.2f*\n魅力值+%.2f*"):format(exp, combat, charm)
-    TaXueSay(str)
+    if IsBoss or NotSmall then
+        player.exp = player.exp and player.exp + exp                                --经验值
+        player.combat_capacity = player.combat_capacity and player.combat_capacity + combat     --战斗力
+        player.charm_value = player.charm_value and player.charm_value + charm              --魅力值
+        local str = ("*经验+%.2f*\n*战斗力+%.2f*\n魅力值+%.2f*"):format(exp, combat, charm)
+        TaXueSay(str)
+    end
     --#endregion
 
     --变异撬锁蜘蛛
