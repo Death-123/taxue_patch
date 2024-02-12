@@ -88,7 +88,7 @@ local function getFileMd5(path)
         local line = file:read(bytes)
         while line do
             collectgarbage("collect")
-            print("calculating md5, chunk size: " .. cfg.MD5_BYTES .. ", memory usage: " .. collectgarbage("count"))
+            -- print("calculating md5, chunk size: " .. cfg.MD5_BYTES .. ", memory usage: " .. collectgarbage("count"))
             md5lib.update(line)
             line = file:read(bytes)
         end
@@ -390,6 +390,9 @@ end
 
 local function addPatchs(key, lines)
     for _, line in ipairs(lines) do
+        if not PATCHS[key] then
+            PATCHS[key] = {lines = {}}
+        end
         table.insert(PATCHS[key].lines, line)
     end
 end
@@ -682,6 +685,13 @@ if cfg.DORP_ASH then
         inst.AddSpecialCookedPrefab = AddSpecialCookedPrefab
         inst.CheckBurnable = CheckBurnable
     end)
+end
+
+local customPatch = kleiloadlua(modPath .. "custompatch.lua")()
+if next(customPatch) then
+    for path, lines in pairs(customPatch) do
+        addPatchs(path, lines)
+    end
 end
 
 local command = require "command"
