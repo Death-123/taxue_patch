@@ -10,7 +10,7 @@ local str551 = [[
         return inventoryitem and inventoryitem.canbepickedup and inventoryitem.cangoincontainer and not ent:HasTag("doydoy")
             and not table.contains(blackList, itemName)
     end
-    PackAllEntities(package, ents, testFn)
+    PackAllEntities(package, ents, testFn, true)
 ]]
 
 local lines = {

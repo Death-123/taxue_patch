@@ -234,6 +234,16 @@ configuration_options = {
         default = true,
     },
     {
+        name = "MACHINE_TREASURES",
+        label = "打包机能否开宝藏",
+        hover = "打包机能否打包宝藏",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = false,
+    },
+    {
         name = "DESTORY_CHEST",
         label = "打包拆宝藏箱",
         hover = "打包书和打包机开宝藏时,会将箱子一并拆除,并将物品包进包裹",
@@ -300,6 +310,16 @@ configuration_options = {
         name = "BETTER_DORP",
         label = "优化物品掉落",
         hover = "掉落物合并,当附近有开启的打包机时,直接进打包机",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "STACK_DROP",
+        label = "掉落物是否合并",
+        hover = "掉落物是否合并",
         options = {
             { description = "启用", data = true },
             { description = "禁用", data = false },

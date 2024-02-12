@@ -675,10 +675,11 @@ end
 ---@param package package
 ---@param entities entityPrefab[]
 ---@param testFn fun(entity:entityPrefab):boolean
-function PackAllEntities(package, entities, testFn)
+---@param isBook? boolean
+function PackAllEntities(package, entities, testFn, isBook)
     local treasures = {}
     for _, ent in ipairs(entities) do
-        if cfg.OPEN_TREASURES and ent:HasTag("taxue_treasure") then
+        if cfg.OPEN_TREASURES and ent:HasTag("taxue_treasure") and (isBook or cfg.MACHINE_TREASURES) then
             table.insert(treasures, ent)
         elseif testFn(ent) then
             AddItemToSuperPackage(package, ent, true)
@@ -1136,7 +1137,7 @@ function StackDrops(target, dorpList, package)
         end
         AddItemsToSuperPackage(package, dorpList, nil, testFn)
         if next(dorpList) then TaxueFx(target, "small_puff") end
-    else
+    elseif TaxuePatch.cfg.STACK_DROP then
         for name, amount in pairs(dorpList) do
             local item = SpawnPrefab(name)
             if item and item.components and item.components.stackable then
@@ -1161,6 +1162,19 @@ function StackDrops(target, dorpList, package)
                     item:Remove()
                     TaxueFx(target, "small_puff")
                 end
+            elseif item then
+                item:Remove()
+                for _ = 1, amount do
+                    target.components.lootdropper:DropLootPrefab(SpawnPrefab(name))
+                end
+            end
+        end
+    else
+        for name, amount in pairs(dorpList) do
+            local item = SpawnPrefab(name)
+            if item and item.components and item.components.stackable then
+                item.components.stackable.stacksize = amount
+                target.components.lootdropper:DropLootPrefab(item)
             elseif item then
                 item:Remove()
                 for _ = 1, amount do
