@@ -1,3 +1,5 @@
+local Image = require "widgets/image"
+
 ItemTypeMap = {
     book1 = {
         "book_rocky",     --石虾
@@ -233,6 +235,15 @@ TableCount = function(table)
 end
 table.TableCount = TableCount
 
+---给列表key对应的值加value
+---@param List table
+---@param key any
+---@param value any
+ListAdd = function(List, key, value)
+    value = value or 1
+    List[key] = List[key] and List[key] + value or value
+end
+
 ---测试物品是否符合条件
 ---@param item entityPrefab
 ---@param test string|string[]|fun(item:entityPrefab):boolean
@@ -312,17 +323,39 @@ end
 TaxuePatch.GetChanceResult = GetChanceResult
 
 local function giveItem(inst, item)
-    local owner = inst.components.inventoryitem.owner
-    if owner then
-        local container = owner == GetPlayer() and owner.components.inventory or owner.components.container
-        if container:CanTakeItemInSlot(item) then
-            container:GiveItem(item)
-            return
+    if not item or not item.components then return end
+    local container
+    if inst.components.inventoryitem then
+        local owner = inst.components.inventoryitem.owner
+        container = owner == GetPlayer() and owner.components.inventory or owner.components.container
+    elseif inst.components.container or inst.components.inventory then
+        container = inst == GetPlayer() and inst.components.inventory or inst.components.container
+    end
+    if container and container:CanTakeItemInSlot(item) then
+        container:GiveItem(item)
+    else
+        local pos = Vector3(inst.Transform:GetWorldPosition())
+        item.Transform:SetPosition(pos:Get())
+        item.components.inventoryitem:OnDropped(true)
+    end
+end
+
+---给予物品
+---@param inst entityPrefab
+---@param itemList table<string, integer>
+function GiveItems(inst, itemList)
+    for name, amount in pairs(itemList) do
+        local item = SpawnPrefab(name)
+        if item.components and item.components.stackable then
+            item.components.stackable.stacksize = amount
+            giveItem(inst, item)
+        else
+            item:Remove()
+            for _ = 1, amount do
+                giveItem(inst, SpawnPrefab(name))
+            end
         end
     end
-    local pos = Vector3(inst.Transform:GetWorldPosition())
-    item.Transform:SetPosition(pos:Get())
-    item.components.inventoryitem:OnDropped(true)
 end
 
 local function getStackedItem(name, amount, maxsize)
@@ -1128,7 +1161,7 @@ function GetNearestPackageMachine(target)
         return player.nearestPackageMachine:getPackage()
     elseif not player.lastScanPackage or GetTime() - player.lastScanPackage > 1 then
         player.lastScanPackage = GetTime()
-        local testFn = function (ent)
+        local testFn = function(ent)
             return ent.prefab == "super_package_machine" and ent.switch == "on"
         end
         local packageMachines = GetNearByEntities(target, 50, testFn)
@@ -1138,5 +1171,166 @@ function GetNearestPackageMachine(target)
         else
             player.nearestPackageMachine = nil
         end
+    end
+end
+
+local itemImageCache = {}
+
+---播放物品移动的动画
+---@param item string
+---@param src table
+---@param target table
+---@param time? number
+function PlayItemMove(item, src, target, time)
+    local im
+    if not itemImageCache[item] then
+        local temp = SpawnPrefab(item)
+        if temp.components and temp.components.inventoryitem then
+            itemImageCache[item] = { temp.components.inventoryitem:GetAtlas(), temp.components.inventoryitem:GetImage() }
+        end
+    end
+
+    im = Image(itemImageCache[item][1], itemImageCache[item][2])
+    im:MoveTo(src, target, time or 0.3, function() im:Kill() end)
+end
+
+---批量收获
+---@param crop table
+---@param itemList table<string, integer>
+---@param isBook? boolean
+function MultHarvest(crop, itemList, isBook)
+    if not crop.matured or crop.withered then return end
+    local player = GetPlayer()
+    local product, amount = nil, 1
+    local srcPos = Vector3(TheSim:GetScreenPos(crop.inst.Transform:GetWorldPosition()))
+    local targetPos = Vector3(TheSim:GetScreenPos(player.Transform:GetWorldPosition())) + Vector3(0, 50, 0)
+    if crop.grower and crop.grower:HasTag("fire") or crop.inst:HasTag("fire") then --着火，产物变为烤的
+        local temp = SpawnPrefab(crop.product_prefab)                              --产物
+        if temp.components.cookable and temp.components.cookable.product then
+            product = temp.components.cookable.product
+        else
+            product = "seeds_cooked"
+        end
+        temp:Remove() --移除产物
+    else
+        product = crop.product_prefab
+    end
+
+    -----------------处理特殊种子额外收获-----------------
+    --仙人掌额外收获花
+    if crop.inst.prefab == "plant_cactus" then
+        ListAdd(itemList, "cactus_flower")
+        PlayItemMove("cactus_flower", srcPos, targetPos)
+
+        --蘑菇
+    elseif crop.inst.prefab == "plant_mushroom" then
+        ListAdd(itemList, "green_cap")
+        ListAdd(itemList, "blue_cap")
+        PlayItemMove("green_cap", srcPos, targetPos)
+        PlayItemMove("blue_cap", srcPos, targetPos)
+
+        --蜜花额外收获
+    elseif crop.inst.prefab == "plant_nectar" then
+        amount = 6
+
+        --处理芦苇,盆栽草,树枝,荧光果收获倍率
+    elseif crop.inst.prefab == "plant_reeds" or crop.inst.prefab == "plant_grass" or crop.inst.prefab == "plant_sapling"
+        or crop.inst.prefab == "plant_bulb" then
+        amount = 3
+    end
+
+    if crop.grower then
+        local grower = crop.grower
+        if grower.prefab == "taxue_flowerpot" then
+            local mult = 1
+            if grower.level == 1 then
+                mult = math.random(1, 3)
+            elseif grower.level == 2 then
+                mult = math.random(2, 5)
+            elseif grower.level == 3 then
+                mult = math.random(2, 6)
+            end
+            amount = amount * mult
+        end
+        
+        local flowerPot = true
+        local cloverChance, cloverEssence
+        local threecolourclover_chance = player.threecolourclover_chance
+        --黄金花盆或者活木花盆
+        if grower.prefab == "taxue_flowerpot" and grower.level and grower.level > 0
+        or grower and grower.prefab == "taxue_flowerpot_livinglog" then
+            cloverChance = player.clover_chance
+            cloverEssence = "plant_essence"
+
+            --重置肥力值-永动机
+            grower.components.grower.cycles_left = grower.components.grower.max_cycles_left
+
+            --水盆
+        elseif grower.prefab == "taxue_flowerpot_water" then
+            cloverChance = player.seaclover_chance
+            cloverEssence = "sea_essence"
+            
+            --火山盆
+        elseif grower.prefab == "taxue_flowerpot_volcano" then
+            cloverChance = player.volcanoclover_chance
+            cloverEssence = "volcano_essence"
+        else
+            flowerPot = false
+        end
+        if flowerPot then
+            local shoudSay
+            --处理四叶草
+            if cloverChance and threecolourclover_chance and math.random() < (cloverChance + threecolourclover_chance) then
+                ListAdd(itemList, cloverEssence)
+                PlayItemMove(cloverEssence, srcPos, targetPos)
+                shoudSay = true
+            end
+            --处理三色四叶草
+            if threecolourclover_chance and math.random() < (threecolourclover_chance / 3) then
+                ListAdd(itemList, "threecolor_essence")
+                PlayItemMove("threecolor_essence", srcPos, targetPos)
+            end
+            if shoudSay then player.components.talker:Say("我转运啦！") end
+            --处理蛋蛋
+            if isBook and math.random() < 0.005 then
+                ListAdd(itemList, "taxue_egg_harvest")
+                PlayItemMove("taxue_egg_harvest", srcPos, targetPos)
+            end
+        end
+    end
+
+    ListAdd(itemList, product, amount)
+    PlayItemMove(product, srcPos, targetPos)
+
+    ProfileStatsAdd("grown_" .. product)
+
+
+    if crop.grower and crop.grower.components.grower then
+        crop.grower.components.grower:RemoveCrop(crop.inst)
+        if crop.inst.prefab == "plant_multiseason_taxue" then
+            local seedMap = {
+                --苹果
+                taxue_apple = "taxue_apple_multiseason_seeds",
+                taxue_apple_golden = "taxue_apple_multiseason_seeds",
+                taxue_apple_green = "taxue_apple_multiseason_seeds",
+                --菠萝
+                taxue_pineapple = "taxue_pineapple_multiseason_seeds",
+                taxue_pineapple_golden = "taxue_pineapple_multiseason_seeds",
+                taxue_pineapple_big = "taxue_pineapple_multiseason_seeds",
+                --草莓
+                taxue_strawberry = "taxue_strawberry_multiseason_seeds",
+                taxue_strawberry_golden = "taxue_strawberry_multiseason_seeds",
+                taxue_strawberry_big = "taxue_strawberry_multiseason_seeds",
+                --甜瓜
+                taxue_melon = "taxue_melon_multiseason_seeds",
+                taxue_melon_golden = "taxue_melon_multiseason_seeds",
+                taxue_melon_big = "taxue_melon_multiseason_seeds",
+            }
+            crop.grower.components.grower:PlantItem(SpawnPrefab(seedMap[product]))             --收获之后重新种植一颗作物
+        elseif crop.inst.prefab ~= "plant_taxue" then
+            crop.grower.components.grower:PlantItem(SpawnPrefab("taxue" .. crop.inst.prefab:sub(6) .. "_seeds")) --收获之后重新种植一颗作物
+        end
+    else
+        crop.inst:Remove()
     end
 end

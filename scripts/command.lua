@@ -17,11 +17,7 @@ function command.Do(fn)
 end
 
 function command.mprint(...)
-    local str = ""
-    for index, value in ipairs(...) do
-        str = str .. tostring(value)
-    end
-    TaxuePatch.print(str)
+    TaxuePatch.print(...)
 end
 
 return command

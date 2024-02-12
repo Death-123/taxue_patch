@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.8"
+version = "3.80.9"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -70,6 +70,16 @@ configuration_options = {
             { description = "浅绿色", data = { 144, 238, 144 } },
         },
         default = { 127, 255, 212 },
+    },
+    {
+        name = "EXP_BANNER",
+        label = "获得经验提示",
+        hover = "使用信息面板显示获得经验提示",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
     },
     {
         name = "DORP_ASH",

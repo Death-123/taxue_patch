@@ -199,7 +199,8 @@ local function addListeners(owner)
 
         owner:ListenForEvent("equip", OwnerOnEquip)
         owner:ListenForEvent("unequip", OwnerUnEquip)
-        owner:ListenForEvent("temperaturedelta", onTemperaturedelta)
+        owner:ListenForEvent("startfreezing", onTemperaturedelta)
+        owner:ListenForEvent("startoverheating", onTemperaturedelta)
     end
 end
 
@@ -216,7 +217,8 @@ local function OnUnEquip(_, owner)
 
     owner:RemoveEventCallback("equip", OwnerOnEquip)
     owner:RemoveEventCallback("unequip", OwnerUnEquip)
-    owner:RemoveEventCallback("temperaturedelta", onTemperaturedelta)
+    owner:RemoveEventCallback("startfreezing", onTemperaturedelta)
+    owner:RemoveEventCallback("startoverheating", onTemperaturedelta)
 end
 
 -- 存档加载

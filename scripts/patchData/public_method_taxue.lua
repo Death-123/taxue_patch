@@ -60,8 +60,30 @@ function TaxueOnKilled(player, target)
         player.exp = player.exp and player.exp + exp                                --经验值
         player.combat_capacity = player.combat_capacity and player.combat_capacity + combat     --战斗力
         player.charm_value = player.charm_value and player.charm_value + charm              --魅力值
-        local str = ("*经验+%.2f*\n*战斗力+%.2f*\n魅力值+%.2f*"):format(exp, combat, charm)
-        TaXueSay(str)
+        if TaxuePatch.cfg.EXP_BANNER and TaxuePatch.dyc then
+            local bannerExp
+            local dyc = TaxuePatch.dyc
+            for index, banner in pairs(dyc.bannerSystem.banners) do
+                if banner:HasTag("taxueGetExpBanner") then
+                    bannerExp = banner
+                    break
+                end
+            end
+            if not bannerExp then
+                local str = ("*经验+%.2f* *战斗力+%.2f* *魅力值+%.2f*"):format(exp, combat, charm)
+                bannerExp = dyc.bannerSystem:ShowMessage(str, 5, dyc.RGBAColor(255 / 255, 215 / 255, 0))
+                bannerExp:AddTag("taxueGetExpBanner")
+            end
+            bannerExp.exp = bannerExp.exp and bannerExp.exp + exp or exp
+            bannerExp.combat = bannerExp.combat and bannerExp.combat + combat or combat
+            bannerExp.charm = bannerExp.charm and bannerExp.charm + charm or charm
+            bannerExp:SetText(("*经验+%.2f* *战斗力+%.2f* *魅力值+%.2f*"):format(bannerExp.exp, bannerExp.combat, bannerExp.charm))
+            bannerExp.bannerTimer = 5
+            bannerExp:OnUpdate(0)
+        else
+            local str = ("*经验+%.2f*\n*战斗力+%.2f*\n魅力值+%.2f*"):format(exp, combat, charm)
+            TaXueSay(str)
+        end
     end
     --#endregion
 

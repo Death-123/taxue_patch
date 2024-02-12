@@ -156,10 +156,13 @@ local PATCHS = {
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
     ["scripts/prefabs/taxue_fish_tank.lua"] = { md5 = "4512a2847f757c7a2355f3f620a286a8", lines = {} },
+    --定位猫猫
+    ["scripts/prefabs/taxue_cat_floorlamp.lua"] = { md5 = "2344dc25f5ce1fbba5efa5ad726859c7", lines = {} },
 
     --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
+    --打包系统,优化收获书
     ["scripts/prefabs/taxue_book.lua"] = { md5 = "c0012c48eb693c79576bcc90a45d198e", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
@@ -392,6 +395,13 @@ local function addPatchs(key, lines)
 end
 --#endregion
 
+local oldLookAtFn = ACTIONS.LOOKAT.fn
+ACTIONS.LOOKAT.fn = function(act)
+    local targ = act.target or act.invobject
+    targ:PushEvent("onLookAt", { doer = act.doer })
+    oldLookAtFn(act)
+end
+
 --踏雪优化
 if cfg.TAXUE_FIX then
     --空格收菜
@@ -481,6 +491,20 @@ if cfg.TAXUE_FIX then
             end
         ]]
         },
+    })
+    --猫猫定位
+    addPatch("scripts/prefabs/taxue_cat_floorlamp.lua", {index = 186, type = "add", content = [[
+        inst:ListenForEvent("onLookAt", function(inst, data)
+            if inst:IsValid() and TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and GetPlayer():GetDistanceSqToInst(inst) < 25 then
+                GetPlayer().Transform:SetPosition(inst.Transform:GetWorldPosition())
+            end
+        end)
+    ]]})
+    --优化收获书
+    addPatchs("scripts/prefabs/taxue_book.lua", {
+        {index = 21, type = "add", content = [[                local itemList = {}]]},
+        {index = 36, content = [[                            MultHarvest(v.components.crop, itemList, true)]]},
+        {index = 46, type = "add", content = [[                GiveItems(reader, itemList)]]},
     })
 end
 

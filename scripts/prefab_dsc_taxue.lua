@@ -846,6 +846,7 @@ AddPlayerPostInit(function(inst)
     inst:DoTaskInTime(0.1, function()
         if (DYCInfoPanel and DYCInfoPanel.objectDetailWindow) or (DYCLegendary and DYCLegendary.objectDetailWindow) then
             local dyc = DYCLegendary and DYCLegendary or DYCInfoPanel
+            TaxuePatch.dyc = dyc
             local oldSetObjectDetail = dyc.objectDetailWindow.SetObjectDetail
             dyc.objectDetailWindow.SetObjectDetail = function(self, page)
                 for _, item in ipairs(page.lines) do
