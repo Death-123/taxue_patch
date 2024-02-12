@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.9"
+version = "3.80.10"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -31,17 +31,15 @@ configuration_options = {
         label = "md5读取长度",
         hover = "md5计算时每次读取的字节长度,如果加载mod时内存溢出,可以尝试将此配置改小,如果禁用,请确保补丁版本匹配,并且踏雪文件没有被改动",
         options = {
+            { description = "C语言库", data = "C" },
             { description = "32", data = 32 },
             { description = "16", data = 16 },
             { description = "8", data = 8 },
-            { description = "4", data = 4 },
-            { description = "2", data = 2 },
             { description = "1", data = 1 },
-            { description = "1/4", data = 1 / 4 },
             { description = "1/16", data = 1 / 16 },
             { description = "禁用", data = false },
         },
-        default = 16,
+        default = "C",
     },
     {
         name = "TAXUE_FIX",

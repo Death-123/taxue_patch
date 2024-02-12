@@ -426,4 +426,15 @@ function md5.sumhexa(s)
     return md5.tohex(md5.sum(s))
 end
 
-return md5
+local md5context
+
+return {
+    init = function() md5context = md5.new() end,
+    update = function(str) md5context:update(str) end,
+    toHex = function()
+        local hex = md5.tohex(md5context:finish())
+        md5context = nil
+        return hex
+    end,
+    calc = function(str) return md5.sumhexa(str) end
+}

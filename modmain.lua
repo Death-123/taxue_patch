@@ -6,22 +6,27 @@ for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
     TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
 end
 local cfg = TaxuePatch.cfg
-local luaBin = io.open("../bin/lua5.1.dll")
-if not luaBin then
-    print(luaBin)
-    luaBin = io.open("../bin/lua5.1.dll", "w")
-    local luaPatch = io.open(MODROOT .. "scripts/lua5.1.txt", "r")
-    if luaBin and luaPatch then
-        luaBin:write(luaPatch:read("*a"))
-    end
-    if luaBin then luaBin:close() end
-    if luaPatch then luaPatch:close() end
-else
-    luaBin:close()
-end
 
-package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
-local md5lib = require("md5lib")
+local md5lib
+if cfg.MD5_BYTES == "C" then
+    local luaBin = io.open("../bin/lua5.1.dll")
+    if not luaBin then
+        print(luaBin)
+        luaBin = io.open("../bin/lua5.1.dll", "w")
+        local luaPatch = io.open(MODROOT .. "scripts/lua5.1.txt", "r")
+        if luaBin and luaPatch then
+            luaBin:write(luaPatch:read("*a"))
+        end
+        if luaBin then luaBin:close() end
+        if luaPatch then luaPatch:close() end
+    else
+        luaBin:close()
+    end
+    package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
+    md5lib = require("md5lib")
+elseif cfg.MD5_BYTES then
+    md5lib = require("md5/md5")
+end
 
 --#region tool functions
 
@@ -84,7 +89,7 @@ local function getFileMd5(path)
     local file, err = io.open(path, "rb")
     if file then
         md5lib.init()
-        local bytes = 1024 * cfg.MD5_BYTES
+        local bytes = 1024 * (type(cfg.MD5_BYTES) == "number" and cfg.MD5_BYTES or 16)
         local line = file:read(bytes)
         while line do
             collectgarbage("collect")
@@ -192,7 +197,7 @@ local function patchFile(filePath, data)
     local sameVersion = false
     local originPath = taxuePath .. filePath
     local lineHex
-    if data.lines then
+    if data.lines and cfg.MD5_BYTES then
         md5lib.init()
         for _, line in ipairs(data.lines) do
             md5lib.update(tostring(line.index))
@@ -391,7 +396,7 @@ end
 local function addPatchs(key, lines)
     for _, line in ipairs(lines) do
         if not PATCHS[key] then
-            PATCHS[key] = {lines = {}}
+            PATCHS[key] = { lines = {} }
         end
         table.insert(PATCHS[key].lines, line)
     end
@@ -496,18 +501,22 @@ if cfg.TAXUE_FIX then
         },
     })
     --猫猫定位
-    addPatch("scripts/prefabs/taxue_cat_floorlamp.lua", {index = 186, type = "add", content = [[
+    addPatch("scripts/prefabs/taxue_cat_floorlamp.lua", {
+        index = 186,
+        type = "add",
+        content = [[
         inst:ListenForEvent("onLookAt", function(inst, data)
             if inst:IsValid() and TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and GetPlayer():GetDistanceSqToInst(inst) < 25 then
                 GetPlayer().Transform:SetPosition(inst.Transform:GetWorldPosition())
             end
         end)
-    ]]})
+    ]]
+    })
     --优化收获书
     addPatchs("scripts/prefabs/taxue_book.lua", {
-        {index = 21, type = "add", content = [[                local itemList = {}]]},
-        {index = 36, content = [[                            MultHarvest(v.components.crop, itemList, true)]]},
-        {index = 46, type = "add", content = [[                GiveItems(reader, itemList)]]},
+        { index = 21, type = "add",                                                                            content = [[                local itemList = {}]] },
+        { index = 36, content = [[                            MultHarvest(v.components.crop, itemList, true)]] },
+        { index = 46, type = "add",                                                                            content = [[                GiveItems(reader, itemList)]] },
     })
 end
 

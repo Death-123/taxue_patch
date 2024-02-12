@@ -586,7 +586,9 @@ end
 ---@param package package
 ---@param entity entityPrefab|package
 ---@param showFx? boolean
-function AddItemToSuperPackage(package, entity, showFx)
+---@param testFn? fun(ent:entityPrefab):boolean
+function AddItemToSuperPackage(package, entity, showFx, testFn)
+    if testFn and not testFn(entity) then return end
     --特效
     if showFx then SpawnPrefab("small_puff").Transform:SetPosition(entity.Transform:GetWorldPosition()) end
     --fx.Transform:SetScale(0.5,0.5,0.5)
@@ -652,16 +654,18 @@ end
 ---将表中物品添加到超级包裹中
 ---@param package package
 ---@param items table<string, integer>
-function AddItemsToSuperPackage(package, items)
+---@param showFx? boolean
+---@param testFn? fun(ent:entityPrefab):boolean
+function AddItemsToSuperPackage(package, items, showFx, testFn)
     for name, amount in pairs(items) do
         local prefab = SpawnPrefab(name)
         if prefab and prefab.components.stackable then
             prefab.components.stackable.stacksize = amount
-            AddItemToSuperPackage(package, prefab)
+            AddItemToSuperPackage(package, prefab, showFx, testFn)
         elseif prefab then
             prefab:Remove()
             for _ = 1, amount do
-                AddItemToSuperPackage(package, SpawnPrefab(name))
+                AddItemToSuperPackage(package, SpawnPrefab(name), showFx, testFn)
             end
         end
     end
@@ -1119,7 +1123,18 @@ end
 ---@param package? package
 function StackDrops(target, dorpList, package)
     if package then
-        AddItemsToSuperPackage(package, dorpList)
+        local blackList = { "chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone" }
+        local function testFn(ent)
+            local inventoryitem = ent.components.inventoryitem
+            local itemName = ent.prefab
+            local flag = inventoryitem and inventoryitem.canbepickedup and inventoryitem.cangoincontainer
+            flag = flag and not ent:HasTag("doydoy") and not table.contains(blackList, itemName)
+            if not flag then
+                target.components.lootdropper:DropLootPrefab(ent)
+            end
+            return flag
+        end
+        AddItemsToSuperPackage(package, dorpList, nil, testFn)
         if next(dorpList) then TaxueFx(target, "small_puff") end
     else
         for name, amount in pairs(dorpList) do
@@ -1141,7 +1156,7 @@ function StackDrops(target, dorpList, package)
                 end
                 if amount > 0 then
                     item.components.stackable.stacksize = amount
-                    TaxuePrefabDrop(target, item)
+                    target.components.lootdropper:DropLootPrefab(item)
                 else
                     item:Remove()
                     TaxueFx(target, "small_puff")
@@ -1149,7 +1164,7 @@ function StackDrops(target, dorpList, package)
             elseif item then
                 item:Remove()
                 for _ = 1, amount do
-                    TaxueDrop(target, name)
+                    target.components.lootdropper:DropLootPrefab(SpawnPrefab(name))
                 end
             end
         end
@@ -1158,7 +1173,7 @@ end
 
 ---获得距离最近的开启的打包机中的包裹
 ---@param target entityPrefab
----@return package
+---@return package|nil
 function GetNearestPackageMachine(target)
     local player = GetPlayer()
     if player.nearestPackageMachine and player.nearestPackageMachine.switch == "on" and player.nearestPackageMachine:GetDistanceSqToInst(target) <= 2500 then
@@ -1176,6 +1191,7 @@ function GetNearestPackageMachine(target)
             player.nearestPackageMachine = nil
         end
     end
+    return nil
 end
 
 local itemImageCache = {}
@@ -1256,13 +1272,13 @@ function MultHarvest(crop, itemList, isBook)
             end
             amount = amount * mult
         end
-        
+
         local flowerPot = true
         local cloverChance, cloverEssence
         local threecolourclover_chance = player.threecolourclover_chance
         --黄金花盆或者活木花盆
         if grower.prefab == "taxue_flowerpot" and grower.level and grower.level > 0
-        or grower and grower.prefab == "taxue_flowerpot_livinglog" then
+            or grower and grower.prefab == "taxue_flowerpot_livinglog" then
             cloverChance = player.clover_chance
             cloverEssence = "plant_essence"
 
@@ -1273,7 +1289,7 @@ function MultHarvest(crop, itemList, isBook)
         elseif grower.prefab == "taxue_flowerpot_water" then
             cloverChance = player.seaclover_chance
             cloverEssence = "sea_essence"
-            
+
             --火山盆
         elseif grower.prefab == "taxue_flowerpot_volcano" then
             cloverChance = player.volcanoclover_chance
@@ -1330,7 +1346,7 @@ function MultHarvest(crop, itemList, isBook)
                 taxue_melon_golden = "taxue_melon_multiseason_seeds",
                 taxue_melon_big = "taxue_melon_multiseason_seeds",
             }
-            crop.grower.components.grower:PlantItem(SpawnPrefab(seedMap[product]))             --收获之后重新种植一颗作物
+            crop.grower.components.grower:PlantItem(SpawnPrefab(seedMap[product]))                               --收获之后重新种植一颗作物
         elseif crop.inst.prefab ~= "plant_taxue" then
             crop.grower.components.grower:PlantItem(SpawnPrefab("taxue" .. crop.inst.prefab:sub(6) .. "_seeds")) --收获之后重新种植一颗作物
         end
