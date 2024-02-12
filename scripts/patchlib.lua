@@ -323,11 +323,13 @@ end
 TaxuePatch.GetChanceResult = GetChanceResult
 
 local function giveItem(inst, item)
-    if not item or not item.components then return end
+    if not item or not item.components or not inst or not inst.components then return end
     local container
     if inst.components.inventoryitem then
         local owner = inst.components.inventoryitem.owner
-        container = owner == GetPlayer() and owner.components.inventory or owner.components.container
+        if owner then
+            container = owner == GetPlayer() and owner.components.inventory or owner.components.container
+        end
     elseif inst.components.container or inst.components.inventory then
         container = inst == GetPlayer() and inst.components.inventory or inst.components.container
     end
@@ -336,7 +338,9 @@ local function giveItem(inst, item)
     else
         local pos = Vector3(inst.Transform:GetWorldPosition())
         item.Transform:SetPosition(pos:Get())
-        item.components.inventoryitem:OnDropped(true)
+        if item.components.inventoryitem then
+            item.components.inventoryitem:OnDropped(true)
+        end
     end
 end
 
