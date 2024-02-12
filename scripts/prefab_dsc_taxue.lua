@@ -771,13 +771,22 @@ local function getItemInfo(target)
     if target.taxue_coin_value then
         local stacksize = target.components.stackable and target.components.stackable.stacksize or 1
         local valueStr = formatCoins(target.taxue_coin_value)
+        local realValue
+        if target.components.finiteuses then
+            local percent = target.components.finiteuses:GetPercent()
+            realValue = percent < 1 and target.taxue_coin_value * percent
+        elseif target.components.armor then
+            local percent = target.components.armor:GetPercent()
+            realValue = percent < 1 and target.taxue_coin_value * percent
+        end
         if stacksize > 1 then
             local stackValue = stacksize * target.taxue_coin_value
             local force = stackValue > 1000
             local stackValueStr = "/总价值:" .. formatCoins(stackValue, force)
             Info:Add("单价:" .. valueStr .. stackValueStr)
         else
-            Info:Add("价值:" .. valueStr)
+            local realValueStr = realValue and "/实际价值:" .. formatCoins(realValue) or ""
+            Info:Add("价值:" .. valueStr .. realValueStr)
         end
     end
     --boss献祭价值
