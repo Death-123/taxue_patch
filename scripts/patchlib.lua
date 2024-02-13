@@ -476,6 +476,19 @@ function SpawnPackage(name, type)
     return package
 end
 
+---检查包裹类型
+---@param package package
+function CheckPackageType(package)
+    if TableCount(package.item_list) == 1 then
+        local type, _ = next(package.item_list)
+        package.name = ItemTypeNameMap[type]
+        package.type = type
+    else
+        package.type = nil
+        package.name = TaxueToChs(package.prefab)
+    end
+end
+
 ---transform package to patched package
 ---@param package package
 ---@return package newPackage
@@ -669,6 +682,7 @@ function AddItemsToSuperPackage(package, items, showFx, testFn)
             end
         end
     end
+    CheckPackageType(package)
 end
 
 ---打包所有实体
@@ -688,14 +702,7 @@ function PackAllEntities(package, entities, testFn, isBook)
     if next(treasures) then
         AddTreasuresToPackage(package, treasures)
     end
-    if TableCount(package.item_list) == 1 then
-        local type, _ = next(package.item_list)
-        package.name = ItemTypeNameMap[type]
-        package.type = type
-    else
-        package.type = nil
-        package.name = TaxueToChs(package.prefab)
-    end
+    CheckPackageType(package)
 end
 
 ---打开超级包裹

@@ -699,6 +699,17 @@ if cfg.DORP_ASH then
     end)
 end
 
+if cfg.INGAMEGC then
+    AddPlayerPostInit(function(player)
+        player:DoPeriodicTask(cfg.INGAMEGC * 60, function()
+            if collectgarbage("count") > 200000 then
+                print("memory usage: " .. collectgarbage("count") .. ", starting garbage collect")
+                collectgarbage("collect")
+            end
+        end)
+    end)
+end
+
 local customPatch = kleiloadlua(modPath .. "custompatch.lua")()
 if next(customPatch) then
     for path, lines in pairs(customPatch) do

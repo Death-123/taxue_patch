@@ -42,6 +42,20 @@ configuration_options = {
         default = "C",
     },
     {
+        name = "INGAMEGC",
+        label = "内存清理",
+        hover = "定时清理内存,设置清理检查间隔",
+        options = {
+            { description = "1分钟", data = 1 },
+            { description = "5分钟", data = 5 },
+            { description = "10分钟", data = 10 },
+            { description = "30分钟", data = 30 },
+            { description = "60分钟", data = 60 },
+            { description = "禁用", data = false },
+        },
+        default = "10",
+    },
+    {
         name = "TAXUE_FIX",
         label = "踏雪优化",
         hover = "优化部分踏雪功能",
