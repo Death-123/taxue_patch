@@ -31,7 +31,6 @@ local str79 = [[
         package = TransformPackage(package)
     end
     inst.isPatched = true
-    inst.getPackage = getPackage
 ]]
 
 local str93 = [[
@@ -60,6 +59,7 @@ local lines = {
     { index = 148, endIndex = 151, type = "override" },
     { index = 166, type = "add",   content = "    data.isPatched = inst.isPatched" },
     { index = 172, type = "add",   content = "    inst.isPatched = data.isPatched" },
+    { index = 233, type = "add",   content = "    inst.getPackage = getPackage" },
 }
 
 return lines

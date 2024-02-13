@@ -618,7 +618,7 @@ if cfg.BUFF_STAFF then
             ]]
     })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER, inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED / 5 * 7, nil),     --彩虹法杖-冰箱背包升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED / 4 * 7, nil),     --彩虹法杖-冰箱背包升级]]) })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),            --湛青法杖-武器升级]]) })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),     --锻造法杖]]) })
 end
@@ -647,15 +647,18 @@ if cfg.FORTUNE_PATCH then
         { index = 216, type = "add", content = [[    if data.fortune_day then inst.fortune_day = data.fortune_day end]] },
         { index = 244, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]] },
     })
-    addPatch("scripts/prefabs/taxue_other_items.lua", {
-        index = 204,
-        endIndex = 227,
-        content = [[
+    addPatchs("scripts/prefabs/taxue_other_items.lua", {
+        {
+            index = 204,
+            endIndex = 227,
+            content = [[
         local amount = inst.components.stackable.stacksize
         GetPlayer().fortune_day = GetPlayer().fortune_day and GetPlayer().fortune_day + amount or amount
         TaXueSay("已装载梅运券: " .. amount)
         inst:Remove()
-    ]]
+        ]]
+        },
+        {index = 239, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]]}
     })
     --梅运券显示
 elseif cfg.FORTUNE_NUM then

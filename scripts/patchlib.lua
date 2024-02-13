@@ -588,7 +588,7 @@ end
 ---@param showFx? boolean
 ---@param testFn? fun(ent:entityPrefab):boolean
 function AddItemToSuperPackage(package, entity, showFx, testFn)
-    if testFn and not testFn(entity) then return end
+    if not entity or testFn and not testFn(entity) then return end
     --特效
     if showFx then SpawnPrefab("small_puff").Transform:SetPosition(entity.Transform:GetWorldPosition()) end
     --fx.Transform:SetScale(0.5,0.5,0.5)
@@ -816,7 +816,13 @@ function SellPavilionSellItems(inst)
     local playSound = false
     local coinList = {}
     local coins = 0
+    local itemCount = 0
+    local lastItem
     for slot, item in pairs(slots) do
+        if item then
+            itemCount = itemCount + 1
+            lastItem = item
+        end
         local amount = 1
         if item and item.components.stackable then
             amount = item.components.stackable.stacksize
@@ -849,6 +855,7 @@ function SellPavilionSellItems(inst)
             diamond = item
         end
     end
+    if itemCount == 1 and lastItem.prefab == "gold_brick" then return end
     print("总硬币价值：", coins)
     local tempCoins = 0
     for slot, coin in pairs(coinList) do
@@ -1191,7 +1198,7 @@ end
 function GetNearestPackageMachine(target)
     local player = GetPlayer()
     if player.nearestPackageMachine and player.nearestPackageMachine.switch == "on" and player.nearestPackageMachine:GetDistanceSqToInst(target) <= 2500 then
-        return player.nearestPackageMachine:getPackage()
+        return player.nearestPackageMachine.getPackage and player.nearestPackageMachine:getPackage()
     elseif not player.lastScanPackage or GetTime() - player.lastScanPackage > 1 then
         player.lastScanPackage = GetTime()
         local testFn = function(ent)
@@ -1222,6 +1229,7 @@ function PlayItemMove(item, src, target, time)
         if temp.components and temp.components.inventoryitem then
             itemImageCache[item] = { temp.components.inventoryitem:GetAtlas(), temp.components.inventoryitem:GetImage() }
         end
+        if temp then temp:Remove() end
     end
 
     im = Image(itemImageCache[item][1], itemImageCache[item][2])
