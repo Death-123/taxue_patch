@@ -10,7 +10,7 @@ local str47 = [[
             end
         end
         if package == nil then
-            package = SpawnPackage()
+            package = TaxuePatch.SpawnPackage()
             inst.components.container:GiveItem(package)
         end
         return package
@@ -22,13 +22,13 @@ local str79 = [[
         local tempPackage = SpawnPrefab("super_package")
         tempPackage.item_list = inst.item_list
         if package then
-            package = MergePackage(package, tempPackage)
+            package = TaxuePatch.MergePackage(package, tempPackage)
         else
-            package = TransformPackage(tempPackage)
+            package = TaxuePatch.TransformPackage(tempPackage)
         end
     end
     if package and not package.isPatched then
-        package = TransformPackage(package)
+        package = TaxuePatch.TransformPackage(package)
     end
     inst.isPatched = true
 ]]
@@ -41,9 +41,9 @@ local str93 = [[
             local item = ent.components.inventoryitem
             return item and item.canbepickedup and item.cangoincontainer and not ent:HasTag("doydoy") and not ent:HasTag("taxue_ultimate_weapon") and not table.contains(blackList, ent.prefab)
         end
-        PackAllEntities(package, ents, testFn)
+        TaxuePatch.PackAllEntities(package, ents, testFn)
         --判断字典型数组是否空
-        if TableCount(package.item_list) == 0 and package.components.container:IsEmpty() then
+        if table.count(package.item_list) == 0 and package.components.container:IsEmpty() then
             package:Remove()
             package = nil
         end

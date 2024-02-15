@@ -14,7 +14,7 @@ local function findItem(slots, test)
             if table.contains(bagList, item.prefab) and item.components and item.components.container then
                 found2 = findItem(item.components.container.slots, test)
             else
-                if not found1 and TestItem(item, test) then found1 = item end
+                if not found1 and TaxuePatch.TestItem(item, test) then found1 = item end
             end
         end
     end

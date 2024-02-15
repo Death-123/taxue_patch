@@ -1,228 +1,5 @@
 local Image = require "widgets/image"
 
-ItemTypeMap = {
-    book1 = {
-        "book_rocky",     --石虾
-        "book_pigman",    --猪人
-        "book_bunnyman",  --兔人
-        "book_krampus",   --坎普斯
-        "book_tentacles", --触手
-        "book_birds",
-        "book_meteor",
-        "book_sleep",
-        "book_brimstone"
-    },
-    book2 = {
-        "book_minotaur",          --犀牛
-        "book_deerclops",         --巨鹿
-        "book_moose",             --鸭子
-        "book_dragonfly",         --龙蝇
-        "book_bearger",           --熊大
-        "book_spiderqueen",       --蜘蛛女王
-        "book_leif",              --树精
-        "book_touch_leif",        --点树成精
-        "book_touch_spiderqueen", --点蛛成精
-        "book_animal_breed",      --生物繁殖书
-        "book_grow_spiderden",    --蜘蛛生长
-    },
-    book3 = {
-        "book_clear",           --清理书
-        "book_harvest",         --收获书
-        "book_pickup",          --拾取书
-        "book_seeder",          --播种书
-        "book_hatch",           --孵化书
-        "book_gardening",       --应用园艺学
-        "book_incubate",        --应用孵化学
-        "book_pisciculture",    --应用渔业学
-        "book_pigman_golden",   --猪人点金
-        "book_bunnyman_golden", --兔人点金
-        "book_golden_rocky",    --黄金石虾
-        "book_touch_golden",    --点怪成金书
-        "book_seeder_golden",   --黄金播种书
-    },
-    golden_food = TaxueList.golden_food,
-    gem = {
-        "redgem",        --红
-        "bluegem",       --蓝
-        "purplegem",     --紫
-        "greengem",      --绿
-        "orangegem",     --橙
-        "yellowgem",     --黄
-        "pink_gem",      --粉宝石
-        "cyan_gem",      --青宝石
-        "white_gem",     --白宝石
-        "black_gem",     --黑宝石
-        "taxue_diamond", --钻石
-
-        "random_gem",    --随机宝石
-        "promote_gem",   --提升宝石
-        "reset_gem",     --重置宝石
-        "colorful_gem",  --五彩宝石
-        "copy_gem",      --复制宝石
-    },
-    equipment = TaxueList.equipment,
-    my_ticket = TaxueList.my_ticket,
-    egg_all = {
-        "taxue_egg_nomal",
-        "taxue_egg_moose",
-        "taxue_egg_doydoy",
-        "taxue_egg_tallbird",
-        "taxue_egg_colourful",
-        "taxue_egg_golden",
-        "taxue_egg_sakura",
-        "taxue_egg_lacy",
-        "taxue_egg_taxue",
-        "taxue_egg_totoro",
-        "taxue_egg_spotty",
-        "taxue_egg_wave",
-        "taxue_egg_star",
-        "taxue_egg_grassland",
-        "taxue_egg_lightning",
-        "taxue_egg_whiteblue",
-        "taxue_egg_strawberry",
-        "taxue_egg_pineapple",
-        "taxue_egg_lollipop",
-        "taxue_egg_starrysky",
-        "taxue_egg_tigershark",
-        "taxue_egg_charm",
-        "taxue_egg_eddy",
-        "taxue_egg_txxm",
-        "taxue_egg_hatch",
-        "taxue_egg_delicious",
-        "taxue_egg_porcelain",
-        "taxue_egg_rainbow",
-        "taxue_egg_lava",
-        "taxue_egg_decorate",
-        "taxue_egg_harvest",
-        "taxue_egg_lollipop_rare",
-        "taxue_egg_ancient",
-        "taxue_egg_skin",
-        "taxue_egg_melon",
-        "taxue_egg_rock",
-        "taxue_egg_meteor",
-        "taxue_egg_millionclub",
-        "taxue_egg_rose",
-        "taxue_egg_ampullaria_gigas",
-        "taxue_egg_free",
-    },
-    treasure_map = TaxueList.treasure_map,
-    weapon1 = TaxueList.weapon,
-    weapon2 = TaxueList.weapon2,
-    armor1 = TaxueList.armor,
-    armor2 = TaxueList.armor_2,
-    key = {
-
-        "corkchest_key",     --软木桶钥匙
-        "treasurechest_key", --木箱钥匙
-        "skullchest_key",    --骨钥匙
-        "pandoraschest_key", --精致钥匙
-        "minotaurchest_key", --豪华钥匙
-        "terrarium_key",     --恐怖钥匙
-        "poison_key",        --剧毒钥匙
-    },
-    agentia_all = {
-        "exp_agentia",             --经验药剂-蓝
-        "health_agentia",          --血量药剂-红
-        "sanity_agentia",          --san值药剂-绿
-        "ice_agentia",             --寒冰药剂
-        "hot_agentia",             --炎热药剂
-        "map_agentia",             --开心
-        "treasure_agentia",        --寻宝
-        "totoro_agentia",          --龙猫
-        "transfer_agentia",        --随机传送
-        "light_agentia",           --发光药剂
-
-        "antivenom_agentia",       --解毒药剂
-        "sleep_agentia",           --催眠药水
-        "invisible_agentia",       --隐形药水
-        "taxue_milk",              --牛奶
-
-        "golden_agentia_pigman",   --点金猪人
-        "golden_agentia_bunnyman", --点金兔人
-        "scared_agentia",          --恐惧药剂
-        "mocking_agentia",         --嘲讽药剂
-        "awake_agentia",           --唤醒药剂
-        "lessen_agentia",          --缩小药剂
-        "paralytic_agentia",       --麻痹药剂
-        "bleed_agentia",           --流血药剂
-        "weak_agentia",            --虚弱药剂
-        "rage_agentia",            --狂暴药剂
-        "illegal_cooking_oil",     --地沟油
-        "bramble_agentia",         --荆棘药剂
-        "bloodsucking_agentia",    --嗜血药剂
-    },
-    essence = {
-        "plant_essence",         --植物精华
-        "sea_essence",           --海洋精华
-        "volcano_essence",       --火山精华
-        "threecolor_essence",    --三色精华
-        "delicious_essence",     --美味精华
-        "roe_essence",           --鱼籽精华
-        "pearl_essence",         --珍珠精华
-        "spiderhat_essence",     --蜘蛛帽精华
-        "mineral_essence",       --矿石精华
-        "mushroom_essence",      --蘑菇精华
-        "ice_essence",           --寒冰精华
-        "return_fresh_essence",  --反鲜精华
-        "free_essence",          --白嫖精华
-        "free_essence_advanced", --高级白嫖精华
-        "chest_essence",         --宝箱精华
-        "chest_essence_nomal"    --稀有宝箱精华
-    },
-    special = {
-        "perpetual_core",     --永动机核心
-        "crystal_ball_taxue", --水晶煤球
-        "random_agentia",     --随机药剂
-        "chest_agentia",      --宝箱药剂
-    },
-}
-
-ItemTypeNameMap = {
-    book1 = "低级书",
-    book2 = "高级书",
-    book3 = "功能书",
-    golden_food = "黄金食物",
-    gem = "宝石",
-    equipmentHigh = "高属性五彩装备",
-    equipmentLow = "低属性五彩装备",
-    my_ticket = "劵类",
-    egg_all = "孵化蛋",
-    treasure_map = "藏宝图",
-    weapon1 = "低级武器",
-    weapon2 = "高级武器",
-    armor1 = "低级装备",
-    armor2 = "高级装备",
-    key = "钥匙",
-    agentia_all = "药水",
-    essence = "精华",
-    special = "特殊",
-    others = "其他"
-}
-
-ItemDataMap = {
-    refreshticket_ticket = "refresh_num",          --刷券券
-    loot_ticket = "loot_multiple",                 --战利品券
-    book_touch_leif = "leif_num",                  --点树成精
-    book_touch_spiderqueen = "spiderqueen_num",    --点蛛成精
-    book_touch_golden = "golden_num",              --点怪成金
-    gamble_ticket = "gamble_multiple",             --赌狗劵
-    substitute_ticket = "substitute_item",         --掉包券
-    shop_refresh_ticket_directed = "refresh_item", --定向商店刷新券
-    interest_ticket = "interest"                   --利息券
-}
-
-DataStrMap = {
-    refreshticket_ticket = "可刷新数量：%s个", --刷券券
-    loot_ticket = "额外掉落：%s倍", --战利品券
-    book_touch_leif = "树精数量: %s只", --点树成精
-    book_touch_spiderqueen = "蜘蛛女王数量: %s只", --点蛛成精
-    book_touch_golden = "点金数量: %s只", --点怪成金
-    gamble_ticket = "额外掉落: %s倍", --赌狗劵
-    substitute_ticket = "掉包物品: %s", --掉包券
-    shop_refresh_ticket_directed = "刷新物品: %s", --定向商店刷新券
-    interest_ticket = "利息上限: %s梅币" --利息券
-}
-
 local cfg = TaxuePatch.cfg
 
 ---count table
@@ -233,7 +10,7 @@ TableCount = function(table)
     for _, _ in pairs(table) do count = count + 1 end
     return count
 end
-table.TableCount = TableCount
+table.count = TableCount
 
 ---给列表key对应的值加value
 ---@param List table
@@ -243,6 +20,7 @@ ListAdd = function(List, key, value)
     value = value or 1
     List[key] = List[key] and List[key] + value or value
 end
+TaxuePatch.ListAdd = ListAdd
 
 ---测试物品是否符合条件
 ---@param item entityPrefab
@@ -263,6 +41,8 @@ function TestItem(item, test)
     return testFn(item)
 end
 
+TaxuePatch.TestItem = TestItem
+
 ---返回slots中找到的第一个符合的物品
 ---@param slots entityPrefab[]
 ---@param itemTest string|string[]|fun(item:entityPrefab):boolean
@@ -276,6 +56,8 @@ function FindItem(slots, itemTest)
         end
     end
 end
+
+TaxuePatch.FindItem = FindItem
 
 ---查找周围实体
 ---@param inst entityPrefab
@@ -305,6 +87,8 @@ function GetNearByEntities(inst, radius, testFn, tags, notags)
     end
     return list
 end
+
+TaxuePatch.GetNearByEntities = GetNearByEntities
 
 ---计算概率次数结果
 ---@param chance number
@@ -362,6 +146,8 @@ function GiveItems(inst, itemList)
     end
 end
 
+TaxuePatch.GiveItems = GiveItems
+
 local function getStackedItem(name, amount, maxsize)
     local items = {}
     if not maxsize then
@@ -386,6 +172,7 @@ local function getStackedItem(name, amount, maxsize)
     end
     return items
 end
+TaxuePatch.getStackedItem = getStackedItem
 
 local function addToList(list, entity, number, data)
     local amount = 1
@@ -409,6 +196,7 @@ local function addToList(list, entity, number, data)
         table.insert(listItem, saveData)
     end
 end
+TaxuePatch.addToList = addToList
 
 local function processPackageData(package, itemType, itemName, amount, value, data)
     package.amount = package.amount or 0
@@ -476,18 +264,22 @@ function SpawnPackage(name, type)
     return package
 end
 
+TaxuePatch.SpawnPackage = SpawnPackage
+
 ---检查包裹类型
 ---@param package package
 function CheckPackageType(package)
     if TableCount(package.item_list) == 1 then
         local type, _ = next(package.item_list)
-        package.name = ItemTypeNameMap[type]
+        package.name = TaxuePatch.ItemTypeNameMap[type]
         package.type = type
     else
         package.type = nil
         package.name = TaxueToChs(package.prefab)
     end
 end
+
+TaxuePatch.CheckPackageType = CheckPackageType
 
 ---transform package to patched package
 ---@param package package
@@ -555,6 +347,8 @@ function TransformPackage(package)
     return newPackage
 end
 
+TaxuePatch.TransformPackage = TransformPackage
+
 ---merge two packages into one
 ---@param package package
 ---@param packageM package
@@ -595,6 +389,8 @@ function MergePackage(package, packageM)
     return package
 end
 
+TaxuePatch.MergePackage = MergePackage
+
 ---将物品添加到超级包裹
 ---@param package package
 ---@param entity entityPrefab|package
@@ -625,7 +421,7 @@ function AddItemToSuperPackage(package, entity, showFx, testFn)
         return
     end
     local itemType
-    for type, list in pairs(ItemTypeMap) do
+    for type, list in pairs(TaxuePatch.ItemTypeMap) do
         if table.contains(list, entity.prefab) then
             if type == "equipment" then
                 local isHigh = entity.equip_value >= cfg.HIGH_EQUIPMENT_PERCENT * entity.MAX_EQUIP_VALUE
@@ -637,8 +433,8 @@ function AddItemToSuperPackage(package, entity, showFx, testFn)
     end
     itemType = itemType or "others"
     local data
-    if table.containskey(ItemDataMap, entity.prefab) then
-        data = entity[ItemDataMap[entity.prefab]]
+    if table.containskey(TaxuePatch.ItemDataMap, entity.prefab) then
+        data = entity[TaxuePatch.ItemDataMap[entity.prefab]]
     end
     item_list[itemType] = item_list[itemType] or {}
     addToList(item_list[itemType], entity, nil, data)
@@ -664,6 +460,8 @@ function AddItemToSuperPackage(package, entity, showFx, testFn)
     entity:Remove()
 end
 
+TaxuePatch.AddItemToSuperPackage = AddItemToSuperPackage
+
 ---将表中物品添加到超级包裹中
 ---@param package package
 ---@param items table<string, integer>
@@ -685,6 +483,8 @@ function AddItemsToSuperPackage(package, items, showFx, testFn)
     CheckPackageType(package)
 end
 
+TaxuePatch.AddItemsToSuperPackage = AddItemsToSuperPackage
+
 ---打包所有实体
 ---@param package package
 ---@param entities entityPrefab[]
@@ -705,6 +505,8 @@ function PackAllEntities(package, entities, testFn, isBook)
     CheckPackageType(package)
 end
 
+TaxuePatch.PackAllEntities = PackAllEntities
+
 ---打开超级包裹
 ---@param package package
 function UnpackSuperPackage(package)
@@ -713,7 +515,7 @@ function UnpackSuperPackage(package)
         local item_list = package.item_list
         if not package.type then
             for itemType, list in pairs(item_list) do
-                local typeName = ItemTypeNameMap[itemType]
+                local typeName = TaxuePatch.ItemTypeNameMap[itemType]
                 local newPackage = SpawnPackage()
                 newPackage.name = typeName
                 newPackage.type = itemType
@@ -749,7 +551,7 @@ function UnpackSuperPackage(package)
                                 table.insert(itemList, SpawnSaveRecord(item_))
                             end
                         elseif isSingle then
-                            local packageName = TaxueToChs(itemName) .. "  " .. DataStrMap[itemName]:format(type(value) == "number" and value or TaxueToChs(value))
+                            local packageName = TaxueToChs(itemName) .. "  " .. TaxuePatch.DataStrMap[itemName]:format(type(value) == "number" and value or TaxueToChs(value))
                             local newPackage = SpawnPackage(packageName, package.type)
                             for _, item_ in ipairs(item) do
                                 AddItemToSuperPackage(newPackage, SpawnSaveRecord(item_))
@@ -804,6 +606,8 @@ function UnpackSuperPackage(package)
     package:Remove()
 end
 
+TaxuePatch.UnpackSuperPackage = UnpackSuperPackage
+
 ---删除容器内物品
 ---@param container table
 ---@param itemList entityPrefab[]
@@ -812,6 +616,8 @@ function RemoveSlotsItems(container, itemList)
         container:RemoveItemBySlot(slot):Remove()
     end
 end
+
+TaxuePatch.RemoveSlotsItems = RemoveSlotsItems
 
 ---售货亭卖东西
 ---@param inst entityPrefab
@@ -834,7 +640,15 @@ function SellPavilionSellItems(inst)
         if item and item.components.stackable then
             amount = item.components.stackable.stacksize
         end
-        if item and item.taxue_coin_value then
+        if item and item.prefab == "taxue_coin" then
+            coinList[slot] = item
+        elseif item and item.prefab == "taxue_coin_silver" then
+            coinList[slot] = item
+        elseif item and item.prefab == "taxue_coin_copper" then
+            coinList[slot] = item
+        elseif item and item.prefab == "gold_brick" then
+            coinList[slot] = item
+        elseif item and item.taxue_coin_value then
             --物品价值
             local taxue_coin_value = item.taxue_coin_value
             --有耐久，根据耐久百分比替换价值
@@ -852,12 +666,6 @@ function SellPavilionSellItems(inst)
 
             --移除物品
             container:RemoveItemBySlot(slot):Remove()
-        elseif item and item.prefab == "taxue_coin" then
-            coinList[slot] = item
-        elseif item and item.prefab == "taxue_coin_silver" then
-            coinList[slot] = item
-        elseif item and item.prefab == "taxue_coin_copper" then
-            coinList[slot] = item
         elseif item and cfg.SELL_PAVILION == "bank" and item.prefab == "taxue_diamond" then
             diamond = item
         end
@@ -866,13 +674,15 @@ function SellPavilionSellItems(inst)
     print("总硬币价值：", coins)
     local tempCoins = 0
     for slot, coin in pairs(coinList) do
-        local amount = coin.components.stackable.stacksize
+        local amount = coin.components.stackable and coin.components.stackable.stacksize or 1
         if coin.prefab == "taxue_coin" then
             tempCoins = tempCoins + amount * 100
         elseif coin.prefab == "taxue_coin_silver" then
             tempCoins = tempCoins + amount
         elseif coin.prefab == "taxue_coin_copper" then
             tempCoins = tempCoins + amount * 0.01
+        elseif coin.prefab == "gold_brick" then
+            tempCoins = tempCoins + coin.taxue_coin_value
         end
     end
 
@@ -884,6 +694,9 @@ function SellPavilionSellItems(inst)
         playSound = true
         --如果不是禁用,并且金额大于500梅币
     elseif cfg.SELL_PAVILION and coins + tempCoins >= 50000 then
+        if table.count(coinList) == 1 and ({ next(coinList) })[2].prefab == "gold_brick" then
+            return
+        end
         RemoveSlotsItems(container, coinList)
         local goldBrick = SpawnPrefab("gold_brick")
         goldBrick.taxue_coin_value = coins + tempCoins
@@ -906,6 +719,8 @@ function SellPavilionSellItems(inst)
     end
     if playSound then inst.SoundEmitter:PlaySound("money/sfx/money") end
 end
+
+TaxuePatch.SellPavilionSellItems = SellPavilionSellItems
 
 ---开宝藏
 ---@param treasures entityPrefab[]
@@ -1000,6 +815,8 @@ function OpenTreasures(treasures)
     return loots, numbers
 end
 
+TaxuePatch.OpenTreasures = OpenTreasures
+
 ---开启所有宝藏并将物品添加进包裹
 ---@param package package
 ---@param treasures entityPrefab[]
@@ -1031,6 +848,8 @@ function AddTreasuresToPackage(package, treasures)
     package.components.talker:Say(str, 10)
     package:RemoveComponent("talker")
 end
+
+TaxuePatch.AddTreasuresToPackage = AddTreasuresToPackage
 
 ---将掉落物添加到列表中
 ---@param lootDropper table
@@ -1132,6 +951,8 @@ function AddLootsToList(lootDropper, dorpList, times)
     end
 end
 
+TaxuePatch.AddLootsToList = AddLootsToList
+
 ---堆叠掉落物
 ---@param target entityPrefab
 ---@param dorpList table<string, integer>
@@ -1199,6 +1020,8 @@ function StackDrops(target, dorpList, package)
     end
 end
 
+TaxuePatch.StackDrops = StackDrops
+
 ---获得距离最近的开启的打包机中的包裹
 ---@param target entityPrefab
 ---@return package|nil
@@ -1222,6 +1045,8 @@ function GetNearestPackageMachine(target)
     return nil
 end
 
+TaxuePatch.GetNearestPackageMachine = GetNearestPackageMachine
+
 local itemImageCache = {}
 
 ---播放物品移动的动画
@@ -1242,6 +1067,8 @@ function PlayItemMove(item, src, target, time)
     im = Image(itemImageCache[item][1], itemImageCache[item][2])
     im:MoveTo(src, target, time or 0.3, function() im:Kill() end)
 end
+
+TaxuePatch.PlayItemMove = PlayItemMove
 
 ---批量收获
 ---@param crop table
@@ -1383,3 +1210,5 @@ function MultHarvest(crop, itemList, isBook)
         crop.inst:Remove()
     end
 end
+
+TaxuePatch.MultHarvest = MultHarvest

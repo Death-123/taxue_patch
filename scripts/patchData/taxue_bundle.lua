@@ -24,7 +24,7 @@ local str272 = [[
 ]]
 
 local lines = {
-    { index = 92,  endIndex = 176, type = "override", content = "        UnpackSuperPackage(inst)" },
+    { index = 92,  endIndex = 176, type = "override", content = "        TaxuePatch.UnpackSuperPackage(inst)" },
     { index = 257, type = "add",   content = str257 },
     { index = 262, type = "add",   content = str262 },
     { index = 272, type = "add",   content = str272 },

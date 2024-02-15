@@ -22,8 +22,10 @@ if cfg.MD5_BYTES == "C" then
     else
         luaBin:close()
     end
+    -- local oldCpath = package.cpath
     package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
     md5lib = require("md5lib")
+    -- package.cpath = oldCpath
 elseif cfg.MD5_BYTES then
     md5lib = require("md5/md5")
 end
@@ -106,6 +108,9 @@ end
 
 --#endregion
 
+require "publicList"
+TaxuePatch.patchlib = require "patchlib"
+
 local patchStr = "--patch "
 local patchVersionStr = modinfo.version
 local patchVersion = patchVersionStr:split(".")[3]
@@ -143,7 +148,7 @@ end
 
 local PATCHS = {
     --库
-    ["scripts/patchlib.lua"] = { mode = "override" },
+    -- ["scripts/patchlib.lua"] = { mode = "override" },
     --面板兼容
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
@@ -471,7 +476,7 @@ if cfg.TAXUE_FIX then
         index = 62,
         type = "add",
         content = [[
-        for _, entity in ipairs(GetNearByEntities(reader, 15, function(entity) return entity.prefab == "interest_ticket" end)) do
+        for _, entity in ipairs(TaxuePatch.GetNearByEntities(reader, 15, function(entity) return entity.prefab == "interest_ticket" end)) do
 			num = num + entity.interest
             entity:Remove()
 		end
@@ -515,15 +520,15 @@ if cfg.TAXUE_FIX then
     --优化收获书
     addPatchs("scripts/prefabs/taxue_book.lua", {
         { index = 21, type = "add",                                                                            content = [[                local itemList = {}]] },
-        { index = 36, content = [[                            MultHarvest(v.components.crop, itemList, true)]] },
-        { index = 46, type = "add",                                                                            content = [[                GiveItems(reader, itemList)]] },
+        { index = 36, content = [[                            TaxuePatch.MultHarvest(v.components.crop, itemList, true)]] },
+        { index = 46, type = "add",                                                                            content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
     })
 end
 
 --售货亭修改
 if cfg.SELL_PAVILION then
-    addPatch("scripts/prefabs/taxue_sell_pavilion.lua", { index = 45, endIndex = 112, content = [[   SellPavilionSellItems(inst)]] })
-    addPatch("scripts/prefabs/taxue_portable_sell_pavilion.lua", { index = 33, endIndex = 99, content = [[   SellPavilionSellItems(inst)]] })
+    addPatch("scripts/prefabs/taxue_sell_pavilion.lua", { index = 45, endIndex = 112, content = [[   TaxuePatch.SellPavilionSellItems(inst)]] })
+    addPatch("scripts/prefabs/taxue_portable_sell_pavilion.lua", { index = 33, endIndex = 99, content = [[   TaxuePatch.SellPavilionSellItems(inst)]] })
 end
 
 --打包系统
@@ -551,9 +556,9 @@ if cfg.BETTER_DORP then
                 end
 
                 local target = self.inst
-                local package = GetNearestPackageMachine(target)
+                local package = TaxuePatch.GetNearestPackageMachine(target)
 
-                StackDrops(target, dorpList, package)
+                TaxuePatch.StackDrops(target, dorpList, package)
             end
         end
     end)
@@ -723,7 +728,6 @@ for name, value in pairs(command) do
 end
 
 local function test()
-    TaxuePatch.patchlib = require "patchlib"
 end
 TaxuePatch.test = test
 

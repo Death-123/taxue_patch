@@ -35,7 +35,7 @@ local example = {
     },
 
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = {
-         { index = 45, endIndex = 112, content = [[   SellPavilionSellItems(inst)]] }
+         { index = 45, endIndex = 112, content = [[   TaxuePatch.SellPavilionSellItems(inst)]] }
     },
 }
 

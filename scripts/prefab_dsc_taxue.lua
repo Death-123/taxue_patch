@@ -4,8 +4,6 @@ local ItemTile = require "widgets/itemtile"
 local OldGDS = ItemTile.GetDescriptionString --原版显示物品描述
 local Text = require "widgets/text"
 
-if TaxuePatch then require "patchlib" end
-
 local textColor = TaxuePatch and TaxuePatch.cfg.DSC_COLOR or { 255, 108, 180 }
 
 --#region tool functions
@@ -257,7 +255,7 @@ local function getItemInfo(target)
         Info:Add("战斗力:" .. formatNumber(player.combat_capacity) .. ",攻击系数:" .. string.format("%.2f", 1 + modifier))
         Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. delicious_value)
         Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. title)
-        Info:Add("已收获利息:" .. formatCoins(player.interest_num))
+        Info:Add("已收获利息:" .. formatCoins(player.interest_num * 100))
         if TaxuePatch and TaxuePatch.cfg.FORTUNE_PATCH then
             local str = ""
             if player.fortune_day and player.fortune_day > 0 then
@@ -508,7 +506,7 @@ local function getItemInfo(target)
             --添加信息
             for _, item in ipairs(itemList) do
                 if item.name then
-                    local space = (maxCostLength - #item.cost + math.floor(maxCostLength / 4) - math.floor(#item.cost / 4))
+                    local space = ((maxCostLength - #item.cost) * 2 - (math.floor(maxCostLength / 4) - math.floor(#item.cost / 4)))
                     local cost = ("%" .. space .. "s"):format("") .. item.cost
                     Info:Add(("%-" .. maxNameLength .. "s: %s%s"):format(item.name, cost, item.costName))
                 end
@@ -563,26 +561,26 @@ local function getItemInfo(target)
             local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
                 "gem", "egg_all", "book2", "book3", "book1", "golden_food", "treasure_map", "weapon1",
                 "weapon2", "armor1", "armor2", "key", "agentia_all", "others" }
-            local getNameStr = function(name) return ItemTypeNameMap[name] end
+            local getNameStr = function(name) return TaxuePatch.ItemTypeNameMap[name] end
             local showLines
 
             if singleType then
                 list = list[singleType]
                 amountMap = amountMap[singleType].sub
                 valueMap = valueMap[singleType].sub
-                orders = ItemTypeMap[singleType] or { "noOrder" }
+                orders = TaxuePatch.ItemTypeMap[singleType] or { "noOrder" }
                 getNameStr = function(name) return TaxueToChs(name) end
 
-                singleItem = TableCount(list) == 1 and next(list)
+                singleItem = table.count(list) == 1 and next(list)
                 if singleItem and type(list[singleItem]) == "table" then
                     amountMap = amountMap[singleItem].sub
                     valueMap = valueMap[singleItem].sub
                     list = list[singleItem]
                     orders = { "noOrder" }
-                    getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
-                    showLines = table.containskey(ItemDataMap, singleItem)
+                    getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. TaxuePatch.DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
+                    showLines = table.containskey(TaxuePatch.ItemDataMap, singleItem)
 
-                    singleData = showLines and TableCount(list) == 1 and next(list)
+                    singleData = showLines and table.count(list) == 1 and next(list)
                     if singleData then
                         amountMap = amountMap[singleData]
                         valueMap = valueMap[singleData]
@@ -607,7 +605,7 @@ local function getItemInfo(target)
                                 elseif showLines ~= nil then
                                     numberStr = (": 数量%s"):format(formatNumber(amountMap[name].amount))
                                 else
-                                    numberStr = ((": 种类%d/总数%s"):format(TableCount(subList), formatNumber(amountMap[name].amount)))
+                                    numberStr = ((": 种类%d/总数%s"):format(table.count(subList), formatNumber(amountMap[name].amount)))
                                 end
                                 Info:Add(nameStr .. numberStr .. valueStr)
                                 lineNum = lineNum + 1
@@ -624,7 +622,7 @@ local function getItemInfo(target)
             end
             local str
             if showLines == nil or showLines then
-                str = ("%d%s物品,物品总数量: %s"):format(TableCount(list), singleType and "种" or "类", formatNumber(totalAmount))
+                str = ("%d%s物品,物品总数量: %s"):format(table.count(list), singleType and "种" or "类", formatNumber(totalAmount))
             else
                 str = ("物品数量: %s"):format(formatNumber(totalAmount))
             end

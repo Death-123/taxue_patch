@@ -102,14 +102,14 @@ function TaxueOnKilled(player, target)
         local lootdropper = target.components.lootdropper
         local package
         if TaxuePatch.cfg.BETTER_DORP then
-            package = GetNearestPackageMachine(target)
+            package = TaxuePatch.GetNearestPackageMachine(target)
         end
         --处理赌狗
         if player.gamble_multiple > 0 then
             has_save = true
             if math.random() < 0.1 then
                 player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
-                AddLootsToList(lootdropper, dorpList, player.gamble_multiple)
+                TaxuePatch.AddLootsToList(lootdropper, dorpList, player.gamble_multiple)
             else
                 target.components.lootdropper:SetChanceLootTable()
                 target.components.lootdropper:SetLoot({"poop","poop","poop","poop","poop","poop","poop","poop","poop","poop"})
@@ -121,7 +121,7 @@ function TaxueOnKilled(player, target)
         if player.loot_multiple > 0 then	--触发战利品券
             has_save = true
             player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
-            AddLootsToList(lootdropper, dorpList, player.loot_multiple)
+            TaxuePatch.AddLootsToList(lootdropper, dorpList, player.loot_multiple)
             player.loot_multiple = 0
             player.has_ticket = false
         end
@@ -141,12 +141,12 @@ function TaxueOnKilled(player, target)
         end
         --处理脸黑值,概率为0~0.2
         if player.faceblack > 0 and math.random() <= player.faceblack then
-            AddLootsToList(lootdropper, dorpList)
+            TaxuePatch.AddLootsToList(lootdropper, dorpList)
             player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
             -- print("触发脸黑奖掉落")
             --超级掉落
             if math.random() <= 0.005 then	--拥有奖杯则0.5%触发总概率1/3(向下取整)的数量掉落			
-                AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100 )/3))
+                TaxuePatch.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100 )/3))
                 player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
                 TaXueSay("哇！欧气爆炸！！！")
                 TaxueFx(player,"metal_hulk_ring_fx")
@@ -156,7 +156,7 @@ function TaxueOnKilled(player, target)
         -------------------------------------------------
         if math.random() <= 0.01 then	--默认1%概率双倍战利品
             player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
-            AddLootsToList(lootdropper, dorpList)
+            TaxuePatch.AddLootsToList(lootdropper, dorpList)
             -- print("双倍掉落")
         end	
         ----------------------------------------------------
@@ -316,14 +316,14 @@ function TaxueOnKilled(player, target)
                 end
             end
             if package then
-                AddItemToSuperPackage(package, loadedPackage)
+                TaxuePatch.AddItemToSuperPackage(package, loadedPackage)
             else
                 TaxuePrefabDrop(target, loadedPackage, 1)
             end
         end
         --#endregion
 
-        StackDrops(target, dorpList)
+        TaxuePatch.StackDrops(target, dorpList)
 
         if has_save then
             GetPlayer().components.autosaver:DoSave() 
