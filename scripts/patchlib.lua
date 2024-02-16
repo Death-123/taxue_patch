@@ -885,9 +885,11 @@ function AddLootsToList(lootDropper, dorpList, times)
             for i, entry in ipairs(loot_table) do
                 local prefab = entry[1]
                 local chance = entry[2]
-                if math.random() <= chance then
-                    dorpList[prefab] = dorpList[prefab] and dorpList[prefab] + 1 or 1
-                    lootDropper.droppingchanceloot = true
+                for _ = 1, times do
+                    if math.random() <= chance then
+                        dorpList[prefab] = dorpList[prefab] and dorpList[prefab] + 1 or 1
+                        lootDropper.droppingchanceloot = true
+                    end
                 end
             end
         end
@@ -1006,12 +1008,7 @@ function StackDrops(target, dorpList, package)
         end
     else
         for name, amount in pairs(dorpList) do
-            local item = SpawnPrefab(name)
-            if item and item.components and item.components.stackable then
-                item.components.stackable.stacksize = amount
-                target.components.lootdropper:DropLootPrefab(item)
-            elseif item then
-                item:Remove()
+            if Prefabs[name] then
                 for _ = 1, amount do
                     target.components.lootdropper:DropLootPrefab(SpawnPrefab(name))
                 end

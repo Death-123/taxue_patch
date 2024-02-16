@@ -519,9 +519,9 @@ if cfg.TAXUE_FIX then
     })
     --优化收获书
     addPatchs("scripts/prefabs/taxue_book.lua", {
-        { index = 21, type = "add",                                                                            content = [[                local itemList = {}]] },
+        { index = 21, type = "add",                                                                                       content = [[                local itemList = {}]] },
         { index = 36, content = [[                            TaxuePatch.MultHarvest(v.components.crop, itemList, true)]] },
-        { index = 46, type = "add",                                                                            content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
+        { index = 46, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
     })
 end
 
@@ -663,7 +663,7 @@ if cfg.FORTUNE_PATCH then
         inst:Remove()
         ]]
         },
-        {index = 239, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]]}
+        { index = 239, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]] }
     })
     --梅运券显示
 elseif cfg.FORTUNE_NUM then
@@ -726,6 +726,21 @@ local command = require "command"
 for name, value in pairs(command) do
     GLOBAL[name] = value
 end
+
+AddClassPostConstruct("widgets/itemtile", function(origin)
+    local oldOnGainFocus = origin.OnGainFocus
+    origin.OnGainFocus = function(self, ...)
+        TaxuePatch.hoverItem = self.item
+        oldOnGainFocus(self, ...)
+    end
+    local oldOnLoseFocus = origin.OnLoseFocus
+    origin.OnLoseFocus = function(self, ...)
+        self.inst:DoTaskInTime(FRAMES, function()
+            if TaxuePatch.hoverItem == self.item then TaxuePatch.hoverItem = nil end
+        end)
+        oldOnLoseFocus(self, ...)
+    end
+end)
 
 local function test()
 end

@@ -3,12 +3,20 @@ local command = {}
 ---获取鼠标指向的实体
 ---@return table
 function command.Sel()
-    local entity = TheInput.hoverinst
-    if entity and entity.Transform then
-        return entity
+    if TaxuePatch.hoverItem then
+        return TaxuePatch.hoverItem
     else
-        local item = entity.widget.parent.item
-        return item
+        return TheInput:GetWorldEntityUnderMouse()
+    end
+end
+
+function command.SetTaxueValue(value)
+    local item = command.Sel()
+    if not item then return nil end
+    if item.equip_value then
+        item.equip_value = value
+    elseif item.times then
+        item.times = value
     end
 end
 

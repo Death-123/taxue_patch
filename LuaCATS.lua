@@ -10,7 +10,7 @@
 ---@field children table[]
 ---@field callbacks table[]
 ---@field name string
----@field inst entity
+---@field inst EntityScript
 ---@field enabled boolean
 ---@field shown boolean
 ---@field focus boolean
@@ -20,6 +20,7 @@
 ---
 ---@field SetCenterAlignment function
 ---@field StartUpdating function
+---@field StopUpdating function
 ---@field SetPosition function
 ---@field GetPosition function
 ---@field SetVAnchor function
@@ -28,10 +29,20 @@
 ---@field Hide function
 ---@field OnRawKey function
 ---@field OnControl function
----@field OnMouseButton function
+---@field OnMouseButton fun(self,button:integer, down:boolean, x:number, y:number):boolean
 ---@field GetDeepestFocus function
 ---@field SetScale function
----@field MoveToFront function
+---@field OnGainFocus fun(self)
+---@field OnLoseFocus fun(self)
+---@field Kill fun(self)
+---@field IsEnabled fun():boolean
+---@field GetLocalPosition fun():Vector3
+---@field SetVAlign fun(self,integer)
+---@field SetHAlign fun(self,integer)
+---@field Enable fun(self)
+---@field Disable fun(self)
+---@field MoveToBack fun(self)
+---@field MoveToFront fun(self)
 Widget = {}
 
 ---@generic T
@@ -39,30 +50,263 @@ Widget = {}
 ---@return T child
 function Widget:AddChild(child) end
 
+---@class UITransform
+---@field SetScale function
+---@field SetVAnchor function
+---@field GetRotation function
+---@field GetLocalPosition function
+---@field SetPosition function
+---@field SetMaxPropUpscale function
+---@field SetScaleMode function
+---@field UpdateTransform function
+---@field SetHAnchor function
+---@field SetRotation function
+---@field GetScale function
+---@field GetWorldPosition function
+
+---@class TextWidget
+---@field EnableWordWrap function
+---@field SetVAnchor function
+---@field SetColour function
+---@field SetFont function
+---@field SetHAnchor function
+---@field GetString function
+---@field GetRegionSize function
+---@field SetString function
+---@field SetSize function
+---@field SetRegionSize function
+---@field ShowEditCursor function
+---@field SetHorizontalSqueeze function
+
+---@class ImageWidget
+---@field GetSize function
+---@field SetBlendMode function
+---@field SetVAnchor function
+---@field SetTexture function
+---@field SetTextureHandle function
+---@field SetHAnchor function
+---@field SetAlphaRange function
+---@field SetTint function
+---@field SetEffect function
+---@field SetSize function
+---@field SetEffectParams function
+---@field SetUVScale function
+---@field EnableEffectParams function
+
 --#endregion
 
 --#region entity
 
 ---创建实体
----@return entity
+---@return EntityScript
 function CreateEntity() end
 
 ---@class entity
----@field name string
+---@field GetGUID fun(self):integer
+---@field GetCanSleep function
+---@field AddRoadManager function
+---@field AddMiniMap function
+---@field AddMiniMapEntity function
+---@field AddFollower function
+---@field AddAnimState function
+---@field AddFlooding function
+---@field GetParent function
+---@field RemoveTag function
+---@field Show function
+---@field SetParent function
+---@field AddEnvelopeManager function
+---@field SetClickable function
+---@field AddStaticShadow function
+---@field GetDebugString function
+---@field AddSoundEmitter function
+---@field AddLabel function
+---@field AddPhysics function
+---@field Retire function
+---@field SetPrefabName function
+---@field WorldToLocalSpace function
+---@field IsValid function
+---@field SetCanSleep function
+---@field AddLight function
+---@field LocalToWorldSpaceIncParen function
+---@field GetPrefabName function
+---@field AddTextEditWidget function
+---@field SetSelected function
+---@field AddTextWidget function
+---@field AddPostProcessor function
+---@field AddTag function
+---@field AddInteriorManager function
+---@field AddWaveComponent function
+---@field Hide function
+---@field LocalToWorldSpace function
+---@field AddSplatManager function
+---@field AddBroadcastingOptions function
+---@field SetName function
+---@field AddDebugRender function
+---@field HasTag function
+---@field AddLightWatcher function
+---@field AddFloodingBlockerEntity function
+---@field AddUITransform function
+---@field AddFloodingEntity function
+---@field AddGroundCreepEntity function
+---@field AddGroundCreep function
+---@field MoveToFront function
+---@field SetAABB function
+---@field CallPrefabConstructionCom function
+---@field AddShadowManager function
+---@field AddDynamicShadow function
+---@field AddGraphicsOptions function
+---@field AddCloudComponent function
+---@field AddFontManager function
+---@field AddParticleEmitter function
+---@field MoveToBack function
+---@field AddVideoWidget function
+---@field GetName function
+---@field AddImageWidget function
+---@field AddMapGenSim function
+---@field AddTransform function
+---@field AddMapLayerManager function
+---@field AddMap function
+---@field AddPathfinder function
+---@field IsAwake function
+---@field IsVisible function
+---@field __index table
+
+---@class EntityScript
+---@field entity entity
+---@field name string|nil
+---@field GUID integer
+---@field components table[]
+---@field spawntime integer
+---@field age integer
+---@field persists boolean
+---@field inlimbo boolean
+---@field data nil|table
+---@field listeners nil|table
+---@field updatecomponents nil|table
+---@field inherentactions nil|table
+---@field event_listeners nil|table
+---@field event_listening nil|table
+---@field pendingtasks nil|table
+---@field children nil|table
+---@field ininterior nil|boolean
 ---
----@field ImageWidget table
----@field UITransform table
+---@field UITransform UITransform
+---@field ImageWidget ImageWidget
+---@field TextWidget TextWidget
 ---
 ---@field IsValid fun(self):boolean
 ---@field Remove fun(self)
 ---@field AddComponent fun(self, component:string)
 ---@field RemoveComponent fun(self, component:string)
----@field HasTag fun(self, component:string):boolean
----@field RemoveTag fun(self, component:string)
+---@field AddTag fun(self, tag:string)
+---@field HasTag fun(self, tag:string):boolean
+---@field RemoveTag fun(self, tag:string)
+---@field ListenForEvent fun(self,envent:string,fn:fun(ent:EntityScript,data?:any),source?:table)
+---@field PushEvent fun(self,event:string,data?:any)
+---@field RemoveEventCallback fun(self,envent:string,fn:fun(ent:EntityScript,data?:any),source?:table)
+---@field RemoveAllEventCallbacks fun(self)
+---@field _ctor function
+---@field __tostring function
+---@field is_a function
+---
+---@field IsActionValid function
+---@field GetIsOnWater function
+---@field SetPanelLongDescription function
+---@field GetIsOnLand function
+---@field GetSaveRecord function
+---@field GetPanelLongDescription function
+---@field LoadPostPass function
+---@field IsPosSurroundedByLand function
+---@field AddComponentAtRuntime function
+---@field GetIsFlooded function
+---@field StartThread function
+---@field Teleport function
+---@field CanDoAction function
+---@field SetBrain function
+---@field GetDistanceSqToPoint function
+---@field RemoveFromScene function
+---@field ResumeTask function
+---@field GetHorzDistanceSqToInst function
+---@field SetProfile function
+---@field GetDebugString function
+---@field CancelAllPendingTasks function
+---@field GetIsWet function
+---@field IsInLimbo function
+---@field GetPanelDescriptions function
+---@field SetPanelDescription function
+---@field SetAddColour function
+---@field GetPhysicsRadius function
+---@field SetPrefabName function
+---@field SetInherentSceneAltAction function
+---@field GetIsInInterior function
+---@field SetInherentSceneAction function
+---@field IsPosSurroundedByTileType function
+---@field GetAngleToPoint function
+---@field SetPersistData function
+---@field StartWallUpdatingComponent function
+---@field FaceAwayFromPoint function
+---@field ForceFacePoint function
+---@field GetCurrentTileType function
+---@field GetIsOnTileType function
+---@field IsNear function
+---@field TimeRemainingInTask function
+---@field ReturnToScene function
+---@field IsOnValidGround function
+---@field SinkIfOnWater function
+---@field SetPrefabNameOverride function
+---@field AddInherentAction function
+---@field GetRotation function
+---@field OnUsedAsItem function
+---@field CanInteractWith function
+---@field RemoveChild function
+---@field ClearStateGraph function
+---@field PushBufferedAction function
+---@field GetBufferedAction function
+---@field InterruptBufferedAction function
+---@field Hide function
+---@field PerformBufferedAction function
+---@field StartUpdatingComponent function
+---@field OnBuilt function
+---@field GetIsOnLandOutside function
+---@field GetTaskInfo function
+---@field GetTimeAlive function
+---@field DoTaskInTime function
+---@field DoPeriodicTask function
+---@field GetPersistData function
+---@field AddChild function
+---@field KillTasks function
+---@field StopUpdatingComponent function
+---@field RemoveComponentAtRuntime function
+---@field GetBrainString function
+---@field GetDistanceSqToInst function
+---@field GetGrandParent function
+---@field FacePoint function
+---@field GetAdjective function
+---@field LongUpdate function
+---@field ClearBufferedAction function
+---@field GetDisplayName function
+---@field GetComponentName function
+---@field GetInheritedMoisture function
+---@field OnProgress function
+---@field IsPosSurroundedByWater function
+---@field Show function
+---@field ApplyInheritedMoisture function
+---@field RunScript function
+---@field IsAsleep function
+---@field SetStateGraph function
+---@field StopUpdatingComponent_Deferred function
+---@field UpdateIsInInterior function
+---@field HasChildPrefab function
+---@field RemoveInherentAction function
+---@field StopBrain function
+---@field StopWallUpdatingComponent function
+---@field GetPosition function
+---@field CheckIsInInterior function
+---@field RestartBrain function
+---@field SpawnChild function
 
----@class entityPrefab:entity
----@field GUID integer
----@field Transform table
+---@class entityPrefab:EntityScript
+---@field Transform Transform
 ---@field inlimbo boolean
 ---@field parent entityPrefab
 ---@field AnimState table
@@ -118,16 +362,28 @@ Vector3 = {}
 ---@param y number
 ---@param z number
 ---@return Vector3|nil
-function ToVector3(obj,y,z) end
+function ToVector3(obj, y, z) end
+
 --#endregion
+
+---@class Transform
+---@field SetPosition fun(self,x:number,y:number,z:number)
+---@field SetScale fun(self,x:number,y:number,z:number)
+---@field GetWorldPosition fun(self):x:number,y:number,z:number
+---@field GetRotation fun(self):x:number,y:number,z:number
+Transform = {}
 
 ---@class TheSim
 ---@field GetPosition fun():x:integer, y:integer
 ---@field GetScreenPos fun(self,x:number,y:number,z:number):x:integer, y:integer
----@field FindEntities fun(self,x:number,y:number,z:number,radius:number,tags:string[],notags:string[]):entityPrefab[]
+---@field FindEntities fun(self,x:number,y:number,z:number,radius:number,tags?:string[],notags?:string[]):entityPrefab[]
+---@field GetScreenSize fun(self):w:integer,h:integer
 TheSim = {}
 
 ---@class Input
----@field GetScreenPosition fun():Vector3
+---@field GetScreenPosition fun(self):Vector3
+---@field GetWorldPosition fun(self):Vector3
 ---@field GetWorldEntityUnderMouse fun(self):entityPrefab
+---@field GetControllerID fun(self):string
+---@field GetLocalizedControl fun(self,id:string,key:integer):string
 TheInput = {}

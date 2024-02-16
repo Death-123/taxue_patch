@@ -3,18 +3,16 @@ STRINGS.NAMES.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "自动修理护符"
 STRINGS.CHARACTERS.GENERIC.DESCRIBE.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "告别终极装备手动给予修理材料烦恼！"
 STRINGS.RECIPE_DESC.TAXUE_ULTIMATE_ARMOR_AUTO_AMULET = "自动修理你值得拥有！"
 
-local bagList = { "gorgeous_bag", "agentia_bag" }
-
 local function findItem(slots, test)
     if not slots then return nil end
     local found1
     local found2
     for slot, item in pairs(slots) do
         if item then
-            if table.contains(bagList, item.prefab) and item.components and item.components.container then
+            if not found2 and item.components and item.components.container then
                 found2 = findItem(item.components.container.slots, test)
             else
-                if not found1 and TaxuePatch.TestItem(item, test) then found1 = item end
+                if not found1 and TaxuePatch.TestItem(item, test) then found1 = item break end
             end
         end
     end
@@ -199,8 +197,7 @@ local function addListeners(owner)
 
         owner:ListenForEvent("equip", OwnerOnEquip)
         owner:ListenForEvent("unequip", OwnerUnEquip)
-        owner:ListenForEvent("startfreezing", onTemperaturedelta)
-        owner:ListenForEvent("startoverheating", onTemperaturedelta)
+        owner:ListenForEvent("temperaturedelta", onTemperaturedelta)
     end
 end
 
@@ -217,8 +214,7 @@ local function OnUnEquip(_, owner)
 
     owner:RemoveEventCallback("equip", OwnerOnEquip)
     owner:RemoveEventCallback("unequip", OwnerUnEquip)
-    owner:RemoveEventCallback("startfreezing", onTemperaturedelta)
-    owner:RemoveEventCallback("startoverheating", onTemperaturedelta)
+    owner:RemoveEventCallback("temperaturedelta", onTemperaturedelta)
 end
 
 -- 存档加载

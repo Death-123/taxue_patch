@@ -1,5 +1,8 @@
 local str448 = [[
 function TaxueOnKilled(player, target)
+    local showBanner = TaxuePatch.cfg.EXP_BANNER and TaxuePatch.dyc
+    local BANNER_COLOR = TaxuePatch.cfg.BANNER_COLOR
+    local bannerColor = showBanner and TaxuePatch.dyc.RGBAColor(BANNER_COLOR[1] / 255, BANNER_COLOR[2] / 255, BANNER_COLOR[3] / 255)
     --#region 是boss
     local IsBoss = false
     local bossTags = {
@@ -60,7 +63,7 @@ function TaxueOnKilled(player, target)
         player.exp = player.exp and player.exp + exp                                --经验值
         player.combat_capacity = player.combat_capacity and player.combat_capacity + combat     --战斗力
         player.charm_value = player.charm_value and player.charm_value + charm              --魅力值
-        if TaxuePatch.cfg.EXP_BANNER and TaxuePatch.dyc then
+        if showBanner then
             local bannerExp
             local dyc = TaxuePatch.dyc
             for index, banner in pairs(dyc.bannerSystem.banners) do
@@ -71,7 +74,7 @@ function TaxueOnKilled(player, target)
             end
             if not bannerExp then
                 local str = ("*经验+%.2f* *战斗力+%.2f* *魅力值+%.2f*"):format(exp, combat, charm)
-                bannerExp = dyc.bannerSystem:ShowMessage(str, 5, dyc.RGBAColor(255 / 255, 215 / 255, 0))
+                bannerExp = dyc.bannerSystem:ShowMessage(str, 5, bannerColor)
                 bannerExp:AddTag("taxueGetExpBanner")
             end
             bannerExp.exp = bannerExp.exp and bannerExp.exp + exp or exp
@@ -108,11 +111,18 @@ function TaxueOnKilled(player, target)
         if player.gamble_multiple > 0 then
             has_save = true
             if math.random() < 0.1 then
-                player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+                if showBanner then
+                    TaxuePatch.dyc.bannerSystem:ShowMessage("赌狗成功! 额外" .. player.gamble_multiple .. "倍掉落", 5, bannerColor)
+                else
+                    player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+                end
                 TaxuePatch.AddLootsToList(lootdropper, dorpList, player.gamble_multiple)
             else
-                target.components.lootdropper:SetChanceLootTable()
-                target.components.lootdropper:SetLoot({"poop","poop","poop","poop","poop","poop","poop","poop","poop","poop"})
+                if showBanner then
+                    TaxuePatch.dyc.bannerSystem:ShowMessage("赌狗失败!", 5, bannerColor)
+                end
+                lootdropper:SetChanceLootTable()
+                lootdropper:SetLoot({"poop","poop","poop","poop","poop","poop","poop","poop","poop","poop"})
             end
             player.gamble_multiple = 0
             player.has_ticket = false
@@ -120,7 +130,11 @@ function TaxueOnKilled(player, target)
         --处理战利品券
         if player.loot_multiple > 0 then	--触发战利品券
             has_save = true
-            player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+            if showBanner then
+                TaxuePatch.dyc.bannerSystem:ShowMessage("触发战利品券! 额外" .. player.loot_multiple .. "倍掉落", 5, bannerColor)
+            else
+                player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+            end
             TaxuePatch.AddLootsToList(lootdropper, dorpList, player.loot_multiple)
             player.loot_multiple = 0
             player.has_ticket = false
@@ -128,20 +142,44 @@ function TaxueOnKilled(player, target)
         --处理掉包券
         if player.substitute_item ~= "" then
             has_save = true
-            player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
-            local item_list = target.components.lootdropper:GenerateLoot()   --战利品表
+            if showBanner then
+                TaxuePatch.dyc.bannerSystem:ShowMessage("触发掉包券! 掉包物品: " .. TaxueToChs(player.substitute_item), 5, bannerColor)
+            else
+                player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+            end
+            local item_list = lootdropper:GenerateLoot()   --战利品表
             local loot_list = {}
             for _ = 1, #item_list do
                 table.insert(loot_list,player.substitute_item)
             end
-            target.components.lootdropper:SetChanceLootTable()
-            target.components.lootdropper:SetLoot(loot_list)
+            lootdropper:SetChanceLootTable()
+            lootdropper:SetLoot(loot_list)
             player.substitute_item = ""
             player.has_ticket = false
         end
         --处理脸黑值,概率为0~0.2
         if player.faceblack > 0 and math.random() <= player.faceblack then
             TaxuePatch.AddLootsToList(lootdropper, dorpList)
+            if showBanner then
+                local bannerFaceBlack
+                local dyc = TaxuePatch.dyc
+                for index, banner in pairs(dyc.bannerSystem.banners) do
+                    if banner:HasTag("taxueFaceBlackDropBanner") then
+                        bannerFaceBlack = banner
+                        break
+                    end
+                end
+                if not bannerFaceBlack then
+                    bannerFaceBlack = dyc.bannerSystem:ShowMessage("脸黑奖触发双爆!", 5, bannerColor)
+                    bannerFaceBlack:AddTag("taxueFaceBlackDropBanner")
+                    bannerFaceBlack.times = 1
+                else
+                    bannerFaceBlack.times = bannerFaceBlack.times + 1
+                    bannerFaceBlack:SetText(("脸黑奖触发双爆 X%d !"):format(bannerFaceBlack.times))
+                    bannerFaceBlack.bannerTimer = 5
+                    bannerFaceBlack:OnUpdate(0)
+                end
+            end
             player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
             -- print("触发脸黑奖掉落")
             --超级掉落
@@ -284,8 +322,8 @@ function TaxueOnKilled(player, target)
         --print("处理灌铅骰子",inst.loaded_dice_chance)
         if player.loaded_dice_chance > 0 and math.random() < player.loaded_dice_chance then     --触发包裹掉落
             local monster_item_list = {}
-            if target.components.lootdropper then
-                monster_item_list = target.components.lootdropper:GenerateLoot()     --战利品表
+            if lootdropper then
+                monster_item_list = lootdropper:GenerateLoot()     --战利品表
                 for i = #monster_item_list, 1, -1 do                                 --这里把非物品栏物品剔除（注：用table库这种方式剔除一定要倒着干，不然无法全部删除）
                     local item = SpawnPrefab(monster_item_list[i])
                     if item then

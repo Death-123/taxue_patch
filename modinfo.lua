@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.12"
+version = "3.80.13"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -92,6 +92,24 @@ configuration_options = {
             { description = "禁用", data = false },
         },
         default = true,
+    },
+    {
+        name = "BANNER_COLOR",
+        label = "经验提示颜色",
+        hover = "经验提示的文字颜色",
+        options = {
+            { description = "海蓝宝石色", data = { 127, 255, 212 } },
+            { description = "品红色", data = { 255, 108, 180 } },
+            { description = "青色", data = { 0, 255, 255 } },
+            { description = "蓝色", data = { 0, 0, 255 } },
+            { description = "绿色", data = { 0, 255, 0 } },
+            { description = "黄色", data = { 255, 255, 0 } },
+            { description = "金色", data = { 255, 215, 0 } },
+            { description = "橙色", data = { 255, 165, 0 } },
+            { description = "粉红色", data = { 255, 20, 147 } },
+            { description = "浅绿色", data = { 144, 238, 144 } },
+        },
+        default = { 255, 215, 0 },
     },
     {
         name = "DORP_ASH",
