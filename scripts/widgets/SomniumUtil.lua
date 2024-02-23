@@ -1,8 +1,8 @@
-local widgetUtil = {}
+local SomniumUtil = {}
 
 ---获取屏幕横向缩放倍数
 ---@return number
-function widgetUtil.getWidthScal()
+function SomniumUtil.getWidthScal()
     local w, h = TheSim:GetScreenSize()
     return w / 1920
 end
@@ -11,10 +11,10 @@ end
 ---@param b number end number
 ---@param t number percent
 ---@return number number number
-function widgetUtil.Lerp(a, b, t) return (b - a) * t + a end
+function SomniumUtil.Lerp(a, b, t) return (b - a) * t + a end
 
 ---@enum Aligns
-widgetUtil.Aligns = {
+SomniumUtil.Aligns = {
     MIDDLE = 0,
     TOP = 1,
     BOTTOM = -1,
@@ -125,18 +125,20 @@ function RGBAColor:__index(key)
         return self.b
     elseif key == 4 then
         return self.a
+    else
+        return rawget(RGBAColor, key)
     end
 end
 
 function RGBAColor:__tostring()
-    return string.format("(#%2X%2X%2X%2X)", self.r * 255, self.g * 255, self.b * 255, self.a * 255)
+    return string.format("(#%02X%02X%02X%02X)", self.r * 255, self.g * 255, self.b * 255, self.a * 255)
 end
 
 function RGBAColor:__eq(o)
     return self.r == o[1] and self.g == o[2] and self.b == o[3] and self.a == o[4]
 end
 
-widgetUtil.RGBAColor = RGBAColor
+SomniumUtil.RGBAColor = RGBAColor
 
 Colors = {
     aquamarine = RGBAColor(127, 255, 212),
@@ -152,4 +154,22 @@ Colors = {
 }
 --#endregion
 
-return widgetUtil
+local OnMoveHandlers = {}
+
+function SomniumUtil.AddOnMoveHandler(widget)
+    OnMoveHandlers[widget] = true
+end
+
+function SomniumUtil.RemoveOnMoveHandler(widget)
+    OnMoveHandlers[widget] = nil
+end
+
+function SomniumUtil.OnMove(x, y)
+    for widget, _ in pairs(OnMoveHandlers) do
+        widget:OnMouseMove(x, y)
+    end
+end
+
+TheInput.position:AddEventHandler("move", SomniumUtil.OnMove)
+
+return SomniumUtil

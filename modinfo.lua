@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.13"
+version = "3.80.14"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -59,6 +59,16 @@ configuration_options = {
         name = "TAXUE_FIX",
         label = "踏雪优化",
         hover = "优化部分踏雪功能",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "FILLABLE",
+        label = "一键使用",
+        hover = "利息券,战利品券一键使用",
         options = {
             { description = "启用", data = true },
             { description = "禁用", data = false },

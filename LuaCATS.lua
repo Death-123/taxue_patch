@@ -32,6 +32,7 @@
 ---@field OnMouseButton fun(self,button:integer, down:boolean, x:number, y:number):boolean
 ---@field GetDeepestFocus function
 ---@field SetScale function
+---@field SetFocus fun(self)
 ---@field OnGainFocus fun(self)
 ---@field OnLoseFocus fun(self)
 ---@field Kill fun(self)
@@ -77,6 +78,16 @@ function Widget:AddChild(child) end
 ---@field SetRegionSize function
 ---@field ShowEditCursor function
 ---@field SetHorizontalSqueeze function
+
+---@class TextEditWidget
+---@field SetAllowClipboardPaste fun(self,enable:boolean)
+---@field SetPassword fun(self,enable:boolean)
+---@field ShowEditCursor fun(self,enable:boolean)
+---@field GetString fun(self):string
+---@field SetString fun(self,str:string)
+---@field OnKeyDown fun(self,key:integer)
+---@field OnKeyUp fun(self,key:integer)
+---@field OnTextInput fun(self,text:string)
 
 ---@class ImageWidget
 ---@field GetSize function
@@ -193,6 +204,7 @@ function CreateEntity() end
 ---@field UITransform UITransform
 ---@field ImageWidget ImageWidget
 ---@field TextWidget TextWidget
+---@field TextEditWidget TextEditWidget
 ---
 ---@field IsValid fun(self):boolean
 ---@field Remove fun(self)
@@ -378,12 +390,68 @@ Transform = {}
 ---@field GetScreenPos fun(self,x:number,y:number,z:number):x:integer, y:integer
 ---@field FindEntities fun(self,x:number,y:number,z:number,radius:number,tags?:string[],notags?:string[]):entityPrefab[]
 ---@field GetScreenSize fun(self):w:integer,h:integer
+---@field ProfilerPush fun(self,profile:string)
+---@field ProfilerPop fun(self)
 TheSim = {}
 
----@class Input
+---@class Input:Class
 ---@field GetScreenPosition fun(self):Vector3
 ---@field GetWorldPosition fun(self):Vector3
 ---@field GetWorldEntityUnderMouse fun(self):entityPrefab
 ---@field GetControllerID fun(self):string
 ---@field GetLocalizedControl fun(self,id:string,key:integer):string
+---@field pickConditions table
+---@field hoverinst EntityScript
+---@field entitiesundermouse EntityScript
+---@field useController boolean
+---@field enabledebugtoggle boolean
+---@field mouse_enabled boolean
+---@field position table
+---@field onkey table
+---@field onkeyup table
+---@field onkeydown table
+---@field ongesture table
+---@field oncontrol table
+---@field onmousedown table
+---@field onmouseup {events:table<string|integer,table[]>}
+---@field ontextinput table
+---
+---@field GetInputDevices function
+---@field OnText function
+---@field AddGestureHandler function
+---@field OnMouseMove function
+---@field EnableAllControllers function
+---@field OnUpdate fun(self)
+---@field GetControlIsMouseWheel function
+---@field EnableDebugToggle function
+---@field AddControlMappingHandler function
+---@field ControllerConnected function
+---@field OnMouseButton function
+---@field UpdatePosition function
+---@field AddPickCondition function
+---@field IsControlPressed function
+---@field IsDebugToggleEnabled function
+---@field UpdateEntitiesUnderMouse function
+---@field AddMoveHandler function
+---@field ControllerAttached function
+---@field AddGeneralControlHandler function
+---@field GetAnalogControlValue function
+---@field IsKeyDown function
+---@field OnRawKey function
+---@field GetHUDEntityUnderMouse function
+---@field IsMouseDown function
+---@field AddControlHandler function
+---@field GetAllEntitiesUnderMouse function
+---@field AddTextInputHandler function
+---@field RemovePickCondition function
+---@field OnControlMapped function
+---@field OnFrameStart function
+---@field AddMouseButtonHandler function
+---@field EnableMouse function
+---@field OnGesture function
+---@field DisableAllControllers function
+---@field AddKeyHandler function
+---@field AddKeyUpHandler function
+---@field OnControl function
+---@field AddKeyDownHandler function
 TheInput = {}

@@ -1,5 +1,5 @@
 local Widget = require "widgets/widget"
-local WidgetUtil = require "widgets/widgetUtil"
+local SomniumUtil = require "widgets/SomniumUtil"
 
 ---@class SomniumWidget:Widget
 ---@overload fun(name:string):SomniumWidget
@@ -9,7 +9,7 @@ local WidgetUtil = require "widgets/widgetUtil"
 ---@field UITransform UITransform
 ---@field draggable boolean|nil
 ---@field dragging boolean|nil
----@field draggingPos {x:number, y:number}
+---@field draggingPos Vector3
 ---@field keepTop boolean
 ---@field moveLayerTimer number
 ---@field basePos Vector3
@@ -125,8 +125,29 @@ function SomniumWidget:UpdatePosition()
     self:SetOffset()
 end
 
+function SomniumWidget:SetDraggable(enable)
+    if enable then
+        self.draggable = true
+        self.draggingPos = Vector3()
+        self:SetUpdating("draggable")
+    else
+        self.draggable = nil
+        self.draggingPos = nil
+        self:RemoveUpdating("draggable")
+    end
+end
+
+function SomniumWidget:OnGainFocus()
+    self:PushEvent("onGainFocus")
+end
+
+function SomniumWidget:OnLoseFocus()
+    self:PushEvent("onLoseFocus")
+end
+
 function SomniumWidget:OnMouseButton(button, down, x, y)
-    local flag = self._base.OnMouseButton(self, button, down, x, y)
+    if SomniumWidget._base.OnMouseButton(self, button, down, x, y) then return true end
+    self:PushEvent("onMouseButton", { button = button, down = down, x = x, y = y })
     if self.draggable then
         if not down and button == MOUSEBUTTON_LEFT then self.dragging = false end
 
@@ -139,8 +160,19 @@ function SomniumWidget:OnMouseButton(button, down, x, y)
             -- end
         end
     end
-    if not self.focus then return false end
-    return flag
+    return false
+end
+
+function SomniumWidget:OnMouseMove(x, y)
+    self:PushEvent("onMouseMove", { x = x, y = y })
+end
+
+function SomniumWidget:AddOnMouseMove()
+    SomniumUtil.AddOnMoveHandler(self)
+end
+
+function SomniumWidget:RemoveOnMouseMove()
+    SomniumUtil.RemoveOnMoveHandler(self)
 end
 
 function SomniumWidget:OnRawKey(key, down)
@@ -192,6 +224,28 @@ function SomniumWidget:OnUpdate(dt)
         end
     end
     self:PushEvent("OnUpdate", dt)
+end
+
+function SomniumWidget:SetUpdating(source)
+    self.updatingSource = self.updatingSource or {}
+    self.updatingSource[source] = true
+    self:ShouldUpdating()
+end
+
+function SomniumWidget:RemoveUpdating(source)
+    if self.updatingSource then
+        self.updatingSource[source] = nil
+        if not next(self.updatingSource) then self.updatingSource = nil end
+    end
+    self:ShouldUpdating()
+end
+
+function SomniumWidget:ShouldUpdating()
+    if self.updatingSource then
+        TheFrontEnd:StartUpdatingWidget(self)
+    else
+        TheFrontEnd:StopUpdatingWidget(self)
+    end
 end
 
 ---推送事件

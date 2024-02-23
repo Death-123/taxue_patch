@@ -1,6 +1,6 @@
-local Widget = require "widgets/SomniumWidget"
-local WidgetUtil = require "widgets/widgetUtil"
-local RGBAColor = WidgetUtil.RGBAColor
+local SomniumWidget = require "widgets/SomniumWidget"
+local SomniumUtil = require "widgets/SomniumUtil"
+local RGBAColor = SomniumUtil.RGBAColor
 
 ---@class SomniumText:SomniumWidget
 ---@overload fun(font?:string, size?:number, color?:RGBAColor, text?:string):SomniumText
@@ -11,10 +11,10 @@ local RGBAColor = WidgetUtil.RGBAColor
 ---@field fontSize number
 ---@field color RGBAColor
 ---@field text string
-local Text = Class(Widget,
+local SomniumText = Class(SomniumWidget,
     function(self, font, size, color, text)
         ---@cast self SomniumText
-        Widget._ctor(self, "Text")
+        SomniumWidget._ctor(self, "Text")
 
         self.inst.entity:AddTextWidget()
         self.TextWidget = self.inst.TextWidget
@@ -31,7 +31,7 @@ local Text = Class(Widget,
         end
     end)
 
-function Text:__tostring()
+function SomniumText:__tostring()
     return string.format("%s - %s", self.name, self.text or "")
 end
 
@@ -40,7 +40,7 @@ end
 ---@param g? number
 ---@param b? number
 ---@param a? number
-function Text:SetColour(r, g, b, a)
+function SomniumText:SetColour(r, g, b, a)
     if type(r) == "number" then
         self.color = RGBAColor(r, g, b, a, true)
         self.TextWidget:SetColour(r, g, b, a)
@@ -53,20 +53,20 @@ function Text:SetColour(r, g, b, a)
     end
 end
 
-function Text:SetHorizontalSqueeze(squeeze)
+function SomniumText:SetHorizontalSqueeze(squeeze)
     self.TextWidget:SetHorizontalSqueeze(squeeze)
 end
 
-function Text:SetAlpha(a)
+function SomniumText:SetAlpha(a)
     self.TextWidget:SetColour(1, 1, 1, a)
 end
 
-function Text:SetFont(font)
+function SomniumText:SetFont(font)
     self.font = font
     self.TextWidget:SetFont(font)
 end
 
-function Text:SetFontSize(fontSize)
+function SomniumText:SetFontSize(fontSize)
     if LOC then
         fontSize = fontSize * LOC.GetTextScale()
     end
@@ -74,53 +74,53 @@ function Text:SetFontSize(fontSize)
     self.TextWidget:SetSize(fontSize)
 end
 
-function Text:GetFontSize()
+function SomniumText:GetFontSize()
     return self.fontSize
 end
 
 ---@param w? number
 ---@param h? number
-function Text:SetSize(w, h)
+function SomniumText:SetSize(w, h)
     w = w or self.width
     h = h or self.height
-    self._base.SetSize(self, w, h)
+    SomniumText._base.SetSize(self, w, h)
     self.TextWidget:SetRegionSize(w, h)
 end
 
 ---@return number w, number h
-function Text:GetSize()
+function SomniumText:GetSize()
     return self.TextWidget:GetRegionSize()
 end
 
-function Text:SetString(str)
+function SomniumText:SetString(str)
     local text = tostring(str)
     self.text = text
     self.TextWidget:SetString(text)
 end
 
-function Text:SetText(text)
+function SomniumText:SetText(text)
     self:SetString(text)
     self:UpdatePosition()
 end
 
-function Text:GetString()
+function SomniumText:GetString()
     --print("Text:GetString()", self.TextWidget:GetString())
     return self.TextWidget:GetString() or ""
 end
 
-function Text:SetVAnchor(anchor)
+function SomniumText:SetVAnchor(anchor)
     self.TextWidget:SetVAnchor(anchor)
 end
 
-function Text:SetHAnchor(anchor)
+function SomniumText:SetHAnchor(anchor)
     self.TextWidget:SetHAnchor(anchor)
 end
 
-function Text:EnableWordWrap(enable)
+function SomniumText:EnableWordWrap(enable)
     self.TextWidget:EnableWordWrap(enable)
 end
 
-function Text:AnimateIn(speed)
+function SomniumText:AnimateIn(speed)
     self.textString = self.text
     self.animSpeed = speed or 60
     self.animIndex = 0
@@ -129,9 +129,9 @@ function Text:AnimateIn(speed)
     self:StartUpdating()
 end
 
-function Text:OnUpdate(dt)
+function SomniumText:OnUpdate(dt)
     dt = dt or 0
-    self._base.OnUpdate(self, dt)
+    SomniumText._base.OnUpdate(self, dt)
     if dt > 0 and self.animIndex and self.textString and #self.textString > 0 then
         self.animTimer = self.animTimer + dt
         if self.animTimer > 1 / self.animSpeed then
@@ -149,4 +149,4 @@ function Text:OnUpdate(dt)
     end
 end
 
-return Text
+return SomniumText

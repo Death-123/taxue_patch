@@ -1,4 +1,4 @@
-local Widget = require "widgets/SomniumWidget"
+local SomniumWidget = require "widgets/SomniumWidget"
 
 ---@class SomniumImage:SomniumWidget
 ---@overload fun(atlas:string, tex:string):SomniumImage
@@ -8,10 +8,10 @@ local Widget = require "widgets/SomniumWidget"
 ---@field tex string
 ---@field originWidth integer
 ---@field originHeight integer
-local Image = Class(Widget,
+local SomniumImage = Class(SomniumWidget,
     function(self, atlas, tex)
         ---@cast self SomniumImage
-        Widget._ctor(self, "SomniumImage")
+        SomniumWidget._ctor(self, "SomniumImage")
 
         self.inst.entity:AddImageWidget()
         self.ImageWidget = self.inst.ImageWidget
@@ -22,18 +22,18 @@ local Image = Class(Widget,
     end)
 
 ---@return string
-function Image:__tostring()
+function SomniumImage:__tostring()
     return string.format("%s - %s:%s", self.name, self.atlas, self.texture)
 end
 
-function Image:SetAlphaRange(min, max)
+function SomniumImage:SetAlphaRange(min, max)
     self.ImageWidget:SetAlphaRange(min, max)
 end
 
 ---设置材质
 ---@param atlas string
 ---@param tex string
-function Image:SetTexture(atlas, tex)
+function SomniumImage:SetTexture(atlas, tex)
     assert(atlas and tex)
 
     self.atlas = resolvefilepath(atlas)
@@ -47,17 +47,17 @@ function Image:SetTexture(atlas, tex)
     self.originWidth, self.originHeight = self.ImageWidget:GetSize()
 end
 
-function Image:SetMouseOverTexture(atlas, tex)
+function SomniumImage:SetMouseOverTexture(atlas, tex)
     self.atlas = resolvefilepath(atlas)
     self.mouseovertex = tex
 end
 
-function Image:SetDisabledTexture(atlas, tex)
+function SomniumImage:SetDisabledTexture(atlas, tex)
     self.atlas = resolvefilepath(atlas)
     self.disabledtex = tex
 end
 
-function Image:SetSize(w, h)
+function SomniumImage:SetSize(w, h)
     if type(w) == "number" then
         self.ImageWidget:SetSize(w, h)
     else
@@ -65,15 +65,15 @@ function Image:SetSize(w, h)
     end
 end
 
-function Image:GetOriginSize()
+function SomniumImage:GetOriginSize()
     return self.originWidth, self.originHeight
 end
 
-function Image:GetSize()
+function SomniumImage:GetSize()
     return self.ImageWidget:GetSize()
 end
 
-function Image:ScaleToSize(w, h)
+function SomniumImage:ScaleToSize(w, h)
     local w0, h0 = self.ImageWidget:GetSize()
     local scalex = w / w0
     local scaley = h / h0
@@ -85,7 +85,7 @@ end
 ---@param g? number
 ---@param b? number
 ---@param a? number
-function Image:SetTint(ColorOrR, g, b, a)
+function SomniumImage:SetTint(ColorOrR, g, b, a)
     if type(ColorOrR) == "table" then
         self.ImageWidget:SetTint(ColorOrR.r, ColorOrR.g, ColorOrR.b, ColorOrR.a)
     else
@@ -93,37 +93,37 @@ function Image:SetTint(ColorOrR, g, b, a)
     end
 end
 
-function Image:SetVRegPoint(anchor)
+function SomniumImage:SetVRegPoint(anchor)
     self.ImageWidget:SetVAnchor(anchor)
 end
 
-function Image:SetHRegPoint(anchor)
+function SomniumImage:SetHRegPoint(anchor)
     self.ImageWidget:SetHAnchor(anchor)
 end
 
-function Image:OnGainFocus()
+function SomniumImage:OnGainFocus()
     if self.enabled and self.mouseovertex then
         self.ImageWidget:SetTexture(self.atlas, self.mouseovertex)
     end
-    self._base.OnGainFocus(self)
+    SomniumImage._base.OnGainFocus(self)
 end
 
-function Image:OnLoseFocus()
+function SomniumImage:OnLoseFocus()
     if self.enabled and self.mouseovertex then
         self.ImageWidget:SetTexture(self.atlas, self.texture)
     end
-    self._base.OnLoseFocus(self)
+    SomniumImage._base.OnLoseFocus(self)
 end
 
-function Image:OnEnable()
+function SomniumImage:OnEnable()
     self.ImageWidget:SetTexture(self.atlas, self.texture)
 end
 
-function Image:OnDisable()
+function SomniumImage:OnDisable()
     self.ImageWidget:SetTexture(self.atlas, self.disabledtex)
 end
 
-function Image:SetEffect(filename)
+function SomniumImage:SetEffect(filename)
     self.ImageWidget:SetEffect(filename)
     if filename == "shaders/ui_cc.ksh" then
         --hack for faked ambient lighting influence (common_postinit, quagmire.lua)
@@ -133,20 +133,20 @@ function Image:SetEffect(filename)
     end
 end
 
-function Image:SetEffectParams(param1, param2, param3, param4)
+function SomniumImage:SetEffectParams(param1, param2, param3, param4)
     self.ImageWidget:SetEffectParams(param1, param2, param3, param4)
 end
 
-function Image:EnableEffectParams(enabled)
+function SomniumImage:EnableEffectParams(enabled)
     self.ImageWidget:EnableEffectParams(enabled)
 end
 
-function Image:SetUVScale(xScale, yScale)
+function SomniumImage:SetUVScale(xScale, yScale)
     self.ImageWidget:SetUVScale(xScale, yScale)
 end
 
-function Image:SetBlendMode(mode)
+function SomniumImage:SetBlendMode(mode)
     self.ImageWidget:SetBlendMode(mode)
 end
 
-return Image
+return SomniumImage

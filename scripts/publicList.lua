@@ -185,7 +185,7 @@ ItemTypeMap = {
         "reinforce_oxhat",             --强化牛角头盔
         "reinforce_peagawkfeatherhat", --强化孔雀帽
     },
-    armor_2 = {
+    armor2 = {
         "reinforce_armorruins",  --强化铥矿甲
         "reinforce_ruinshat",    --强化皇冠
         "reinforce_pigcrownhat", --猪猪皇冠

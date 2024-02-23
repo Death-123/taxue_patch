@@ -1,22 +1,24 @@
-local Widget = require "widgets/SomniumWidget"
-local SlicedImage = require "widgets/SomniumSlicedImage"
+local SomniumWidget = require "widgets/SomniumWidget"
 local SomniumText = require "widgets/SomniumText"
-local WidgetUtil = require "widgets/widgetUtil"
-local RGBAColor = WidgetUtil.RGBAColor
+local SomniumUtil = require "widgets/SomniumUtil"
+local RGBAColor = SomniumUtil.RGBAColor
+
+---@alias data {width?:number,height?:number,paddingX?:number,paddingY?:number,lineSpacing?:number,background?:SomniumImage}
 
 ---@class SomniumWindow:SomniumWidget
----@overload fun(data:table):SomniumWindow
+---@overload fun(data?:data):SomniumWindow
+---@field _ctor fun(self, data?:data):SomniumWindow
 ---@field _base SomniumWidget
----@field background SomniumSlicedImage
+---@field background SomniumImage
 ---@field paddingX integer
 ---@field paddingY integer
 ---@field currentLineY integer
 ---@field lineSpacing integer
 ---@field contents SomniumWidget[]
-local Window = Class(Widget,
+local SomniumWindow = Class(SomniumWidget,
     function(self, data)
         ---@cast self SomniumWindow
-        Widget._ctor(self, "SomniumWindow")
+        SomniumWidget._ctor(self, "SomniumWindow")
         self.width = data.width or 400
         self.height = data.height or 300
         self.paddingX = data.paddingX or 40
@@ -28,24 +30,26 @@ local Window = Class(Widget,
         if data.background then
             self:SetBackground(data.background)
         end
-        -- self:SetCenterAlignment()
+        self:SetAnchors(ANCHOR_MIDDLE, ANCHOR_MIDDLE)
         self:SetSize()
         -- self:SetPosition(0, 0, 0)
-        self:StartUpdating()
+        -- self:StartUpdating()
     end)
 
-function Window:SetBackground(bg)
+---设置背景
+---@param bg SomniumImage
+function SomniumWindow:SetBackground(bg)
     if self.background then self.background:Kill() end
-    self.background = self:AddChild(SlicedImage(bg))
+    self.background = self:AddChild(bg)
     self.background:SetSize(self.width, self.height)
 end
 
-function Window:SetAnchors(anchorX, anchorY)
+function SomniumWindow:SetAnchors(anchorX, anchorY)
     self:SetVAnchor(anchorX)
     self:SetHAnchor(anchorY)
 end
 
-function Window:SetAnchor(XY, anchor)
+function SomniumWindow:SetAnchor(XY, anchor)
     if XY then
         self:SetVAnchor(anchor)
     else
@@ -53,28 +57,28 @@ function Window:SetAnchor(XY, anchor)
     end
 end
 
-function Window:SetPosition(...)
+function SomniumWindow:SetPosition(...)
     -- self.bg:SetPosition(...)
-    self._base.SetPosition(self, ...)
+    SomniumWindow._base.SetPosition(self, ...)
 end
 
-function Window:GetPosition()
-    return self._base.GetPosition(self)
+function SomniumWindow:GetPosition()
+    return SomniumWindow._base.GetPosition(self)
 end
 
-function Window:SetSize(width, height)
+function SomniumWindow:SetSize(width, height)
     width = width or self.width
     height = height or self.height
     self.width = width; self.height = height
     if self.background then self.background:SetSize(width, height) end
 end
 
-function Window:GetSize() return self.width, self.height end
+function SomniumWindow:GetSize() return self.width, self.height end
 
-function Window:SetTitle(title, font, size, color)
+function SomniumWindow:SetTitle(title, font, size, color)
     if not self.title then
         self.title = self:AddChild(SomniumText(font, size, color, title))
-        self.title:SetAligns(nil, WidgetUtil.Aligns.TOP)
+        self.title:SetAligns(nil, SomniumUtil.Aligns.TOP)
         local _, offsetY = self.title:GetSize()
         offsetY = offsetY + self.lineSpacing * 1.5
         if next(self.contents) then
@@ -92,7 +96,7 @@ end
 ---@param key? string
 ---@param contentHeight? number
 ---@return SomniumWidget
-function Window:AddContent(content, key, contentHeight)
+function SomniumWindow:AddContent(content, key, contentHeight)
     local newContent = self:AddChild(content)
     if not contentHeight and newContent.GetSize then
         _, contentHeight = newContent:GetSize()
@@ -108,47 +112,50 @@ function Window:AddContent(content, key, contentHeight)
     return newContent
 end
 
-function Window:ClearContents()
+function SomniumWindow:ClearContents()
     for _, content in pairs(self.contents) do content:Kill() end
     table.clear(self.contents)
     self.currentLineY = 0
 end
 
-function Window:NewLine(height)
+function SomniumWindow:NewLine(height)
     self.currentLineY = self.currentLineY + height
 end
 
-function Window:OnRawKey(key, down)
-    local flag = self._base.OnRawKey(self, key, down)
+function SomniumWindow:OnRawKey(key, down)
+    local flag = SomniumWindow._base.OnRawKey(self, key, down)
     if not self.focus then return false end
     return flag
 end
 
-function Window:OnControl(control, down)
-    local flag = self._base.OnControl(self, control, down)
+function SomniumWindow:OnControl(control, down)
+    local flag = SomniumWindow._base.OnControl(self, control, down)
     if not self.focus then return false end
     return flag
 end
 
-function Window:AnimateSize(w, h, speed)
-    if w and h then
-        self.animTargetSize = { w = w, h = h }
-        self.animSpeed = speed or 5
-    end
+function SomniumWindow:AnimateSize(w, h, speed)
+    w = w or self.width
+    h = h or self.height
+    self.animTargetSize = { w = w, h = h }
+    self.animSpeed = speed or 5
+    self:SetUpdating("animateSize")
 end
 
-function Window:OnUpdate(dt)
+function SomniumWindow:OnUpdate(dt)
     dt = dt or 0
+    SomniumWindow._base.OnUpdate(self, dt)
     if self.animTargetSize and dt > 0 then
         local w, h = self:GetSize()
-        if math.abs(w - self.animTargetSize.w) < 1 then
+        if math.abs(w - self.animTargetSize.w) < 1 and math.abs(h - self.animTargetSize.h) < 1 then
             self:SetSize(self.animTargetSize.w, self.animTargetSize.h)
             self.animTargetSize = nil
+            self:RemoveUpdating("animateSize")
         else
-            self:SetSize(WidgetUtil.Lerp(w, self.animTargetSize.w, self.animSpeed * dt), WidgetUtil.Lerp(h, self.animTargetSize.h, self.animSpeed * dt))
+            self:SetSize(SomniumUtil.Lerp(w, self.animTargetSize.w, self.animSpeed * dt), SomniumUtil.Lerp(h, self.animTargetSize.h, self.animSpeed * dt))
         end
     end
-    local widthScale = WidgetUtil.getWidthScal()
+    local widthScale = SomniumUtil.getWidthScal()
     if widthScale ~= self.screenScale then
         self.background:SetScale(widthScale)
         local offset = self:GetOffset()
@@ -159,4 +166,4 @@ function Window:OnUpdate(dt)
     end
 end
 
-return Window
+return SomniumWindow

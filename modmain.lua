@@ -110,6 +110,8 @@ end
 
 require "publicList"
 TaxuePatch.patchlib = require "patchlib"
+-- TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
+-- TaxuePatch.ControlPanel = require "screens/controlPanel"
 
 local patchStr = "--patch "
 local patchVersionStr = modinfo.version
@@ -129,6 +131,7 @@ for _, name in pairs(KnownModIndex:GetModNames()) do
     end
 end
 local taxuePath = "../mods/" .. taxueName .. "/"
+TaxuePatch.modRoot = modPath
 PrefabFiles = {}
 
 if taxueEnabled and cfg.AUTO_AMULET then
@@ -471,17 +474,6 @@ if cfg.TAXUE_FIX then
     })
     --种子机修复
     addPatchs("scripts/prefabs/taxue_seeds_machine.lua", require "patchData/taxue_seeds_machine")
-    --利息券连地上一起读
-    addPatch("scripts/prefabs/taxue_other_items.lua", {
-        index = 62,
-        type = "add",
-        content = [[
-        for _, entity in ipairs(TaxuePatch.GetNearByEntities(reader, 15, function(entity) return entity.prefab == "interest_ticket" end)) do
-			num = num + entity.interest
-            entity:Remove()
-		end
-    ]]
-    })
     --鱼缸卡顿优化
     addPatchs("scripts/prefabs/taxue_fish_tank.lua", {
         {
@@ -522,6 +514,83 @@ if cfg.TAXUE_FIX then
         { index = 21, type = "add",                                                                                       content = [[                local itemList = {}]] },
         { index = 36, content = [[                            TaxuePatch.MultHarvest(v.components.crop, itemList, true)]] },
         { index = 46, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
+    })
+end
+
+--一键使用
+if cfg.FILLABLE then
+    addPatchs("scripts/prefabs/taxue_other_items.lua", {
+        --利息券连地上一起读
+        {
+            index = 62,
+            type = "add",
+            content = [[
+            for _, entity in ipairs(TaxuePatch.GetNearByEntities(reader, 15, function(entity) return entity.prefab == "interest_ticket" end)) do
+                num = num + entity.interest
+                entity:Remove()
+            end
+        ]]
+        },
+        --战利品券一键填装
+        {
+            index = 72,
+            type = "add",
+            content = [[
+        if inst.prefab == "loot_ticket_fill" and inst.loot_multiple and inst.loot_multiple < 20 then
+			local hasLootTicket
+			local function fill(container, item, slot)
+				if item.prefab == "loot_ticket" then
+					hasLootTicket = true
+					if inst.loot_multiple + item.loot_multiple <= 20 then
+						inst.loot_multiple = inst.loot_multiple + item.loot_multiple
+						container:RemoveItemBySlot(slot):Remove()
+					else
+						item.loot_multiple = inst.loot_multiple + item.loot_multiple - 20
+						inst.loot_multiple = 20
+						return true
+					end
+				end
+			end
+            local oldLoot_multiple = inst.loot_multiple
+			TaxuePatch.TraversalAllInventory(reader, fill, true)
+			if hasLootTicket then
+				TaXueSay(("战利品券已填装！%d -> %d"):format(oldLoot_multiple, inst.loot_multiple))
+				return true
+			end
+		end
+        ]]
+        }
+    })
+    --一键湛青升级
+    addPatchs("scripts/prefabs/taxue_staff.lua", {
+        {
+            index = 322,
+            type = "add",
+            content = [[
+            local ents = TaxuePatch.GetNearByEntities(inst, 10, "blue_staff")
+            local num, numhas = 0, 0
+            if target.prefab == "blooming_sword" or target.prefab == "black_falchion_sword" or target.prefab == "lightning_crescent_sword" or target.prefab == "surprised_sword" then
+                num = 99 - target.level
+            elseif target.prefab == "blooming_armor" or target.prefab == "blooming_headwear" then
+                num = 9 - target.level
+            end
+            for i = 1, num do
+                if ents[i] then
+                    ents[i]:Remove()
+                    numhas = numhas + 1
+                else
+                    break
+                end
+            end
+            TaXueSay(("等级提升！%d -> %d"):format(target.level, target.level + numhas + 1))
+            for _ = 1, numhas + 1 do
+            ]]
+        },
+        {
+            index = 356,
+            type = "add",
+            content = [[        end]]
+        },
     })
 end
 

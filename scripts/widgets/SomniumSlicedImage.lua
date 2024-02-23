@@ -1,5 +1,5 @@
-local Widget = require "widgets/widget"
-local Image = require "widgets/SomniumImage"
+local SomniumWidget = require "widgets/SomniumWidget"
+local SomniumImage = require "widgets/SomniumImage"
 
 ---@class SomniumSlicedImage:Widget
 ---@overload fun(textures:table):SomniumSlicedImage
@@ -12,8 +12,8 @@ local Image = require "widgets/SomniumImage"
 ---@field texScale number
 ---@field width integer
 ---@field height integer
-local SlicedImage = Class(Widget, function(self, textures)
-    Widget._ctor(self, "SomniumSlicedImage")
+local SomniumSlicedImage = Class(SomniumWidget, function(self, textures)
+    SomniumWidget._ctor(self, "SomniumSlicedImage")
     self.images = {}
     self.mode = assert(textures.mode)
     self.atlas = assert(textures.atlas)
@@ -25,11 +25,11 @@ local SlicedImage = Class(Widget, function(self, textures)
 end)
 
 ---@return string
-function SlicedImage:__tostring() return string.format("%s (%s)", self.name, self.mode) end
+function SomniumSlicedImage:__tostring() return string.format("%s (%s)", self.name, self.mode) end
 
 ---删除存在的图像
 ---@return SomniumSlicedImage
-function SlicedImage:RemoveImages()
+function SomniumSlicedImage:RemoveImages()
     for _, image in pairs(self.images) do
         image:kill()
     end
@@ -40,12 +40,12 @@ end
 ---设置材质
 ---@param textures table
 ---@return SomniumSlicedImage
-function SlicedImage:SetTextures(textures)
+function SomniumSlicedImage:SetTextures(textures)
     self.mode = textures.mode or self.mode
     if self.mode == "slice13" or self.mode == "slice31" then
         self:RemoveImages()
         for i = 1, 3 do
-            self.images[i] = self:AddChild(Image(textures.atlas, textures.texname .. "_" .. i .. ".tex"))
+            self.images[i] = self:AddChild(SomniumImage(textures.atlas, textures.texname .. "_" .. i .. ".tex"))
         end
         if self.mode == "slice13" then
             assert(self.images[1].originHeight == self.images[2].originHeight, "Height must be equal!")
@@ -59,7 +59,7 @@ function SlicedImage:SetTextures(textures)
         for i = 1, 3 do
             for j = 1, 3 do
                 local index = i * 10 + j
-                self.images[index] = self:AddChild(Image(textures.atlas, textures.texname .. "_" .. index .. ".tex"))
+                self.images[index] = self:AddChild(SomniumImage(textures.atlas, textures.texname .. "_" .. index .. ".tex"))
                 if i > 1 then assert(self.images[index].originWidth == self.images[index - 10].originWidth, "Width must be equal!") end
                 if j > 1 then assert(self.images[index].originHeight == self.images[index - 1].originHeight, "Height must be equal!") end
             end
@@ -75,7 +75,7 @@ end
 ---@param width integer
 ---@param height integer
 ---@return SomniumSlicedImage
-function SlicedImage:SetSize(width, height)
+function SomniumSlicedImage:SetSize(width, height)
     width = width or self.width
     height = height or self.height
     if self.mode == "slice13" then
@@ -144,10 +144,10 @@ function SlicedImage:SetSize(width, height)
     return self
 end
 
-function SlicedImage:GetSize() return self.width, self.height end
+function SomniumSlicedImage:GetSize() return self.width, self.height end
 
-function SlicedImage:SetTint(r, g, b, a) for _, image in pairs(self.images) do image:SetTint(r, g, b, a) end end
+function SomniumSlicedImage:SetTint(r, g, b, a) for _, image in pairs(self.images) do image:SetTint(r, g, b, a) end end
 
-function SlicedImage:SetClickable(clickable) for _, image in pairs(self.images) do image:SetClickable(clickable) end end
+function SomniumSlicedImage:SetClickable(clickable) for _, image in pairs(self.images) do image:SetClickable(clickable) end end
 
-return SlicedImage
+return SomniumSlicedImage

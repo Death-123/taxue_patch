@@ -59,6 +59,37 @@ end
 
 TaxuePatch.FindItem = FindItem
 
+---遍历物品栏
+---@param owner entityPrefab
+---@param fn fun(container:table,item:entityPrefab,slot:integer):shouldEnd:boolean
+---@param opencontainer? boolean
+---@return boolean
+function TraversalAllInventory(owner, fn, opencontainer)
+    if not (owner and owner.components) then return false end
+    local allSlots = {}
+    if owner.components.container then
+        allSlots[owner.components.container.slots] = owner.components.container
+    elseif owner.components.inventory then
+        local inventory = owner.components.inventory
+        allSlots[inventory.itemslots] = inventory
+        allSlots[inventory.equipslots] = inventory
+        if opencontainer then
+            for container, _ in pairs(inventory.opencontainers) do
+                allSlots[container.components.container.slots] = container.components.container
+            end
+        end
+    end
+    for slots, container in pairs(allSlots) do
+        for slot, item in pairs(slots) do
+            if fn(container, item, slot) then return true end
+            if item.components and item.components.container then TraversalAllInventory(item, fn) end
+        end
+    end
+    return false
+end
+
+TaxuePatch.TraversalAllInventory = TraversalAllInventory
+
 ---查找周围实体
 ---@param inst entityPrefab
 ---@param radius number
@@ -1121,7 +1152,7 @@ function MultHarvest(crop, itemList, isBook)
             elseif grower.level == 2 then
                 mult = math.random(2, 5)
             elseif grower.level == 3 then
-                mult = math.random(2, 6)
+                mult = math.random(3, 7)
             end
             amount = amount * mult
         end

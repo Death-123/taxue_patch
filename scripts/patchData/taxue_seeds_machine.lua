@@ -8,7 +8,7 @@ local str26 = [[
             has = true
             --处理原材料堆叠数量
             local stacksize = v.components.stackable and v.components.stackable.stacksize or 1
-            inst.components.container:RemoveItemBySlot(slot)	--删除材料
+            inst.components.container:RemoveItemBySlot(slot):Remove()	--删除材料
             local num_seeds = 0
             local nomal_seeds = 0
             for i = 1, stacksize do
