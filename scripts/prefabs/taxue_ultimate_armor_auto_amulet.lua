@@ -12,7 +12,10 @@ local function findItem(slots, test)
             if not found2 and item.components and item.components.container then
                 found2 = findItem(item.components.container.slots, test)
             else
-                if not found1 and TaxuePatch.TestItem(item, test) then found1 = item break end
+                if not found1 and TaxuePatch.TestItem(item, test) then
+                    found1 = item
+                    break
+                end
             end
         end
     end
@@ -89,140 +92,209 @@ local function ListenFueledChange(inst, data)
 end
 
 -- 护符主人穿戴装备
-local function OwnerOnEquip(_, data)
-    local equip = data.item
+local function OwnerOnEquip(owner, data)
+    local item = data.item
     local eslot = data.eslot
-    -- 盔甲
-    if eslot == EQUIPSLOTS.BODY and equip and equip.prefab == "blooming_armor" then
-        if not equip:HasTag("ListenDurableConsume") then
-            equip:AddTag("ListenDurableConsume")
-            equip:ListenForEvent("armorhit", ListenDurableConsume)
-        end
-    end
-
-    -- 头盔
-    if eslot == EQUIPSLOTS.HEAD and equip and equip.prefab == "blooming_headwear" then
-        if not equip:HasTag("ListenDurableConsume") then
-            equip:AddTag("ListenDurableConsume")
-            equip:ListenForEvent("armorhit", ListenDurableConsume)
-        end
-    end
+    if not (item and eslot) then return end
+    if item:HasTag("ListenDurableConsume") then return end
+    item:AddTag("ListenDurableConsume")
 
     -- 武器
-    if eslot == EQUIPSLOTS.HANDS and equip and equip:HasTag("taxue_ultimate_weapon") then
-        if not equip:HasTag("ListenDurableConsume") then
-            equip:AddTag("ListenDurableConsume")
-            equip:ListenForEvent("percentusedchange", ListenFueledChange)
+    if eslot == EQUIPSLOTS.HANDS then
+        if item:HasTag("taxue_ultimate_weapon") then
+            item:ListenForEvent("percentusedchange", ListenFueledChange)
         end
+        if owner.level > 0 and not item:HasTag("cantdrop") then
+            owner.cantdrop = true
+            item:AddTag("cantdrop")
+        end
+
+        -- 盔甲
+    elseif eslot == EQUIPSLOTS.BODY and item.prefab == "blooming_armor" then
+        item:ListenForEvent("armorhit", ListenDurableConsume)
+
+        -- 头盔
+    elseif eslot == EQUIPSLOTS.HEAD and item.prefab == "blooming_headwear" then
+        item:ListenForEvent("armorhit", ListenDurableConsume)
     end
 end
 
 -- 护符主人脱下装备
-local function OwnerUnEquip(_, data)
-    local equip = data.item
+local function OwnerUnEquip(owner, data)
+    local item = data.item
     local eslot = data.eslot
-    -- 盔甲
-    if eslot == EQUIPSLOTS.BODY and equip and equip:HasTag("ListenDurableConsume") then
-        equip:RemoveTag("ListenDurableConsume")
-        equip:RemoveEventCallback("armorhit", ListenDurableConsume)
-    end
-
-    -- 头盔
-    if eslot == EQUIPSLOTS.HEAD and equip and equip:HasTag("ListenDurableConsume") then
-        equip:RemoveTag("ListenDurableConsume")
-        equip:RemoveEventCallback("armorhit", ListenDurableConsume)
-    end
-
+    if not (item and eslot) then return end
+    if not item:HasTag("ListenDurableConsume") then return end
+    item:RemoveTag("ListenDurableConsume")
     -- 武器
-    if eslot == EQUIPSLOTS.HANDS and equip and equip:HasTag("ListenDurableConsume") then
-        equip:RemoveTag("ListenDurableConsume")
-        equip:RemoveEventCallback("percentusedchange", ListenFueledChange)
+    if eslot == EQUIPSLOTS.HANDS then
+        item:RemoveEventCallback("percentusedchange", ListenFueledChange)
+        if owner.cantdrop then
+            owner.cantdrop = nil
+            item:RemoveTag("cantdrop")
+        end
+
+        -- 盔甲
+    elseif eslot == EQUIPSLOTS.BODY then
+        item:RemoveEventCallback("armorhit", ListenDurableConsume)
+
+        -- 头盔
+    elseif eslot == EQUIPSLOTS.HEAD then
+        item:RemoveEventCallback("armorhit", ListenDurableConsume)
     end
 end
 
-local function onTemperaturedelta(inst, data)
-    local eater
-    if inst and inst.components and inst.components.eater then
-        eater = inst.components.eater
-    else
-        return
-    end
-    local temperature = inst.components.temperature
-    if not temperature or not inst.components.health then return end
+local function onTemperaturedelta(owner, data)
+    if not (owner and owner.components and owner.components.eater) then return end
+    local eater = owner.components.eater
+    local temperature = owner.components.temperature
+    if not (temperature and owner.components.health) then return end
     if temperature.current <= 0 and temperature.maxtemp > 0 then
-        local hot_agentia = GetOne(inst, { "hot_agentia", "hot_agentia_advanced" })
+        local hot_agentia = GetOne(owner, { "hot_agentia", "hot_agentia_advanced" })
         if hot_agentia then eater:Eat(hot_agentia) end
     elseif temperature.current >= temperature.overheattemp and temperature.mintemp < temperature.overheattemp then
-        local ice_agentia = GetOne(inst, { "ice_agentia", "ice_agentia_advanced" })
+        local ice_agentia = GetOne(owner, { "ice_agentia", "ice_agentia_advanced" })
         if ice_agentia then eater:Eat(ice_agentia) end
     end
 end
 
--- 初始化
-local function Init(owner)
-    if owner and owner.components and owner.components.inventory then
-        -- 盔甲
-        local armor_body = owner.components.inventory:GetEquippedItem(EQUIPSLOTS.BODY)
-        if armor_body and armor_body.prefab == "blooming_armor" then
-            if not armor_body:HasTag("ListenDurableConsume") then
-                armor_body:AddTag("ListenDurableConsume")
-                armor_body:ListenForEvent("armorhit", ListenDurableConsume) -- 监听护甲受损
-            end
-        end
+local enableHeal = TaxuePatch.cfg.AUTO_AMULET_HEAL
 
-        -- 头盔
-        local armor_head = owner.components.inventory:GetEquippedItem(EQUIPSLOTS.HEAD)
-        if armor_head and armor_head.prefab == "blooming_headwear" then
-            if not armor_head:HasTag("ListenDurableConsume") then
-                armor_head:AddTag("ListenDurableConsume")
-                armor_head:ListenForEvent("armorhit", ListenDurableConsume) -- 监听护甲受损
-            end
-        end
-
-        -- 武器
-        local weapon = owner.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
-        if weapon and (weapon:HasTag("taxue_ultimate_weapon") and weapon.components.fueled) then
-            if not weapon:HasTag("ListenDurableConsume") then
-                weapon:AddTag("ListenDurableConsume")
-                weapon:ListenForEvent("percentusedchange", ListenFueledChange)
-            end
+local function onHealthdelta(owner, data)
+    if enableHeal then
+        if not (owner and owner.components and owner.components.health and owner.components.eater) then return end
+        local health = owner.components.health
+        local eater = owner.components.eater
+        if (TaxuePatch.cfg.AUTO_AMULET_HEAL_NUM and health.currenthealth < TaxuePatch.cfg.AUTO_AMULET_HEAL_NUM) or
+            (TaxuePatch.cfg.AUTO_AMULET_HEAL_PER and data.newpercent < TaxuePatch.cfg.AUTO_AMULET_HEAL_PER) then
+            local health_agentia = GetOne(owner, "health_agentia")
+            if health_agentia then eater:Eat(health_agentia) end
         end
     end
 end
 
-local function addListeners(owner)
-    if not owner:HasTag("auto_amulet") then
-        owner.AnimState:OverrideSymbol("swap_body", "torso_amulets", "orangeamulet")
-        owner:AddTag("auto_amulet")
+TheInput:AddKeyDownHandler(TaxuePatch.cfg.AUTO_AMULET_HEAL_KEY, function()
+    enableHeal = not enableHeal
+    TaXueSay(enableHeal and "自动喝血启用" or "自动喝血禁用")
+end)
 
-        owner:ListenForEvent("equip", OwnerOnEquip)
-        owner:ListenForEvent("unequip", OwnerUnEquip)
-        owner:ListenForEvent("temperaturedelta", onTemperaturedelta)
-    end
-end
+local Listeners = {
+    equip = OwnerOnEquip,
+    unequip = OwnerUnEquip,
+    temperaturedelta = onTemperaturedelta,
+    healthdelta = onHealthdelta,
+}
 
 -- 穿戴护符
-local function OnEquip(_, owner)
-    addListeners(owner)
-    Init(owner)
+local function OnEquip(self, owner)
+    owner:AddTag("auto_amulet")
+    owner.AnimState:OverrideSymbol("swap_body", "torso_amulets", "orangeamulet")
+
+    for event, fn in pairs(Listeners) do
+        owner:ListenForEvent(event, fn)
+    end
+
+    if owner and owner.components then
+        if owner.components.inventory then
+            for _, eslot in pairs(EQUIPSLOTS) do
+                local item = owner.components.inventory:GetEquippedItem(eslot)
+                OwnerOnEquip(owner, { item = item, eslot = eslot })
+            end
+        end
+        if self.level > 0 then
+            if owner.components.health then
+                self.fire_damage_scale = owner.components.health.fire_damage_scale
+                owner.components.health.fire_damage_scale = 0
+            end
+        end
+    end
 end
 
 -- 脱下护符
-local function OnUnEquip(_, owner)
-    owner.AnimState:ClearOverrideSymbol("swap_body")
+local function OnUnEquip(self, owner)
     owner:RemoveTag("auto_amulet")
+    owner.AnimState:ClearOverrideSymbol("swap_body")
 
-    owner:RemoveEventCallback("equip", OwnerOnEquip)
-    owner:RemoveEventCallback("unequip", OwnerUnEquip)
-    owner:RemoveEventCallback("temperaturedelta", onTemperaturedelta)
+    for event, fn in pairs(Listeners) do
+        owner:RemoveEventCallback(event, fn)
+    end
+
+    if owner and owner.components and owner.components.inventory then
+        for _, eslot in pairs(EQUIPSLOTS) do
+            local item = owner.components.inventory:GetEquippedItem(eslot)
+            OwnerUnEquip(owner, { item = item, eslot = eslot })
+        end
+    end
+
+    if self.fire_damage_scale then
+        owner.components.health.fire_damage_scale = self.fire_damage_scale
+        self.fire_damage_scale = nil
+    end
 end
 
--- 存档加载
-local function OnLoad(inst, _)
-    if inst.components.inventoryitem.owner then
-        addListeners(inst.components.inventoryitem.owner)
-        Init(inst.components.inventoryitem.owner)
+local function ShouldAcceptItem(inst, item)
+    if not (inst.components and inst.components.inventoryitem and inst.components.inventoryitem.owner) then return false end
+    local owner = inst.components.inventoryitem.owner
+    if not (owner.components and owner.components.inventory) then return false end
+    local inventory = owner.components.inventory
+    if inst.level < 1 and item.prefab == "perpetual_core" then
+        local result = true
+        for name, amount in pairs(inst.upgradeMaterials) do
+            result = result and inventory:Has(name, amount, true)
+        end
+        return result
     end
+    return false
+end
+
+local function OnGetItemFromPlayer(inst, giver, item)
+    local inventory = giver.components and giver.components.inventory
+    for name, amount in pairs(inst.upgradeMaterials) do
+        inventory:ConsumeByName(name, amount, true)
+    end
+    inst.level = inst.level + 1
+    TaXueSay("护符升级成功")
+    inst.SoundEmitter:PlaySound("onupdate/sfx/onupdate")
+    inst.components.equippable.walkspeedmult = 0.2
+    if inst.components.inventoryitem.owner then
+        OnUnEquip(inst, inst.components.inventoryitem.owner)
+        OnEquip(inst, inst.components.inventoryitem.owner)
+    end
+end
+
+local function OnRefuseItem(inst, giver, item)
+    local str
+    if inst.level < 1 and item.prefab == "perpetual_core" then
+        str = "升级材料缺失:\n"
+        local inventory = giver.components and giver.components.inventory
+        for name, amount in pairs(inst.upgradeMaterials) do
+            if inventory then
+                amount = math.max(0, amount - inventory:Count(name, true))
+            end
+            if amount > 0 then
+                str = str .. " " .. TaxueToChs(name) .. "X" .. amount
+            end
+        end
+    else
+        str = "使用永动机核心升级"
+    end
+    TaXueSay(str)
+end
+
+local dataItems = { "level", "fire_damage_scale", "cantdrop" }
+
+local function OnSave(self, data)
+    for _, dataItem in pairs(dataItems) do
+        if self[dataItem] then data[dataItem] = self[dataItem] end
+    end
+    data.walkspeedmult = self.components.equippable.walkspeedmult
+end
+
+local function OnLoad(self, data)
+    for _, dataItem in pairs(dataItems) do
+        if data[dataItem] then self[dataItem] = data[dataItem] end
+    end
+    self.components.equippable.walkspeedmult = data.walkspeedmult
 end
 
 local assets = {
@@ -246,6 +318,13 @@ local function fn()
     MakeInventoryFloatable(inst, "orangeamulet_water", "orangeamulet")
 
     inst:AddComponent("inspectable")
+    inst.components.inspectable.description = function(inst, viewer)
+        local desc = GetDescription(string.upper(viewer.prefab), inst, inst.components.inspectable:GetStatus(viewer))
+        if inst.level < 1 then
+            desc = desc .. "\t可使用永动机核心升级,当前等级: " .. inst.level
+        end
+        return desc
+    end
 
     -- 可装备
     inst:AddComponent("equippable")
@@ -262,10 +341,24 @@ local function fn()
     inst.components.inventoryitem.atlasname = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
     inst.components.inventoryitem.foleysound = "dontstarve/movement/foley/jewlery"
 
+    inst:AddComponent("trader")
+    inst.components.trader.acceptnontradable = true
+    inst.components.trader:SetAcceptTest(ShouldAcceptItem)
+    inst.components.trader.onaccept = OnGetItemFromPlayer
+    inst.components.trader.onrefuse = OnRefuseItem
+
     inst:AddTag("taxue")
     inst:AddTag("taxue_ultimate_armor_auto_amulet")
 
+    inst.OnSave = OnSave
     inst.OnLoad = OnLoad
+
+    inst.level = 0
+    inst.upgradeMaterials = {
+        chest_essence = 10,
+        thulecite = 20,
+        greengem = 20
+    }
 
     return inst
 end

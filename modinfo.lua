@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.14"
+version = "3.80.15"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -193,8 +193,8 @@ configuration_options = {
     },
     {
         name = "BUFF_STAFF_SPEED",
-        label = "增强速度",
-        hover = "湛青/五彩/锻造法杖提高的速度,五彩法杖提高的速度为湛青的7/5倍",
+        label = "湛青增强速度",
+        hover = "湛青/锻造法杖提高的速度",
         options = {
             { description = "20%(默认)", data = 0.2 },
             { description = "35%", data = 0.35 },
@@ -205,6 +205,21 @@ configuration_options = {
             { description = "300%", data = 3 },
         },
         default = 0.2,
+    },
+    {
+        name = "COLOURFUL_STAFF_SPEED",
+        label = "增强速度",
+        hover = "五彩法杖提高的速度",
+        options = {
+            { description = "20%", data = 0.2 },
+            { description = "35%(默认)", data = 0.35 },
+            { description = "50%", data = 0.5 },
+            { description = "75%", data = 0.75 },
+            { description = "100%", data = 1 },
+            { description = "150%", data = 1.5 },
+            { description = "300%", data = 3 },
+        },
+        default = 0.35,
     },
     {
         name = "BUFF_STAFF_MULT",
@@ -387,5 +402,77 @@ configuration_options = {
             { description = "禁用", data = false },
         },
         default = true,
+    },
+    {
+        name = "AUTO_AMULET_HEAL",
+        label = "护符自动喝血",
+        hover = "终极自动护符自动喝血量药剂",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "AUTO_AMULET_HEAL_KEY",
+        label = "自动喝血按键",
+        hover = "终极自动护符禁用自动喝血按键",
+        options = {
+            { description = "小键盘0", data = 256 },
+            { description = "小键盘1", data = 257 },
+            { description = "小键盘2", data = 258 },
+            { description = "小键盘3", data = 259 },
+            { description = "小键盘4", data = 260 },
+            { description = "小键盘5", data = 261 },
+            { description = "小键盘6", data = 262 },
+            { description = "小键盘7", data = 263 },
+            { description = "小键盘8", data = 264 },
+            { description = "小键盘9", data = 265 },
+            { description = "小键盘.", data = KEY_KP_PERIOD },
+            { description = "小键盘/", data = KEY_KP_DIVIDE },
+            { description = "小键盘*", data = KEY_KP_MULTIPLY },
+            { description = "小键盘-", data = KEY_KP_MINUS },
+            { description = "小键盘+", data = KEY_KP_PLUS },
+            { description = "小键盘Enter", data = KEY_KP_ENTER },
+        },
+        default = 256,
+    },
+    {
+        name = "AUTO_AMULET_HEAL_NUM",
+        label = "自动喝血触发值",
+        hover = "当血量低于此值时自动使用血量药剂",
+        options = {
+            { description = "10", data = 10 },
+            { description = "20", data = 20 },
+            { description = "30", data = 30 },
+            { description = "40", data = 40 },
+            { description = "50", data = 50 },
+            { description = "60", data = 60 },
+            { description = "70", data = 70 },
+            { description = "80", data = 80 },
+            { description = "90", data = 90 },
+            { description = "100", data = 100 },
+            { description = "禁用", data = false },
+        },
+        default = 30,
+    },
+    {
+        name = "AUTO_AMULET_HEAL_PER",
+        label = "自动喝血触发百分比",
+        hover = "当血量低于此百分比时自动使用血量药剂",
+        options = {
+            { description = "10%", data = 0.10 },
+            { description = "20%", data = 0.20 },
+            { description = "30%", data = 0.30 },
+            { description = "40%", data = 0.40 },
+            { description = "50%", data = 0.50 },
+            { description = "60%", data = 0.60 },
+            { description = "70%", data = 0.70 },
+            { description = "80%", data = 0.80 },
+            { description = "90%", data = 0.90 },
+            { description = "100%", data = 1.00 },
+            { description = "禁用", data = false },
+        },
+        default = 0.5,
     },
 }

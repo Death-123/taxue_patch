@@ -140,9 +140,9 @@ if taxueEnabled and cfg.AUTO_AMULET then
         if GetPlayer().prefab == "taxue" then
             Recipe("taxue_ultimate_armor_auto_amulet",
                 {
-                    Ingredient("chest_essence", 10, "images/inventoryimages/chest_essence.xml"),
-                    Ingredient("thulecite", 20),
-                    Ingredient("greengem", 10)
+                    Ingredient("chest_essence", 5, "images/inventoryimages/chest_essence.xml"),
+                    Ingredient("thulecite", 10),
+                    Ingredient("greengem", 5)
                 },
                 RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
         end
@@ -692,7 +692,7 @@ if cfg.BUFF_STAFF then
             ]]
     })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER, inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED / 4 * 7, nil),     --彩虹法杖-冰箱背包升级]]) })
+    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff", TaxuePatch.cfg.COLOURFUL_STAFF_SPEED, nil),     --彩虹法杖-冰箱背包升级]]) })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),            --湛青法杖-武器升级]]) })
     addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),     --锻造法杖]]) })
 end
