@@ -134,21 +134,6 @@ local taxuePath = "../mods/" .. taxueName .. "/"
 TaxuePatch.modRoot = modPath
 PrefabFiles = {}
 
-if taxueEnabled and cfg.AUTO_AMULET then
-    table.insert(PrefabFiles, "taxue_ultimate_armor_auto_amulet")
-    AddPlayerPostInit(function()
-        if GetPlayer().prefab == "taxue" then
-            Recipe("taxue_ultimate_armor_auto_amulet",
-                {
-                    Ingredient("chest_essence", 5, "images/inventoryimages/chest_essence.xml"),
-                    Ingredient("thulecite", 10),
-                    Ingredient("greengem", 5)
-                },
-                RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
-        end
-    end)
-end
-
 local PATCHS = {
     --库
     -- ["scripts/patchlib.lua"] = { mode = "override" },
@@ -257,6 +242,8 @@ local function patchFile(filePath, data)
             end
         end
         file:close()
+        local endLine = oringinContents[#oringinContents]
+        if endLine and endLine:sub(#endLine) == "\r" then oringinContents[#oringinContents] = oringinContents[#oringinContents] .. "\n" end
     end
     print("------------------------")
     print(filePath)
@@ -826,6 +813,7 @@ if cfg.DORP_ASH then
     end)
 end
 
+--内存清理
 if cfg.INGAMEGC then
     AddPlayerPostInit(function(player)
         player:DoPeriodicTask(cfg.INGAMEGC * 60, function()
@@ -835,6 +823,23 @@ if cfg.INGAMEGC then
             end
         end)
     end)
+end
+
+--自动护符
+if taxueEnabled and cfg.AUTO_AMULET then
+    table.insert(PrefabFiles, "taxue_ultimate_armor_auto_amulet")
+    AddPlayerPostInit(function()
+        if GetPlayer().prefab == "taxue" then
+            Recipe("taxue_ultimate_armor_auto_amulet",
+                {
+                    Ingredient("chest_essence", 5, "images/inventoryimages/chest_essence.xml"),
+                    Ingredient("thulecite", 10),
+                    Ingredient("greengem", 5)
+                },
+                RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
+        end
+    end)
+    addPatch("scripts/prefabs/taxue_equipment.lua", {index = 115})
 end
 
 local customPatch = kleiloadlua(modPath .. "custompatch.lua")()

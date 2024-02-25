@@ -24,37 +24,64 @@ end
 
 -- 查找修复材料
 local function FindAllInventory(owner, test)
-    local found
     if owner and owner.components and owner.components.inventory then
+        local inventory = owner.components.inventory
         -- 物品栏
-        if owner.components.inventory.itemslots then
-            found = findItem(owner.components.inventory.itemslots, test)
+        if inventory.itemslots then
+            local found = findItem(inventory.itemslots, test)
+            if found then return found, inventory end
         end
-        if found then return found end
         -- 背包栏
-        if owner.components.inventory.equipslots then
-            local back = owner.components.inventory.equipslots[EQUIPSLOTS.BACK]
+        if inventory.equipslots then
+            local back = inventory.equipslots[EQUIPSLOTS.BACK]
             if back and back.components and back.components.container then
-                found = findItem(back.components.container.slots, test)
+                local found = findItem(back.components.container.slots, test)
+                if found then return found, back.components.container end
             end
         end
     end
-    return found
 end
 
 local function GetOne(owner, test)
-    local repairMaterial = FindAllInventory(owner, test)
-    if repairMaterial and repairMaterial.components.stackable then
-        repairMaterial = repairMaterial.components.stackable:Get()
+    local item, container = FindAllInventory(owner, test)
+    if item and item.components.stackable then
+        local stackable = item.components.stackable
+        if stackable.stacksize > 1 then
+            local instance = SpawnPrefab(item.prefab)
+
+            stackable:SetStackSize(stackable.stacksize - 1)
+            instance.components.stackable:SetStackSize(1)
+
+            if stackable.ondestack then
+                stackable.ondestack(instance)
+            end
+
+            if instance.components.perishable then
+                instance.components.perishable.perishremainingtime = item.components.perishable.perishremainingtime
+            end
+
+            if instance.components.inventoryitem ~= nil and item.components.inventoryitem ~= nil then
+                if item.components.inventoryitem.owner then
+                    instance.components.inventoryitem:OnPutInInventory(item.components.inventoryitem.owner)
+                end
+
+                item:ApplyInheritedMoisture(instance)
+            end
+
+            return instance
+        end
     end
-    return repairMaterial
+    if item then
+        container:RemoveItem(item)
+    end
+    return item
 end
 
 -- 监听耐久消耗
 local function ListenDurableConsume(inst, ...)
     local owner = inst.components.inventoryitem.owner
     if owner and owner:HasTag("auto_amulet") then
-        if inst.components.armor:GetPercent() < 0.7 then
+        if TaxuePatch.cfg.AUTO_AMULET_ARMOR and inst.components.armor:GetPercent() < TaxuePatch.cfg.AUTO_AMULET_ARMOR then
             local repairMaterial = GetOne(owner, "core_gem")
             if repairMaterial then
                 inst.components.trader:AcceptGift(owner, repairMaterial)
@@ -70,7 +97,7 @@ end
 local function ListenFueledChange(inst, data)
     local owner = inst.components.inventoryitem.owner
     if owner:HasTag("auto_amulet") then
-        if data.percent < 0.5 then
+        if TaxuePatch.cfg.AUTO_AMULET_WEAPON and data.percent < TaxuePatch.cfg.AUTO_AMULET_WEAPON then
             if inst.components.fueled then
                 local inst_fueled = inst.components.fueled
                 local repairMaterial = GetOne(owner, function(item) return inst_fueled:CanAcceptFuelItem(item) end)
@@ -164,11 +191,15 @@ local function onHealthdelta(owner, data)
     if enableHeal then
         if not (owner and owner.components and owner.components.health and owner.components.eater) then return end
         local health = owner.components.health
-        local eater = owner.components.eater
+        if health.currenthealth == health.maxhealth or not data.cause then return end
         if (TaxuePatch.cfg.AUTO_AMULET_HEAL_NUM and health.currenthealth < TaxuePatch.cfg.AUTO_AMULET_HEAL_NUM) or
             (TaxuePatch.cfg.AUTO_AMULET_HEAL_PER and data.newpercent < TaxuePatch.cfg.AUTO_AMULET_HEAL_PER) then
             local health_agentia = GetOne(owner, "health_agentia")
-            if health_agentia then eater:Eat(health_agentia) end
+            if health_agentia and health_agentia.components.edible then
+                health:DoDelta(health_agentia.components.edible.healthvalue, nil, health_agentia.prefab)
+                data.newpercent = health:GetPercent()
+                health_agentia:Remove()
+            end
         end
     end
 end
@@ -257,8 +288,8 @@ local function OnGetItemFromPlayer(inst, giver, item)
     inst.SoundEmitter:PlaySound("onupdate/sfx/onupdate")
     inst.components.equippable.walkspeedmult = 0.2
     if inst.components.inventoryitem.owner then
-        OnUnEquip(inst, inst.components.inventoryitem.owner)
-        OnEquip(inst, inst.components.inventoryitem.owner)
+        inst.components.equippable:Unequip(inst.components.inventoryitem.owner)
+        inst.components.equippable:Equip(inst.components.inventoryitem.owner)
     end
 end
 
