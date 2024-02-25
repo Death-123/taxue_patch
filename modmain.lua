@@ -194,6 +194,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
     --超级建造护符
     ["scripts/prefabs/taxue_greenamulet.lua"] = { md5 = "9cd5d16770da66120739a4b260f23b4d", lines = {} },
+    ["scripts/prefabs/taxue_agentia_compressor.lua"] = { md5 = "a4d92b944eb75c53a8280966ee18ef79", lines = {} },
 }
 
 --#region
@@ -591,6 +592,58 @@ if cfg.FILLABLE then
             type = "add",
             content = [[        end]]
         },
+    })
+    --药水压缩机压宝箱药水
+    addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", {
+        {
+            index = 33,
+            type = "add",
+            content = [[    local chest_agentia_num = inst.components.container:Count("chest_agentia")]]
+        },
+        {
+            index = 66,
+            type = "add",
+            content = [[
+    if chest_agentia_num > 0 then
+        local list = {
+            { "locked_corkchest",            "corkchest_key" },
+            { "locked_treasurechest",        "treasurechest_key" },
+            { "locked_skullchest",           "skullchest_key" },
+            { "locked_pandoraschest",        "pandoraschest_key" },
+            { "locked_minotaurchest",        "minotaurchest_key" },
+            { "locked_taxue_terrariumchest", "terrarium_key" },
+            { "locked_taxue_poisonchest",    "poison_key" },
+
+            { "mini_pandoraschest",          "crystal_ball_taxue" }, --箱中箱
+        }
+        local keys = {}
+        for _ = 1, chest_agentia_num do
+            local chest_list = list[math.random(#list)]
+            TaxuePatch.ListAdd(keys, chest_list[2])
+            local chest
+            if chest_list[1] == "mini_pandoraschest" then --箱中箱特殊处理，这里需要手动添加物品
+                chest = SpawnPrefab(chest_list[1])
+                for _, v in ipairs(chest.advance_list) do
+                    local item = SpawnPrefab(v)                   --预制表内的物品
+                    if item ~= nil then
+                        chest.components.container:GiveItem(item) --刷物品进箱子
+                    end
+                end
+            else
+                chest = SpawnPrefab(chest_list[1])
+            end
+            if chest then
+                local angle = math.random() * 2 * PI
+                chest.Transform:SetPosition((Vector3(inst.Transform:GetWorldPosition()) + Vector3(math.cos(angle), 0, math.sin(angle)) * 5):Get())
+                TaxueFx(chest, "statue_transition_2") --犀牛刷宝箱扒拉特效
+                TaxueFx(chest, "statue_transition") --犀牛嗖~霹雳特效
+            end
+        end
+        TaxuePatch.StackDrops(inst, keys)
+        inst.SoundEmitter:PlaySound("dontstarve/common/ghost_spawn")
+        GetPlayer().components.autosaver:DoSave()
+    end]]
+        }
     })
 end
 

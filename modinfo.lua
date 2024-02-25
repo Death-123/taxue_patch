@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.15"
+version = "3.80.16"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -208,7 +208,7 @@ configuration_options = {
     },
     {
         name = "COLOURFUL_STAFF_SPEED",
-        label = "增强速度",
+        label = "五彩增强速度",
         hover = "五彩法杖提高的速度",
         options = {
             { description = "20%", data = 0.2 },

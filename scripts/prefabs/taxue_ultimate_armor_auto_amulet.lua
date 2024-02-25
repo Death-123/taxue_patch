@@ -61,7 +61,7 @@ local function ListenDurableConsume(inst, ...)
             end
         end
     else
-        inst:RemoveTag("ListenDurableConsume")
+        inst:RemoveTag("auto_amulet")
         inst:RemoveEventCallback("armorhit", ListenDurableConsume)
     end
 end
@@ -86,7 +86,7 @@ local function ListenFueledChange(inst, data)
             end
         end
     else
-        inst:RemoveTag("ListenDurableConsume")
+        inst:RemoveTag("auto_amulet")
         inst:RemoveEventCallback("percentusedchange", ListenFueledChange)
     end
 end
@@ -96,8 +96,8 @@ local function OwnerOnEquip(owner, data)
     local item = data.item
     local eslot = data.eslot
     if not (item and eslot) then return end
-    if item:HasTag("ListenDurableConsume") then return end
-    item:AddTag("ListenDurableConsume")
+    if item:HasTag("auto_amulet") then return end
+    item:AddTag("auto_amulet")
 
     -- 武器
     if eslot == EQUIPSLOTS.HANDS then
@@ -124,8 +124,8 @@ local function OwnerUnEquip(owner, data)
     local item = data.item
     local eslot = data.eslot
     if not (item and eslot) then return end
-    if not item:HasTag("ListenDurableConsume") then return end
-    item:RemoveTag("ListenDurableConsume")
+    if not item:HasTag("auto_amulet") then return end
+    item:RemoveTag("auto_amulet")
     -- 武器
     if eslot == EQUIPSLOTS.HANDS then
         item:RemoveEventCallback("percentusedchange", ListenFueledChange)
@@ -198,7 +198,7 @@ local function OnEquip(self, owner)
         if owner.components.inventory then
             for _, eslot in pairs(EQUIPSLOTS) do
                 local item = owner.components.inventory:GetEquippedItem(eslot)
-                OwnerOnEquip(owner, { item = item, eslot = eslot })
+                Listeners.equip(owner, { item = item, eslot = eslot })
             end
         end
         if self.level > 0 then
@@ -222,7 +222,7 @@ local function OnUnEquip(self, owner)
     if owner and owner.components and owner.components.inventory then
         for _, eslot in pairs(EQUIPSLOTS) do
             local item = owner.components.inventory:GetEquippedItem(eslot)
-            OwnerUnEquip(owner, { item = item, eslot = eslot })
+            Listeners.unequip(owner, { item = item, eslot = eslot })
         end
     end
 

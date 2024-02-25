@@ -186,7 +186,7 @@ function CreateEntity() end
 ---@field entity entity
 ---@field name string|nil
 ---@field GUID integer
----@field components table[]
+---@field components table
 ---@field spawntime integer
 ---@field age integer
 ---@field persists boolean

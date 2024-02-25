@@ -662,43 +662,43 @@ function SellPavilionSellItems(inst)
     local coins = 0
     local itemCount = 0
     local lastItem
+    local COINS = {
+        taxue_coin = 100,
+        taxue_coin_silver = 1,
+        taxue_coin_copper = 0.01,
+    }
     for slot, item in pairs(slots) do
         if item then
             itemCount = itemCount + 1
             lastItem = item
-        end
-        local amount = 1
-        if item and item.components.stackable then
-            amount = item.components.stackable.stacksize
-        end
-        if item and item.prefab == "taxue_coin" then
-            coinList[slot] = item
-        elseif item and item.prefab == "taxue_coin_silver" then
-            coinList[slot] = item
-        elseif item and item.prefab == "taxue_coin_copper" then
-            coinList[slot] = item
-        elseif item and item.prefab == "gold_brick" then
-            coinList[slot] = item
-        elseif item and item.taxue_coin_value then
-            --物品价值
-            local taxue_coin_value = item.taxue_coin_value
-            --有耐久，根据耐久百分比替换价值
-            if item.components.finiteuses then
-                local percent = item.components.finiteuses:GetPercent()
-                taxue_coin_value = taxue_coin_value * percent
-            end
-            --有护甲值
-            if item.components.armor then
-                local percent = item.components.armor:GetPercent()
-                taxue_coin_value = taxue_coin_value * percent
-            end
 
-            coins = coins + taxue_coin_value * amount
+            local amount = 1
+            if item.components.stackable then
+                amount = item.components.stackable.stacksize
+            end
+            if COINS[item.prefab] or item.prefab == "gold_brick" then
+                coinList[slot] = item
+            elseif item.taxue_coin_value then
+                --物品价值
+                local taxue_coin_value = item.taxue_coin_value
+                --有耐久，根据耐久百分比替换价值
+                if item.components.finiteuses then
+                    local percent = item.components.finiteuses:GetPercent()
+                    taxue_coin_value = taxue_coin_value * percent
+                end
+                --有护甲值
+                if item.components.armor then
+                    local percent = item.components.armor:GetPercent()
+                    taxue_coin_value = taxue_coin_value * percent
+                end
 
-            --移除物品
-            container:RemoveItemBySlot(slot):Remove()
-        elseif item and cfg.SELL_PAVILION == "bank" and item.prefab == "taxue_diamond" then
-            diamond = item
+                coins = coins + taxue_coin_value * amount
+
+                --移除物品
+                container:RemoveItemBySlot(slot):Remove()
+            elseif cfg.SELL_PAVILION == "bank" and item.prefab == "taxue_diamond" then
+                diamond = item
+            end
         end
     end
     if itemCount == 1 and lastItem.prefab == "gold_brick" then return end
@@ -706,12 +706,8 @@ function SellPavilionSellItems(inst)
     local tempCoins = 0
     for slot, coin in pairs(coinList) do
         local amount = coin.components.stackable and coin.components.stackable.stacksize or 1
-        if coin.prefab == "taxue_coin" then
-            tempCoins = tempCoins + amount * 100
-        elseif coin.prefab == "taxue_coin_silver" then
-            tempCoins = tempCoins + amount
-        elseif coin.prefab == "taxue_coin_copper" then
-            tempCoins = tempCoins + amount * 0.01
+        if COINS[coin.prefab] then
+            tempCoins = tempCoins + amount * COINS[coin.prefab]
         elseif coin.prefab == "gold_brick" then
             tempCoins = tempCoins + coin.taxue_coin_value
         end
@@ -725,9 +721,6 @@ function SellPavilionSellItems(inst)
         playSound = true
         --如果不是禁用,并且金额大于500梅币
     elseif cfg.SELL_PAVILION and coins + tempCoins >= 50000 then
-        if table.count(coinList) == 1 and ({ next(coinList) })[2].prefab == "gold_brick" then
-            return
-        end
         RemoveSlotsItems(container, coinList)
         local goldBrick = SpawnPrefab("gold_brick")
         goldBrick.taxue_coin_value = coins + tempCoins
@@ -874,7 +867,7 @@ function AddTreasuresToPackage(package, treasures)
         str = str .. "\n"
     end
     package:AddComponent("talker")
-    package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255, 1)
+    package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
     package.components.talker.offset = Vector3(0, 100, 0)
     package.components.talker:Say(str, 10)
     package:RemoveComponent("talker")
