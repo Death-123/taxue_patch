@@ -151,6 +151,7 @@ Colors = {
     orange = RGBAColor(255, 165, 0),
     pink = RGBAColor(255, 20, 147),
     lime = RGBAColor(144, 238, 144),
+    grey = RGBAColor(128, 128, 128),
 }
 --#endregion
 

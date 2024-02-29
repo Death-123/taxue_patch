@@ -2,5 +2,8 @@
 --     mprint(i,j,type(j)=="function" and getArgs(j) or "")
 -- end
 
-
-for i,j in pairs(TextEditWidget) do mprint(i,j) end
+TaxuePatch.ControlPanel1 = TaxuePatch.ControlPanel()
+TaxuePatch.button = TaxuePatch.SomniumButton()
+TaxuePatch.button:SetImage()
+TaxuePatch.ControlPanel1:AddContent(TaxuePatch.button)
+Mainscreen:AddChild(TaxuePatch.ControlPanel1)

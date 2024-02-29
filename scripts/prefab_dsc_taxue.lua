@@ -524,7 +524,25 @@ local function getItemInfo(target)
     end
     --批量召唤书
     if target.prefab == "book_batch_summon" then
-        Info:Add("召唤物：" .. (#target.monster_list) .. " 只")
+        if #target.monster_list > 0 then
+            if not (target.monsterNum and target.monsterNum == #target.monster_list) then
+                target.monsterNum = #target.monster_list
+                target.monsterNumList = {}
+                for _, monster in pairs(target.monster_list) do
+                    target.monsterNumList[monster] = target.monsterNumList[monster] and target.monsterNumList[monster] + 1 or 1
+                end
+            end
+        end
+        local nameMap = {
+            moose = "鹿鸭"
+        }
+        local lineNum = 1
+        for name, num in pairs(target.monsterNumList) do
+            -- if lineNum > (TaxuePatch.cfg.PACKAGE_DES_MAX_LINES or 10) then break end
+            lineNum = lineNum + 1
+            Info:Add(("召唤物-%s: %d只"):format(TaxueToChs(name) or nameMap[name] or name, num))
+        end
+        Info:Add("召唤物总计：" .. (#target.monster_list) .. " 只")
     end
     --超级书time类
     if target.time then

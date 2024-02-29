@@ -866,11 +866,11 @@ function AddTreasuresToPackage(package, treasures)
         end
         str = str .. "\n"
     end
-    package:AddComponent("talker")
+    if not package.components.talker then package:AddComponent("talker") end
     package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
     package.components.talker.offset = Vector3(0, 100, 0)
     package.components.talker:Say(str, 10)
-    package:RemoveComponent("talker")
+    package:ListenForEvent( "onremove", function() package.components.talker:ShutUp() end )
 end
 
 TaxuePatch.AddTreasuresToPackage = AddTreasuresToPackage

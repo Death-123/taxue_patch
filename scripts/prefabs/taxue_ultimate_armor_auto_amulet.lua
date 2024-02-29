@@ -77,6 +77,15 @@ local function GetOne(owner, test)
     return item
 end
 
+local function GetAutoAmulet(owner)
+    if owner and owner.components and owner.components.inventory then
+        local equipslots = owner.components.inventory.equipslots
+        for _, item in pairs(equipslots) do
+            if item.prefab == "taxue_ultimate_armor_auto_amulet" then return item end
+        end
+    end
+end
+
 -- 监听耐久消耗
 local function ListenDurableConsume(inst, ...)
     local owner = inst.components.inventoryitem.owner
@@ -99,16 +108,19 @@ local function ListenFueledChange(inst, data)
     if owner:HasTag("auto_amulet") then
         if TaxuePatch.cfg.AUTO_AMULET_WEAPON and data.percent < TaxuePatch.cfg.AUTO_AMULET_WEAPON then
             if inst.components.fueled then
-                local inst_fueled = inst.components.fueled
-                local repairMaterial = GetOne(owner, function(item) return inst_fueled:CanAcceptFuelItem(item) end)
+                local fueled = inst.components.fueled
+                local repairMaterial = GetOne(owner, function(item) return fueled:CanAcceptFuelItem(item) end)
                 if repairMaterial then
-                    inst_fueled:TakeFuelItem(repairMaterial)
+                    fueled:TakeFuelItem(repairMaterial)
+                    data.percent = fueled:GetPercent()
+                    data.fuel = fueled.currentfuel
                 end
             elseif inst.components.finiteuses then
                 local repairMaterial = inst.prefab == "pink_crescent_sword" and "pink_core_gem" or "core_gem"
                 repairMaterial = GetOne(owner, repairMaterial)
                 if repairMaterial then
                     inst.components.trader:AcceptGift(owner, repairMaterial)
+                    data.percent = inst.components.finiteuses:GetPercent()
                 end
             end
         end
@@ -122,6 +134,8 @@ end
 local function OwnerOnEquip(owner, data)
     local item = data.item
     local eslot = data.eslot
+    local amulet = data.amulet or GetAutoAmulet(owner)
+    if not amulet then return end
     if not (item and eslot) then return end
     if item:HasTag("auto_amulet") then return end
     item:AddTag("auto_amulet")
@@ -131,8 +145,8 @@ local function OwnerOnEquip(owner, data)
         if item:HasTag("taxue_ultimate_weapon") then
             item:ListenForEvent("percentusedchange", ListenFueledChange)
         end
-        if owner.level > 0 and not item:HasTag("cantdrop") then
-            owner.cantdrop = true
+        if amulet.level > 0 and not item:HasTag("cantdrop") then
+            amulet.cantdrop = true
             item:AddTag("cantdrop")
         end
 
@@ -150,14 +164,16 @@ end
 local function OwnerUnEquip(owner, data)
     local item = data.item
     local eslot = data.eslot
+    local amulet = data.amulet or GetAutoAmulet(owner)
+    if not amulet then return end
     if not (item and eslot) then return end
     if not item:HasTag("auto_amulet") then return end
     item:RemoveTag("auto_amulet")
     -- 武器
     if eslot == EQUIPSLOTS.HANDS then
         item:RemoveEventCallback("percentusedchange", ListenFueledChange)
-        if owner.cantdrop then
-            owner.cantdrop = nil
+        if amulet.cantdrop then
+            amulet.cantdrop = nil
             item:RemoveTag("cantdrop")
         end
 
@@ -205,6 +221,7 @@ local function onHealthdelta(owner, data)
 end
 
 TheInput:AddKeyDownHandler(TaxuePatch.cfg.AUTO_AMULET_HEAL_KEY, function()
+    if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
     enableHeal = not enableHeal
     TaXueSay(enableHeal and "自动喝血启用" or "自动喝血禁用")
 end)
@@ -229,7 +246,7 @@ local function OnEquip(self, owner)
         if owner.components.inventory then
             for _, eslot in pairs(EQUIPSLOTS) do
                 local item = owner.components.inventory:GetEquippedItem(eslot)
-                Listeners.equip(owner, { item = item, eslot = eslot })
+                Listeners.equip(owner, { item = item, eslot = eslot, amulet = self })
             end
         end
         if self.level > 0 then
@@ -253,7 +270,7 @@ local function OnUnEquip(self, owner)
     if owner and owner.components and owner.components.inventory then
         for _, eslot in pairs(EQUIPSLOTS) do
             local item = owner.components.inventory:GetEquippedItem(eslot)
-            Listeners.unequip(owner, { item = item, eslot = eslot })
+            Listeners.unequip(owner, { item = item, eslot = eslot, amulet = self })
         end
     end
 

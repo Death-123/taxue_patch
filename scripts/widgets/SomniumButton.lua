@@ -13,9 +13,11 @@ local RGBAColor = SomniumUtil.RGBAColor
 ---@field image SomniumImage|nil
 ---@field clickoffset Vector3
 local SomniumButton = Class(SomniumWidget,
-    function(self)
+    function(self, width, height)
         ---@cast self SomniumButton
         SomniumWidget._ctor(self, "SomniumButton")
+        self.clickoffset = Vector3(0, -3, 0)
+        SomniumWidget.SetSize(self, width, height)
     end)
 
 
@@ -27,7 +29,6 @@ function SomniumButton:SetText(text)
 
         self.textcol = RGBAColor()
         self.textfocuscolour = RGBAColor()
-        self.clickoffset = Vector3(0, -3, 0)
     else
         if text then
             self.name = text or "SomniumButton"
@@ -58,6 +59,8 @@ function SomniumButton:SetImage(atlas, normal, focus, disabled)
     self.image_focus = focus or self.image_focus or normal
     self.image_disabled = disabled or self.image_disabled or normal
 
+    if self.image_focus == self.image_normal then self.scaleAnim = 1.2 end
+
     self:UpdateStatus()
 end
 
@@ -73,33 +76,28 @@ function SomniumButton:UpdateStatus()
         if self.text then
             if self.focus then
                 self.text:SetColour(self.textfocuscolour)
-                if self.scaleAnim then self.text:SetScale(self.scaleAnim) end
             else
                 self.text:SetColour(self.textcol)
-                if self.scaleAnim then self.text:SetScale(1) end
             end
         end
         if self.image then
             if self.focus then
                 self.image:SetTexture(self.atlas, self.image_focus)
-                self.image:SetSize(self:GetSize())
-                if self.scaleAnim then self.image:SetScale(self.scaleAnim) end
             else
                 self.image:SetTexture(self.atlas, self.image_normal)
-                self.image:SetSize(self:GetSize())
-                if self.scaleAnim then self.image:SetScale(1) end
             end
         end
     else
         if self.text then
             self.text:SetColour(self.textcol)
-            if self.scaleAnim then self.text:SetScale(1) end
         end
         if self.image then
             self.image:SetTexture(self.atlas, self.image_disabled)
-            self.image:SetSize(self:GetSize())
-            if self.scaleAnim then self.image:SetScale(1) end
         end
+    end
+    self:SetSize()
+    if self.scaleAnim then
+        self:SetScale(self:IsEnabled() and self.focus and self.scaleAnim or 1)
     end
 end
 
@@ -159,16 +157,7 @@ function SomniumButton:OnGainFocus()
     SomniumButton._base.OnGainFocus(self)
     if self:IsEnabled() then
         TheFrontEnd:GetSound():PlaySound("dontstarve/HUD/click_mouseover")
-
-        if self.text then
-            self.text:SetColour(self.textfocuscolour)
-        end
-        if self.image then
-            self.image:SetTexture(self.atlas, self.image_focus)
-            if self.image_focus == self.image_normal then
-                self.image:SetScale(1.2, 1.2, 1.2)
-            end
-        end
+        self:UpdateStatus()
     end
 end
 
@@ -177,16 +166,8 @@ function SomniumButton:OnLoseFocus()
     if self.o_pos then
         self:SetPosition(self.o_pos)
     end
-    if self.text then
-        self.text:SetColour(self.textcol)
-    end
-    if self.image then
-        self.image:SetTexture(self.atlas, self.image_normal)
-        if self.image_focus == self.image_normal then
-            self.image:SetScale(1, 1, 1)
-        end
-    end
     self.down = false
+    self:UpdateStatus()
 end
 
 function SomniumButton:SetFont(font)

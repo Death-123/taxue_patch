@@ -23,7 +23,6 @@ local SomniumWindow = Class(SomniumWidget,
         self.height = data.height or 300
         self.paddingX = data.paddingX or 40
         self.paddingY = data.paddingY or 42
-        self.screenScale = 1
         self.currentLineY = 0
         self.lineSpacing = data.lineSpacing or 10
         self.contents = {}
@@ -58,7 +57,6 @@ function SomniumWindow:SetAnchor(XY, anchor)
 end
 
 function SomniumWindow:SetPosition(...)
-    -- self.bg:SetPosition(...)
     SomniumWindow._base.SetPosition(self, ...)
 end
 
@@ -92,17 +90,18 @@ function SomniumWindow:SetTitle(title, font, size, color)
 end
 
 ---添加内容
----@param content SomniumWidget
+---@generic T
+---@param content T
 ---@param key? string
 ---@param contentHeight? number
----@return SomniumWidget
+---@return T
 function SomniumWindow:AddContent(content, key, contentHeight)
     local newContent = self:AddChild(content)
     if not contentHeight and newContent.GetSize then
         _, contentHeight = newContent:GetSize()
     end
     contentHeight = contentHeight or 100
-    newContent:SetOffset(nil, -self.paddingY - self.currentLineY - contentHeight / 2)
+    newContent:SetOffset(nil, self.height / 2 -self.paddingY - self.currentLineY - contentHeight / 2)
     self.currentLineY = self.currentLineY + contentHeight + self.lineSpacing
     if key then
         self.contents[key] = newContent
@@ -123,47 +122,11 @@ function SomniumWindow:NewLine(height)
 end
 
 function SomniumWindow:OnRawKey(key, down)
-    local flag = SomniumWindow._base.OnRawKey(self, key, down)
-    if not self.focus then return false end
-    return flag
+    if SomniumWindow._base.OnRawKey(self, key, down) then return true end
 end
 
 function SomniumWindow:OnControl(control, down)
-    local flag = SomniumWindow._base.OnControl(self, control, down)
-    if not self.focus then return false end
-    return flag
-end
-
-function SomniumWindow:AnimateSize(w, h, speed)
-    w = w or self.width
-    h = h or self.height
-    self.animTargetSize = { w = w, h = h }
-    self.animSpeed = speed or 5
-    self:SetUpdating("animateSize")
-end
-
-function SomniumWindow:OnUpdate(dt)
-    dt = dt or 0
-    SomniumWindow._base.OnUpdate(self, dt)
-    if self.animTargetSize and dt > 0 then
-        local w, h = self:GetSize()
-        if math.abs(w - self.animTargetSize.w) < 1 and math.abs(h - self.animTargetSize.h) < 1 then
-            self:SetSize(self.animTargetSize.w, self.animTargetSize.h)
-            self.animTargetSize = nil
-            self:RemoveUpdating("animateSize")
-        else
-            self:SetSize(SomniumUtil.Lerp(w, self.animTargetSize.w, self.animSpeed * dt), SomniumUtil.Lerp(h, self.animTargetSize.h, self.animSpeed * dt))
-        end
-    end
-    local widthScale = SomniumUtil.getWidthScal()
-    if widthScale ~= self.screenScale then
-        self.background:SetScale(widthScale)
-        local offset = self:GetOffset()
-        offset.x = offset.x * widthScale / self.screenScale
-        offset.y = offset.y * widthScale / self.screenScale
-        self:SetOffset(offset)
-        self.screenScale = widthScale
-    end
+    if SomniumWindow._base.OnControl(self, control, down) then return true end
 end
 
 return SomniumWindow

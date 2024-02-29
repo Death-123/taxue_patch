@@ -110,8 +110,9 @@ end
 
 require "publicList"
 TaxuePatch.patchlib = require "patchlib"
--- TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
--- TaxuePatch.ControlPanel = require "screens/controlPanel"
+TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
+TaxuePatch.SomniumButton = require "widgets/SomniumButton"
+TaxuePatch.ControlPanel = require "screens/controlPanel"
 
 local patchStr = "--patch "
 local patchVersionStr = modinfo.version
@@ -632,6 +633,34 @@ if cfg.FILLABLE then
     end]]
         }
     })
+    --点怪成金可以点召唤书
+    addPatch("scripts/prefabs/taxue_book.lua",
+        {
+            index = 695,
+            endIndex = 711,
+            content = [[
+            local goldenMap = {
+                bunnyman = "golden_bunnyman",
+                book_bunnyman = "golden_bunnyman",
+                pigman = "golden_pigman",
+                book_pigman = "golden_pigman",
+                pigguard = "golden_pigman",
+                wildbore = "golden_pigman",
+                book_rocky = "golden_rocky",
+            }
+            for __, v in pairs(ents) do
+                if v and goldenMap[v.prefab] then
+                    has = true
+                    local golden_monster = goldenMap[v.prefab]
+                    if v.components.health then
+                        v.components.lootdropper:SetLoot()
+                        v.components.health:Kill()	--先击杀保证猪人房能再次刷猪
+                    end
+                    SpawnPrefab("collapse_small").Transform:SetPosition(v.Transform:GetWorldPosition())  -- 生成摧毁动画并设坐标
+		            SpawnPrefab("lightning").Transform:SetPosition(v.Transform:GetWorldPosition())  -- 生成闪电动画并设坐标
+            ]]
+        }
+    )
 end
 
 --售货亭修改
@@ -839,7 +868,7 @@ if taxueEnabled and cfg.AUTO_AMULET then
                 RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
         end
     end)
-    addPatch("scripts/prefabs/taxue_equipment.lua", {index = 115})
+    addPatch("scripts/prefabs/taxue_equipment.lua", { index = 115 })
 end
 
 local customPatch = kleiloadlua(modPath .. "custompatch.lua")()

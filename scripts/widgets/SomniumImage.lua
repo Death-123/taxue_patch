@@ -1,4 +1,6 @@
 local SomniumWidget = require "widgets/SomniumWidget"
+local SomniumUtil = require "widgets/SomniumUtil"
+local RGBAColor = SomniumUtil.RGBAColor
 
 ---@class SomniumImage:SomniumWidget
 ---@overload fun(atlas:string, tex:string):SomniumImage
@@ -8,6 +10,7 @@ local SomniumWidget = require "widgets/SomniumWidget"
 ---@field tex string
 ---@field originWidth integer
 ---@field originHeight integer
+---@field color RGBAColor
 local SomniumImage = Class(SomniumWidget,
     function(self, atlas, tex)
         ---@cast self SomniumImage
@@ -15,6 +18,7 @@ local SomniumImage = Class(SomniumWidget,
 
         self.inst.entity:AddImageWidget()
         self.ImageWidget = self.inst.ImageWidget
+        self.color = RGBAColor()
 
         assert(atlas and tex)
 
@@ -88,9 +92,21 @@ end
 function SomniumImage:SetTint(ColorOrR, g, b, a)
     if type(ColorOrR) == "table" then
         self.ImageWidget:SetTint(ColorOrR.r, ColorOrR.g, ColorOrR.b, ColorOrR.a)
-    else
+    elseif ColorOrR then
         self.ImageWidget:SetTint(ColorOrR, g, b, a)
+    else
+        self.ImageWidget:SetTint(self.color.r, self.color.g, self.color.b, self.color.a)
     end
+end
+
+---设置颜色
+---@param ColorOrR number|RGBAColor
+---@param g? number
+---@param b? number
+---@param a? number
+function SomniumImage:SetColor(ColorOrR, g, b, a)
+    self.color = RGBAColor(ColorOrR, g, b, a)
+    self.ImageWidget:SetTint()
 end
 
 function SomniumImage:SetVRegPoint(anchor)

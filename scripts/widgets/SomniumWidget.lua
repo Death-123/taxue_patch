@@ -1,6 +1,7 @@
 local Widget = require "widgets/widget"
 local SomniumUtil = require "widgets/SomniumUtil"
 
+
 ---@class SomniumWidget:Widget
 ---@overload fun(name:string):SomniumWidget
 ---@field _ctor fun(self,name:string):SomniumWidget
@@ -9,9 +10,9 @@ local SomniumUtil = require "widgets/SomniumUtil"
 ---@field UITransform UITransform
 ---@field draggable boolean|nil
 ---@field dragging boolean|nil
----@field draggingPos Vector3
----@field keepTop boolean
----@field moveLayerTimer number
+---@field draggingPos Vector3|nil
+---@field keepTop boolean|nil
+---@field moveLayerTimer number|nil
 ---@field basePos Vector3
 ---@field offset Vector3
 ---@field position Vector3
@@ -19,17 +20,19 @@ local SomniumUtil = require "widgets/SomniumUtil"
 ---@field height number
 ---@field VAlign Aligns
 ---@field HAlign Aligns
+---@field updatingFns table<string,fun(self,dt:number)>
 local SomniumWidget = Class(Widget,
     function(self, name)
         ---@cast self SomniumWidget
         Widget._ctor(self, name)
         self.UITransform = self.inst.UITransform
-        self.moveLayerTimer = 0
         self.basePos = Vector3()
         self.offset = Vector3()
         self.position = Vector3()
         self.width, self.height = 100, 100
     end)
+
+--#region position
 
 ---设置位置
 ---@param pos? Vector3|number
@@ -125,16 +128,137 @@ function SomniumWidget:UpdatePosition()
     self:SetOffset()
 end
 
+--#endregion
+
+--#region update
+
+---更新
+---@param dt? number
+function SomniumWidget:OnUpdate(dt)
+    dt = dt or 0
+    for source, fn in pairs(self.updatingFns) do
+        if type(fn) == "function" then fn(self, dt) end
+    end
+    self:PushEvent("OnUpdate", dt)
+end
+
+function SomniumWidget:SetUpdating(source, fn)
+    self.updatingFns = self.updatingFns or {}
+    self.updatingFns[source] = fn or true
+    self:ShouldUpdating()
+end
+
+function SomniumWidget:RemoveUpdating(source)
+    if self.updatingFns then
+        self.updatingFns[source] = nil
+        if not next(self.updatingFns) then self.updatingFns = nil end
+    end
+    self:ShouldUpdating()
+end
+
+function SomniumWidget:ShouldUpdating()
+    if self.updatingFns then
+        TheFrontEnd:StartUpdatingWidget(self)
+    else
+        TheFrontEnd:StopUpdatingWidget(self)
+    end
+end
+
+function SomniumWidget:UpdatingDraggable(dt)
+    if self.dragging then
+        local x, y = TheSim:GetPosition()
+        local dx = x - self.draggingPos.x
+        local dy = y - self.draggingPos.y
+        self.draggingPos.x = x
+        self.draggingPos.y = y
+        local offset = self:GetOffset()
+        offset.x = offset.x + dx; offset.y = offset.y + dy
+        self:SetOffset(offset)
+    end
+end
+
 function SomniumWidget:SetDraggable(enable)
     if enable then
         self.draggable = true
         self.draggingPos = Vector3()
-        self:SetUpdating("draggable")
+        self:SetUpdating("draggable", SomniumWidget.UpdatingDraggable)
     else
         self.draggable = nil
         self.draggingPos = nil
         self:RemoveUpdating("draggable")
     end
+end
+
+function SomniumWidget:UpdatingKeepTop(dt)
+    self.moveLayerTimer = self.moveLayerTimer + dt
+    if self.moveLayerTimer > 0.5 then
+        self.moveLayerTimer = 0
+        self:MoveToFront()
+    end
+end
+
+function SomniumWidget:SetKeepTop(enable)
+    if enable then
+        self.keepTop = true
+        self.moveLayerTimer = 0
+        self:SetUpdating("keepTop", SomniumWidget.UpdatingKeepTop)
+    else
+        self.keepTop = nil
+        self.moveLayerTimer = nil
+        self:RemoveUpdating("keepTop")
+    end
+end
+
+function SomniumWidget:UpdatingAnimteSize(dt)
+    if self.animTargetSize and dt > 0 then
+        local w, h = self:GetSize()
+        if math.abs(w - self.animTargetSize.w) < 1 and math.abs(h - self.animTargetSize.h) < 1 then
+            self:SetSize(self.animTargetSize.w, self.animTargetSize.h)
+            self.animTargetSize = nil
+            self.animSpeed = nil
+            self:RemoveUpdating("animateSize")
+        else
+            self:SetSize(SomniumUtil.Lerp(w, self.animTargetSize.w, self.animSpeed * dt), SomniumUtil.Lerp(h, self.animTargetSize.h, self.animSpeed * dt))
+        end
+    end
+end
+
+function SomniumWidget:AnimateSize(w, h, speed)
+    w = w or self.width
+    h = h or self.height
+    self.animTargetSize = { w = w, h = h }
+    self.animSpeed = speed or 5
+    self:SetUpdating("animateSize", SomniumWidget.UpdatingAnimteSize)
+end
+
+--#endregion
+
+--#region event
+
+---推送事件
+---@param event string
+---@param data? any
+function SomniumWidget:PushEvent(event, data)
+    self.inst:PushEvent(event, data)
+end
+
+---监听事件
+---@param event string
+---@param fn fun(inst:EntityScript,data?:any)
+function SomniumWidget:ListenForEvent(event, fn)
+    self.inst:ListenForEvent(event, fn)
+end
+
+---移除事件监听
+---@param event string
+---@param fn fun(inst:EntityScript,data?:any)
+function SomniumWidget:RemoveEventCallback(event, fn)
+    self.inst:RemoveEventCallback(event, fn)
+end
+
+---移除所有事件监听
+function SomniumWidget:RemoveAllEventCallbacks()
+    self.inst:RemoveAllEventCallbacks()
 end
 
 function SomniumWidget:OnGainFocus()
@@ -202,76 +326,6 @@ function SomniumWidget:OnControl(control, down)
     return false
 end
 
----更新
----@param dt? number
-function SomniumWidget:OnUpdate(dt)
-    dt = dt or 0
-    if self.draggable and self.dragging then
-        local x, y = TheSim:GetPosition()
-        local dx = x - self.draggingPos.x
-        local dy = y - self.draggingPos.y
-        self.draggingPos.x = x
-        self.draggingPos.y = y
-        local offset = self:GetOffset()
-        offset.x = offset.x + dx; offset.y = offset.y + dy
-        self:SetOffset(offset)
-    end
-    if self.keepTop then
-        self.moveLayerTimer = self.moveLayerTimer + dt
-        if self.moveLayerTimer > 0.5 then
-            self.moveLayerTimer = 0
-            self:MoveToFront()
-        end
-    end
-    self:PushEvent("OnUpdate", dt)
-end
-
-function SomniumWidget:SetUpdating(source)
-    self.updatingSource = self.updatingSource or {}
-    self.updatingSource[source] = true
-    self:ShouldUpdating()
-end
-
-function SomniumWidget:RemoveUpdating(source)
-    if self.updatingSource then
-        self.updatingSource[source] = nil
-        if not next(self.updatingSource) then self.updatingSource = nil end
-    end
-    self:ShouldUpdating()
-end
-
-function SomniumWidget:ShouldUpdating()
-    if self.updatingSource then
-        TheFrontEnd:StartUpdatingWidget(self)
-    else
-        TheFrontEnd:StopUpdatingWidget(self)
-    end
-end
-
----推送事件
----@param event string
----@param data? any
-function SomniumWidget:PushEvent(event, data)
-    self.inst:PushEvent(event, data)
-end
-
----监听事件
----@param event string
----@param fn fun(inst:EntityScript,data?:any)
-function SomniumWidget:ListenForEvent(event, fn)
-    self.inst:ListenForEvent(event, fn)
-end
-
----移除事件监听
----@param event string
----@param fn fun(inst:EntityScript,data?:any)
-function SomniumWidget:RemoveEventCallback(event, fn)
-    self.inst:RemoveEventCallback(event, fn)
-end
-
----移除所有事件监听
-function SomniumWidget:RemoveAllEventCallbacks()
-    self.inst:RemoveAllEventCallbacks()
-end
+--#endregion
 
 return SomniumWidget
