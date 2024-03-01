@@ -634,11 +634,10 @@ if cfg.FILLABLE then
         }
     })
     --点怪成金可以点召唤书
-    addPatch("scripts/prefabs/taxue_book.lua",
-        {
-            index = 695,
-            endIndex = 711,
-            content = [[
+    addPatch("scripts/prefabs/taxue_book.lua", {
+        index = 695,
+        endIndex = 718,
+        content = [[
             local goldenMap = {
                 bunnyman = "golden_bunnyman",
                 book_bunnyman = "golden_bunnyman",
@@ -658,9 +657,27 @@ if cfg.FILLABLE then
                     end
                     SpawnPrefab("collapse_small").Transform:SetPosition(v.Transform:GetWorldPosition())  -- 生成摧毁动画并设坐标
 		            SpawnPrefab("lightning").Transform:SetPosition(v.Transform:GetWorldPosition())  -- 生成闪电动画并设坐标
+                    local amount = 1
+                    if v.components.finiteuses then
+                        local uses = v.components.finiteuses.current
+                        if uses > num then
+                            v.components.finiteuses.current = uses - num
+                            amount = num
+                        else
+                            v:Remove()
+                            amount = uses
+                        end
+                    else
+                        v:Remove()
+                    end
+                    for _ = 1, amount do
+                        local newGoldenMonster = SpawnPrefab(golden_monster)
+                        newGoldenMonster.Transform:SetPosition(v.Transform:GetWorldPosition())
+                    end
+                    num = num - amount
+                    if num == 0 then break end
             ]]
-        }
-    )
+    })
 end
 
 --售货亭修改

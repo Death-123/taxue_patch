@@ -532,15 +532,15 @@ local function getItemInfo(target)
                     target.monsterNumList[monster] = target.monsterNumList[monster] and target.monsterNumList[monster] + 1 or 1
                 end
             end
-        end
-        local nameMap = {
-            moose = "鹿鸭"
-        }
-        local lineNum = 1
-        for name, num in pairs(target.monsterNumList) do
-            -- if lineNum > (TaxuePatch.cfg.PACKAGE_DES_MAX_LINES or 10) then break end
-            lineNum = lineNum + 1
-            Info:Add(("召唤物-%s: %d只"):format(TaxueToChs(name) or nameMap[name] or name, num))
+            local nameMap = {
+                moose = "鹿鸭"
+            }
+            local lineNum = 1
+            for name, num in pairs(target.monsterNumList) do
+                -- if lineNum > (TaxuePatch.cfg.PACKAGE_DES_MAX_LINES or 10) then break end
+                lineNum = lineNum + 1
+                Info:Add(("召唤物-%s: %d只"):format(TaxueToChs(name) or nameMap[name] or name, num))
+            end
         end
         Info:Add("召唤物总计：" .. (#target.monster_list) .. " 只")
     end
