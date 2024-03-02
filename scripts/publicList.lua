@@ -254,6 +254,17 @@ ItemTypeMap = {
         "crystal_ball_taxue", --水晶煤球
         "random_agentia",     --随机药剂
         "chest_agentia",      --宝箱药剂
+        "surprised_sword",    --惊喜之刃
+    },
+    ruins = {
+        "armorruins",       --铥矿甲
+        "ruinshat",         --铥矿皇冠
+        "ruins_bat",        --铥矿棒
+        "orangestaff",      --懒人法杖
+        "yellowstaff",      --唤星法杖
+        "orangeamulet",     --懒人护符
+        "yellowamulet",     --魔光护符
+        "cave_regenerator", --遗迹之种
     },
 }
 TaxuePatch.ItemTypeMap = ItemTypeMap
@@ -277,6 +288,7 @@ ItemTypeNameMap = {
     agentia_all = "药水",
     essence = "精华",
     special = "特殊",
+    ruins = "远古装备",
     others = "其他"
 }
 TaxuePatch.ItemTypeNameMap = ItemTypeNameMap

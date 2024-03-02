@@ -302,7 +302,7 @@ TaxuePatch.SpawnPackage = SpawnPackage
 function CheckPackageType(package)
     if TableCount(package.item_list) == 1 then
         local type, _ = next(package.item_list)
-        package.name = TaxuePatch.ItemTypeNameMap[type]
+        package.name = TaxuePatch.ItemTypeNameMap[type] or type
         package.type = type
     else
         package.type = nil
@@ -546,7 +546,7 @@ function UnpackSuperPackage(package)
         local item_list = package.item_list
         if not package.type then
             for itemType, list in pairs(item_list) do
-                local typeName = TaxuePatch.ItemTypeNameMap[itemType]
+                local typeName = TaxuePatch.ItemTypeNameMap[itemType] or itemType
                 local newPackage = SpawnPackage()
                 newPackage.name = typeName
                 newPackage.type = itemType
@@ -870,7 +870,7 @@ function AddTreasuresToPackage(package, treasures)
     package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
     package.components.talker.offset = Vector3(0, 100, 0)
     package.components.talker:Say(str, 10)
-    package:ListenForEvent( "onremove", function() package.components.talker:ShutUp() end )
+    package:ListenForEvent("onremove", function() package.components.talker:ShutUp() end)
 end
 
 TaxuePatch.AddTreasuresToPackage = AddTreasuresToPackage
@@ -1058,7 +1058,7 @@ function GetNearestPackageMachine(target)
         local packageMachines = GetNearByEntities(target, 50, testFn)
         if #packageMachines > 0 then
             player.nearestPackageMachine = packageMachines[1]
-            return packageMachines[1]:getPackage()
+            return packageMachines[1].getPackage and packageMachines[1]:getPackage()
         else
             player.nearestPackageMachine = nil
         end
@@ -1233,3 +1233,67 @@ function MultHarvest(crop, itemList, isBook)
 end
 
 TaxuePatch.MultHarvest = MultHarvest
+
+local TRAVEL_COST = 32
+local max_hunger_cost = 100
+local sanity_cost_ratio = 25 / 75
+
+---有消耗传送
+---@param inst entityPrefab|Vector3
+---@param must? boolean
+function CostTeleport(inst, must)
+    local x, y, z
+    local player = GetPlayer()
+    if inst.prefab then
+        if not inst:IsValid() then return end
+        x, y, z = inst.Transform:GetWorldPosition()
+    else
+        x, y, z = inst.x, inst.y, inst.z
+    end
+    if player.components.hunger and player.components.sanity then
+        local dist = Vector3(x, y, z):DistSq(Vector3(player.Transform:GetWorldPosition()))
+        local costHunger = math.floor(math.min(dist / TRAVEL_COST, max_hunger_cost))
+        local costSanity = math.floor(costHunger * sanity_cost_ratio)
+        if must then
+            if player.components.hunger.current < costHunger or player.components.sanity.current < costSanity then
+                TaXueSay("你无法负担折跃消耗")
+                return
+            end
+        end
+        player.components.hunger:DoDelta(-costHunger)
+        player.components.sanity:DoDelta(-costSanity)
+    end
+    if player.Physics then
+        player.Physics:Teleport(x, 0, z)
+    else
+        player.Transform:SetPosition(x, 0, z)
+    end
+
+    -- follows
+    local followers = {}
+    if player.components.leader and player.components.leader.followers then
+        for k, v in pairs(player.components.leader.followers) do
+            table.insert(followers, k)
+        end
+    end
+
+    TraversalAllInventory(player, function(container, item, slot)
+        if item.components.leader and item.components.leader.followers then
+            for follower, _ in pairs(item.components.leader.followers) do
+                table.insert(followers, follower)
+            end
+        end
+        return false
+    end)
+
+    for _, follower in pairs(followers) do
+        if follower.Physics then
+            follower.Physics:Teleport(x, 0, z + 1)
+        else
+            follower.Transform:SetPosition(x, 0, z + 1)
+        end
+    end
+    TaXueSay("折越成功!")
+end
+
+TaxuePatch.CostTeleport = CostTeleport

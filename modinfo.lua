@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.80.18"
+version = "3.80.19"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -59,6 +59,16 @@ configuration_options = {
         name = "TAXUE_FIX",
         label = "踏雪优化",
         hover = "优化部分踏雪功能",
+        options = {
+            { description = "启用", data = true },
+            { description = "禁用", data = false },
+        },
+        default = true,
+    },
+    {
+        name = "TELEPORT_CAT",
+        label = "定位猫猫",
+        hover = "强制检查猫猫地灯会传送到猫猫地灯位置",
         options = {
             { description = "启用", data = true },
             { description = "禁用", data = false },

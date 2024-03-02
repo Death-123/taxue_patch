@@ -347,6 +347,9 @@ function CreateEntity() end
 ---@field noneexchangeable boolean
 --#endregion
 
+---@return entityPrefab
+function GetPlayer() end
+
 --#region Vector3
 ---@class Vector3
 ---@overload fun(x?:number,y?:number,z?:number):Vector3

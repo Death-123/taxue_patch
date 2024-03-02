@@ -186,7 +186,11 @@ function TaxueOnKilled(player, target)
             if math.random() <= 0.005 then	--拥有奖杯则0.5%触发总概率1/3(向下取整)的数量掉落			
                 TaxuePatch.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100 )/3))
                 player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
-                TaXueSay("哇！欧气爆炸！！！")
+                if showBanner then
+                    TaxuePatch.dyc.bannerSystem:ShowMessage("哇！欧气爆炸！！！" .. math.floor((player.faceblack * 100 )/3) .. " 倍多爆！", 5, bannerColor)
+                else
+                    TaXueSay("哇！欧气爆炸！！！")
+                end
                 TaxueFx(player,"metal_hulk_ring_fx")
                 -- print("触发超级掉落")
             end

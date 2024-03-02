@@ -402,9 +402,10 @@ end
 
 local oldLookAtFn = ACTIONS.LOOKAT.fn
 ACTIONS.LOOKAT.fn = function(act)
-    local targ = act.target or act.invobject
-    targ:PushEvent("onLookAt", { doer = act.doer })
     oldLookAtFn(act)
+    local targ = act.target or act.invobject
+    local force = TheInput:IsControlPressed(CONTROL_FORCE_INSPECT)
+    targ:PushEvent("onLookAt", { doer = act.doer, force = force })
 end
 
 --踏雪优化
@@ -486,24 +487,46 @@ if cfg.TAXUE_FIX then
         ]]
         },
     })
-    --猫猫定位
-    addPatch("scripts/prefabs/taxue_cat_floorlamp.lua", {
-        index = 186,
-        type = "add",
-        content = [[
-        inst:ListenForEvent("onLookAt", function(inst, data)
-            if inst:IsValid() and TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and GetPlayer():GetDistanceSqToInst(inst) < 25 then
-                GetPlayer().Transform:SetPosition(inst.Transform:GetWorldPosition())
-            end
-        end)
-    ]]
-    })
     --优化收获书
     addPatchs("scripts/prefabs/taxue_book.lua", {
         { index = 21, type = "add",                                                                                       content = [[                local itemList = {}]] },
         { index = 36, content = [[                            TaxuePatch.MultHarvest(v.components.crop, itemList, true)]] },
         { index = 46, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
     })
+end
+
+--猫猫定位
+if cfg.TELEPORT_CAT then
+    addPatch("scripts/prefabs/taxue_cat_floorlamp.lua", {
+        index = 186,
+        type = "add",
+        content = [[
+    inst:ListenForEvent("onLookAt", function(inst, data)
+        if data.force then
+            TaxuePatch.CostTeleport(inst)
+            TaXueSay("折越成功!")
+        end
+    end)
+    ]]
+    })
+    AddClassPostConstruct("screens/mapscreen", function(MapScreen)
+        local _oldOnControl = MapScreen.OnControl
+        function MapScreen:OnControl(control, down)
+            if not down and control == CONTROL_ACCEPT then
+                local x, y, z = self.minimap:GetWorldMousePosition():Get()
+                local notags = { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
+                local ents = TheSim:FindEntities(x, y, z, 5, nil, notags)
+                for _, entity in pairs(ents) do
+                    if entity.prefab == "taxue_cat_floorlamp" then
+                        entity:PushEvent("onLookAt", { doer = GetPlayer(), force = true })
+                        TheFrontEnd:PopScreen()
+                        return true
+                    end
+                end
+            end
+            return _oldOnControl(self, control, down)
+        end
+    end)
 end
 
 --一键使用
