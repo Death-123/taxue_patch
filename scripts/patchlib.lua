@@ -1293,7 +1293,7 @@ function CostTeleport(inst, must)
             follower.Transform:SetPosition(x, 0, z + 1)
         end
     end
-    TaXueSay("折越成功!")
+    TaXueSay("折越成功！")
 end
 
 TaxuePatch.CostTeleport = CostTeleport

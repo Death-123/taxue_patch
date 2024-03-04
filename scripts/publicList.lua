@@ -293,6 +293,30 @@ ItemTypeNameMap = {
 }
 TaxuePatch.ItemTypeNameMap = ItemTypeNameMap
 
+ItemTypeOders = {
+    "special",
+    "essence",
+    "my_ticket",
+    "equipmentHigh",
+    "equipmentLow",
+    "gem",
+    "egg_all",
+    "book2",
+    "book3",
+    "book1",
+    "golden_food",
+    "treasure_map",
+    "weapon1",
+    "weapon2",
+    "armor1",
+    "armor2",
+    "key",
+    "agentia_all",
+    "ruins",
+    "others"
+}
+TaxuePatch.ItemTypeOders = ItemTypeOders
+
 ItemDataMap = {
     refreshticket_ticket = "refresh_num",          --刷券券
     loot_ticket = "loot_multiple",                 --战利品券

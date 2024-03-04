@@ -576,9 +576,7 @@ local function getItemInfo(target)
             local list = target.item_list
             local amountMap = target.amountMap
             local valueMap = target.valueMap
-            local orders = { "special", "essence", "my_ticket", "equipmentHigh", "equipmentLow",
-                "gem", "egg_all", "book2", "book3", "book1", "golden_food", "treasure_map", "weapon1",
-                "weapon2", "armor1", "armor2", "key", "agentia_all", "others" }
+            local orders = TaxuePatch.ItemTypeOders
             local getNameStr = function(name) return TaxuePatch.ItemTypeNameMap[name] or name end
             local showLines
 

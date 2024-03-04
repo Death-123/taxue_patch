@@ -145,7 +145,7 @@ local function OwnerOnEquip(owner, data)
         if item:HasTag("taxue_ultimate_weapon") then
             item:ListenForEvent("percentusedchange", ListenFueledChange)
         end
-        if amulet.level > 0 and not item:HasTag("cantdrop") then
+        if amulet.level > 0 and not item:HasTag("cantdrop") and not item.components.projectile then
             amulet.cantdrop = true
             item:AddTag("cantdrop")
         end
@@ -252,7 +252,7 @@ local function OnEquip(self, owner)
         if self.level > 0 then
             if owner.components.health then
                 self.fire_damage_scale = owner.components.health.fire_damage_scale
-                owner.components.health.fire_damage_scale = 0
+                owner.components.health.fire_damage_scale = owner.components.health.fire_damage_scale - self.fire_damage_scale
             end
         end
     end
@@ -275,7 +275,7 @@ local function OnUnEquip(self, owner)
     end
 
     if self.fire_damage_scale then
-        owner.components.health.fire_damage_scale = self.fire_damage_scale
+        owner.components.health.fire_damage_scale = owner.components.health.fire_damage_scale + self.fire_damage_scale
         self.fire_damage_scale = nil
     end
 end

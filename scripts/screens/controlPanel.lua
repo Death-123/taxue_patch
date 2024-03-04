@@ -7,11 +7,11 @@ local ControlPanel = Class(SomniumWindow,
         ---@cast self ControlPanel
         local data = {
             width = 400,
-            height = 300,
+            height = 800,
             paddingX = 40,
             paddingY = 40,
             lineSpacing = 10,
-            background = SomniumImage("images/globalpanels.xml", "panel_long.tex")
+            background = SomniumImage("images/dst/scoreboard.xml", "scoreboard_frame.tex")
         }
         SomniumWindow._ctor(self, data)
 

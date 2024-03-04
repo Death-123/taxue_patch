@@ -1,37 +1,6 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
 
-GLOBAL.TaxuePatch = { cfg = {} }
-local TaxuePatch = GLOBAL.TaxuePatch
-for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
-    TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
-end
-local cfg = TaxuePatch.cfg
-
-local md5lib
-if cfg.MD5_BYTES == "C" then
-    local luaBin = io.open("../bin/lua5.1.dll")
-    if not luaBin then
-        print(luaBin)
-        luaBin = io.open("../bin/lua5.1.dll", "w")
-        local luaPatch = io.open(MODROOT .. "scripts/lua5.1.txt", "r")
-        if luaBin and luaPatch then
-            luaBin:write(luaPatch:read("*a"))
-        end
-        if luaBin then luaBin:close() end
-        if luaPatch then luaPatch:close() end
-    else
-        luaBin:close()
-    end
-    -- local oldCpath = package.cpath
-    package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
-    md5lib = require("md5lib")
-    -- package.cpath = oldCpath
-elseif cfg.MD5_BYTES then
-    md5lib = require("md5/md5")
-end
-
 --#region tool functions
-
 function string.split(input, delimiter)
     input = tostring(input)
     delimiter = tostring(delimiter)
@@ -71,7 +40,6 @@ local function mprint(...)
     return print(prefix .. "[" .. modname .. " (" .. prettyname:trim() .. ")" .. "]:", msg)
 end
 local print = mprint
-TaxuePatch.print = print
 
 function string.compare(s1, s2)
     if type(s1) == "string" and type(s2) == "string" then
@@ -85,6 +53,48 @@ function string.compare(s1, s2)
         return false
     end
 end
+
+--#endregion
+
+GLOBAL.TaxuePatch = {
+    id = "TaxuePatch",
+    name = "踏雪补丁",
+    print = mprint,
+    cfg = {},
+}
+local TaxuePatch = GLOBAL.TaxuePatch
+
+-- TaxuePatch.config = require("SomniumConfig")(modname)
+
+for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
+    TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
+end
+local cfg = TaxuePatch.cfg
+
+local md5lib
+if cfg.MD5_BYTES == "C" then
+    local luaBin = io.open("../bin/lua5.1.dll")
+    if not luaBin then
+        print(luaBin)
+        luaBin = io.open("../bin/lua5.1.dll", "w")
+        local luaPatch = io.open(MODROOT .. "scripts/lua5.1.txt", "r")
+        if luaBin and luaPatch then
+            luaBin:write(luaPatch:read("*a"))
+        end
+        if luaBin then luaBin:close() end
+        if luaPatch then luaPatch:close() end
+    else
+        luaBin:close()
+    end
+    -- local oldCpath = package.cpath
+    package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
+    md5lib = require("md5lib")
+    -- package.cpath = oldCpath
+elseif cfg.MD5_BYTES then
+    md5lib = require("md5/md5")
+end
+
+
 
 local function getFileMd5(path)
     if not cfg.MD5_BYTES then return nil end
@@ -106,8 +116,7 @@ local function getFileMd5(path)
     end
 end
 
---#endregion
-
+local json = require "json"
 require "publicList"
 TaxuePatch.patchlib = require "patchlib"
 TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
@@ -120,6 +129,7 @@ local patchVersion = patchVersionStr:split(".")[3]
 local patchComment = patchStr .. patchVersionStr
 local modPath = "../mods/" .. modname .. "/"
 local taxueName = "Taxue1.00"
+TaxuePatch.name = KnownModIndex:GetModFancyName(modname):trim()
 local taxueLoaded = false
 local taxueEnabled = false
 for _, name in pairs(KnownModIndex:GetModNames()) do
@@ -142,15 +152,15 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜,打包机防破坏
-    ["scripts/game_changed_taxue.lua"] = { md5 = "80802bfa924ce00c3d2110e9f0b7a0bb", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "e7c36f924a5bb7525905db4525b8d92d", lines = {} },
     --修复难度未初始化的崩溃
-    ["scripts/widgets/taxue_level.lua"] = { md5 = "6194bdd97527df825238da2ba3d27ec8", lines = {} },
+    ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     --修复宝藏不出普通蛋
-    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "aaa243d80a6aeb6125febef8bf6953a1", lines = {} },
+    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "dd9f7d8822c70e2a6bc7a23f26569b92", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "86a1c8cb703fe4d310f289c059c5bfef", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "ade5dc0c6421c5817ac22e3f6b5e5159", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = { md5 = "0ac6775af4ac0ceff981a8286954274e", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "7da475bd29c46debf8fb691a965ef26d", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
@@ -168,13 +178,13 @@ local PATCHS = {
     --宝石保存,夜明珠地上发光
     ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "59ee9457c09e523d48bdfc87d5be9fa0", lines = {} },
     --打包机防破坏,法杖增强
-    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "36cd0c32a1ed98671601cb15c18e58de", lines = {} },
+    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "5fd18dbd5ccc618ffdbc79dd09d049c0", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
     --梅运券修改,利息券连地上一起读
-    ["scripts/prefabs/taxue.lua"] = { md5 = "ffaca9b7cb0d6fa623266d2f96e744dd", lines = {} },
+    -- ["scripts/prefabs/taxue.lua"] = { md5 = "6aaab1b9655ca1ab06ae727d17c28afd", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -412,7 +422,7 @@ end
 if cfg.TAXUE_FIX then
     --空格收菜
     addPatchs("scripts/game_changed_taxue.lua", {
-        { index = 3085, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+        { index = 3086, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
     })
     --夜明珠扔地上发光
     addPatchs("scripts/prefabs/taxue_equipment.lua", {
@@ -452,15 +462,8 @@ if cfg.TAXUE_FIX then
     })
     --入箱丢包修复,空掉落物崩溃修复
     addPatchs("scripts/public_method_taxue.lua", {
-        {
-            index = 40,
-            content = [[
-        if item.components and item.components.inventoryitem then
-            item.components.inventoryitem:OnDropped(true)
-        end]]
-        },
-        { index = 147, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
-        { index = 205, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
+        { index = 151, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
+        { index = 209, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
     })
     --种子机修复
     addPatchs("scripts/prefabs/taxue_seeds_machine.lua", require "patchData/taxue_seeds_machine")
@@ -513,14 +516,16 @@ if cfg.TELEPORT_CAT then
         local _oldOnControl = MapScreen.OnControl
         function MapScreen:OnControl(control, down)
             if not down and control == CONTROL_ACCEPT then
-                local x, y, z = self.minimap:GetWorldMousePosition():Get()
-                local notags = { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
-                local ents = TheSim:FindEntities(x, y, z, 5, nil, notags)
-                for _, entity in pairs(ents) do
-                    if entity.prefab == "taxue_cat_floorlamp" then
-                        entity:PushEvent("onLookAt", { doer = GetPlayer(), force = true })
-                        TheFrontEnd:PopScreen()
-                        return true
+                if not (GetWorld().components.interiorspawner and GetWorld().components.interiorspawner:IsInInterior()) then
+                    local x, y, z = self.minimap:GetWorldMousePosition():Get()
+                    local notags = { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
+                    local ents = TheSim:FindEntities(x, y, z, 5, nil, notags)
+                    for _, entity in pairs(ents) do
+                        if entity.prefab == "taxue_cat_floorlamp" then
+                            entity:PushEvent("onLookAt", { doer = GetPlayer(), force = true })
+                            TheFrontEnd:PopScreen()
+                            return true
+                        end
                     end
                 end
             end
@@ -581,10 +586,18 @@ if cfg.FILLABLE then
             content = [[
             local ents = TaxuePatch.GetNearByEntities(inst, 10, "blue_staff")
             local num, numhas = 0, 0
-            if target.prefab == "blooming_sword" or target.prefab == "black_falchion_sword" or target.prefab == "lightning_crescent_sword" or target.prefab == "surprised_sword" then
-                num = 99 - target.level
-            elseif target.prefab == "blooming_armor" or target.prefab == "blooming_headwear" then
-                num = 9 - target.level
+            local prefabLevel = {
+                blooming_sword = 100,
+                black_falchion_sword = 100,
+                lightning_crescent_sword = 100,
+                surprised_sword = 100,
+                blooming_armor = 10,
+                black_blooming_armor = 10,
+                blooming_headwear = 10,
+                black_blooming_headwear = 10,
+            }
+            if prefabLevel[target.prefab] then
+                num = prefabLevel[target.prefab] - 1 - target.level
             end
             for i = 1, num do
                 if ents[i] then
@@ -669,6 +682,7 @@ if cfg.FILLABLE then
                 pigguard = "golden_pigman",
                 wildbore = "golden_pigman",
                 book_rocky = "golden_rocky",
+                rocky = "golden_rocky",
             }
             for __, v in pairs(ents) do
                 if v and goldenMap[v.prefab] then
@@ -718,7 +732,7 @@ end
 
 --掉落优化
 if cfg.BETTER_DORP then
-    addPatch("scripts/public_method_taxue.lua", require("patchData/public_method_taxue")[448])
+    addPatch("scripts/public_method_taxue.lua", require("patchData/public_method_taxue")[452])
 
     AddComponentPostInit("lootdropper", function(inst)
         local oldDropLoot = inst.DropLoot
@@ -786,24 +800,26 @@ end
 
 --法杖增强
 if cfg.BUFF_STAFF then
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 491, content = [[    inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 507, content = [[    inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 544, content = [[            inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 552, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", {
-        index = 611,
-        content = [[
+    addPatchs("scripts/prefabs/taxue_staff.lua", {
+        { index = 491, content = [[    inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] },
+        { index = 507, content = [[    inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] },
+        { index = 544, content = [[            inst.components.tool:SetAction(ACTIONS.DIG,inst.work_efficiency)]] },
+        { index = 552, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER,inst.work_efficiency)      --敲]] },
+        {
+            index = 611,
+            content = [[
             local list1 = {1.33, 2, 3, 4, 5, 6}
             local list2 = {2, 4, 6, 8, 10, 12}
             local mult1 = list1[TaxuePatch.cfg.BUFF_STAFF_MULT]
             local mult2 = list2[TaxuePatch.cfg.BUFF_STAFF_MULT]
             inst.work_efficiency = name == "blue_staff" and mult1 or mult2
             ]]
+        },
+        { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER, inst.work_efficiency)      --敲]] },
+        { index = 651, content = [[return MakeStaff("colourful_staff", TaxuePatch.cfg.COLOURFUL_STAFF_SPEED, nil),     --彩虹法杖-冰箱背包升级]] },
+        { index = 653, content = [[       MakeStaff("blue_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),            --湛青法杖-武器升级]] },
+        { index = 656, content = [[       MakeStaff("forge_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),     --锻造法杖]] }
     })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 614, content = [[            inst.components.tool:SetAction(ACTIONS.HAMMER, inst.work_efficiency)      --敲]] })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 651, content = ([[return MakeStaff("colourful_staff", TaxuePatch.cfg.COLOURFUL_STAFF_SPEED, nil),     --彩虹法杖-冰箱背包升级]]) })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 653, content = ([[       MakeStaff("blue_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),            --湛青法杖-武器升级]]) })
-    addPatch("scripts/prefabs/taxue_staff.lua", { index = 656, content = ([[       MakeStaff("forge_staff", TaxuePatch.cfg.BUFF_STAFF_SPEED, nil),     --锻造法杖]]) })
 end
 
 --超级建造护符耐久
@@ -825,11 +841,33 @@ end
 
 --梅运券修改
 if cfg.FORTUNE_PATCH then
-    addPatchs("scripts/prefabs/taxue.lua", {
-        { index = 167, type = "add", content = [[    data.fortune_day = inst.fortune_day]] },
-        { index = 216, type = "add", content = [[    if data.fortune_day then inst.fortune_day = data.fortune_day end]] },
-        { index = 244, type = "add", content = [[        if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end]] },
-    })
+    AddPrefabPostInit("taxue", function(inst)
+        local dataItems = {
+            "fortune_day"
+        }
+        local onsave = inst.OnSave
+        inst.OnSave = function(inst, data)
+            for _, dataItem in pairs(dataItems) do
+                if inst[dataItem] then data[dataItem] = inst[dataItem] end
+            end
+            onsave(inst, data)
+        end
+
+        local onload = inst.OnLoad
+        inst.OnLoad = function(inst, data)
+            for _, dataItem in pairs(dataItems) do
+                if data[dataItem] then inst[dataItem] = data[dataItem] end
+            end
+            onload(inst, data)
+        end
+
+        local function daycomplete(inst, data)
+            if TUNING.FUCK_DAY == true then
+                if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end
+            end
+        end
+        inst:ListenForEvent( "daycomplete", daycomplete, GetWorld())
+    end)
     addPatchs("scripts/prefabs/taxue_other_items.lua", {
         {
             index = 204,
@@ -935,6 +973,276 @@ AddClassPostConstruct("widgets/itemtile", function(origin)
             if TaxuePatch.hoverItem == self.item then TaxuePatch.hoverItem = nil end
         end)
         oldOnLoseFocus(self, ...)
+    end
+end)
+
+AddClassPostConstruct("widgets/mapwidget", function(MapWidget)
+    MapWidget.mapOffset = Vector3(0, 0, 0)
+
+    MapWidget._oldOnUpdate = MapWidget.OnUpdate
+    function MapWidget:OnUpdate(...)
+        if not self.shown then return end
+
+        if TheInput:IsControlPressed(CONTROL_PRIMARY) then
+            local pos = TheInput:GetScreenPosition()
+            if self.lastpos then
+                local scale = 0.2
+                local dx = scale * (pos.x - self.lastpos.x)
+                local dy = scale * (pos.y - self.lastpos.y)
+                self:Offset(dx, dy)
+            end
+            self.lastpos = pos
+        else
+            self.lastpos = nil
+        end
+    end
+
+    MapWidget._oldOffset = MapWidget.Offset
+    function MapWidget:Offset(dx, dy, ...)
+        self.mapOffset.x = self.mapOffset.x + dx
+        self.mapOffset.y = self.mapOffset.y + dy
+        MapWidget._oldOffset(self, dx, dy, ...)
+    end
+
+    MapWidget._oldOnShow = MapWidget.OnShow
+    function MapWidget:OnShow(...)
+        self.mapOffset.x = 0
+        self.mapOffset.y = 0
+        MapWidget._oldOnShow(self, ...)
+    end
+
+    MapWidget._oldOnZoomIn = MapWidget.OnZoomIn
+    function MapWidget:OnZoomIn(...)
+        local zoom1 = self.minimap:GetZoom()
+        MapWidget._oldOnZoomIn(self, ...)
+        local zoom2 = self.minimap:GetZoom()
+        if self.shown then
+            self.mapOffset = self.mapOffset * zoom1 / zoom2
+        end
+    end
+
+    MapWidget._oldOnZoomOut = MapWidget.OnZoomOut
+    function MapWidget:OnZoomOut(...)
+        local zoom1 = self.minimap:GetZoom()
+        MapWidget._oldOnZoomOut(self, ...)
+        local zoom2 = self.minimap:GetZoom()
+        if self.shown and zoom1 < 20 then
+            self.mapOffset = self.mapOffset * zoom1 / zoom2
+        end
+    end
+
+    function MapWidget:GetTargetDoor()
+        local interiorspawner = GetWorld().components.interiorspawner
+        if not interiorspawner or not interiorspawner:IsInInterior() then
+            return
+        end
+        local object_list = interiorspawner:GetCurrentInteriorEntities()
+        for _, object in pairs(object_list) do
+            local door = object.components.door
+            if door and not door.target_interior then
+                if interiorspawner.doors[door.target_door_id] then
+                    return interiorspawner.doors[door.target_door_id].inst
+                end
+            end
+        end
+    end
+
+    function MapWidget:GetRoomMapLayout()
+        local room_map_layout = {}
+        local pos_map = {}
+        local interiorspawner = GetWorld().components.interiorspawner
+        local function GetLayout(current_pos)
+            local pos_x = pos_map[current_pos][1]
+            local pos_y = pos_map[current_pos][2]
+            local object_list
+            if current_pos == "0_0" then
+                object_list = interiorspawner:GetCurrentInteriorEntities()
+            else
+                object_list = room_map_layout[current_pos].object_list
+            end
+            for _, object in pairs(object_list) do
+                local door = object.components.door
+                if door and door.target_interior then
+                    local connected_interior = interiorspawner:GetInteriorByName(door.target_interior)
+                    local pos_x_new, pos_y_new = pos_x, pos_y
+                    local pos_str_new
+                    if object:HasTag("door_north") then
+                        pos_y_new = pos_y_new + 1
+                    elseif object:HasTag("door_south") then
+                        pos_y_new = pos_y_new - 1
+                    elseif object:HasTag("door_east") then
+                        pos_x_new = pos_x_new + 1
+                    elseif object:HasTag("door_west") then
+                        pos_x_new = pos_x_new - 1
+                    end
+                    pos_str_new = tostring(pos_x_new) .. "_" .. tostring(pos_y_new)
+                    for k, v in pairs(pos_map) do
+                        if k == pos_str_new then
+                            pos_str_new = nil
+                            break
+                        end
+                    end
+                    if pos_str_new then
+                        pos_map[pos_str_new] = { pos_x_new, pos_y_new }
+                        room_map_layout[pos_str_new] = connected_interior
+                        GetLayout(pos_str_new)
+                    end
+                end
+            end
+
+            local prefab_list = room_map_layout[current_pos].prefabs
+            prefab_list = prefab_list or {}
+
+            for _, prefab in pairs(prefab_list) do
+                if prefab.name == "prop_door" then
+                    local connected_interior = interiorspawner:GetInteriorByName(prefab.target_interior)
+                    local door_tag = prefab.addtags[2]
+                    local pos_x_new, pos_y_new = pos_x, pos_y
+                    local pos_str_new
+                    if door_tag == "door_north" then
+                        pos_y_new = pos_y_new + 1
+                    elseif door_tag == "door_south" then
+                        pos_y_new = pos_y_new - 1
+                    elseif door_tag == "door_east" then
+                        pos_x_new = pos_x_new + 1
+                    elseif door_tag == "door_west" then
+                        pos_x_new = pos_x_new - 1
+                    end
+                    pos_str_new = tostring(pos_x_new) .. "_" .. tostring(pos_y_new)
+                    for k, v in pairs(pos_map) do
+                        if k == pos_str_new then
+                            pos_str_new = nil
+                            break
+                        end
+                    end
+                    if pos_str_new then
+                        pos_map[pos_str_new] = { pos_x_new, pos_y_new }
+                        room_map_layout[pos_str_new] = connected_interior
+                        GetLayout(pos_str_new)
+                    end
+                end
+            end
+        end
+
+        if not (interiorspawner and interiorspawner:IsInInterior()) then
+            return
+        else
+            local relatedInteriors = interiorspawner:GetCurrentInteriors()
+            room_map_layout["0_0"] = interiorspawner.current_interior
+            pos_map["0_0"] = { 0, 0 }
+            if (#relatedInteriors) > 1 then
+                GetLayout("0_0")
+            end
+            return room_map_layout
+        end
+    end
+
+    function MapWidget:GetWorldMousePosition()
+        local target_door = self:GetTargetDoor()
+        local screenwidth, screenheight = TheSim:GetScreenSize()
+
+        -- 玩家图标在地图界面上的像素位置
+        local cx = screenwidth * 0.5 + self.mapOffset.x * 4.5
+        local cy = screenheight * 0.5 + self.mapOffset.y * 4.5
+
+        -- 鼠标在地图界面上的像素位置
+        local mx, my = TheInput:GetScreenPosition():Get()
+        if TheInput:ControllerAttached() then
+            mx, my = screenwidth * 0.5, screenheight * 0.5
+        end
+
+        -- 两个位置的偏移
+        local ox = mx - cx
+        local oy = my - cy
+
+
+        -- 像素位置差转换为在实际地图上的坐标距离
+        local angle
+        if target_door then
+            angle = 0
+        else
+            angle = TheCamera:GetHeadingTarget() * math.pi / 180
+        end
+
+        local wd = math.sqrt(ox * ox + oy * oy) * self.minimap:GetZoom() / 4.5
+        local wa = math.atan2(ox, oy) - angle
+
+        -- 鼠标位置对应的地图坐标
+        local px, pz
+        if target_door then
+            px, _, pz = target_door:GetPosition():Get()
+        else
+            px, _, pz = GetPlayer():GetPosition():Get()
+        end
+        local wx = px - wd * math.cos(wa)
+        local wz = pz + wd * math.sin(wa)
+        return Vector3(wx, 0, wz)
+    end
+
+    function MapWidget:GetMouseInterior()
+        local interiorspawner = GetWorld().components.interiorspawner
+        if interiorspawner and not interiorspawner:IsInInterior() then
+            return
+        end
+        local relatedInteriors = interiorspawner:GetCurrentInteriors()
+        if (#relatedInteriors) <= 1 then
+            return
+        end
+
+        local screenwidth, screenheight = TheSim:GetScreenSize()
+
+        -- 玩家所在房间的中心在地图上的像素位置
+        local cx = screenwidth * 0.5 + self.mapOffset.x * 4.5
+        local cy = screenheight * 0.5 + self.mapOffset.y * 4.5
+
+        -- 鼠标在地图界面上的像素位置
+        local mx, my = TheInput:GetScreenPosition():Get()
+        if TheInput:ControllerAttached() then
+            mx, my = screenwidth * 0.5, screenheight * 0.5
+        end
+
+        -- 两个位置的偏移
+        local ox = mx - cx
+        local oy = my - cy
+
+        -- 实际距离差距
+        ox = ox * self.minimap:GetZoom()
+        oy = oy * self.minimap:GetZoom()
+
+        -- interior width 和 interior depth
+        local iw = interiorspawner.current_interior.width
+        local id = interiorspawner.current_interior.depth
+
+        -- 当zoom为1时interior的长和宽的像素数
+        local iw_pixel = iw * 2.5 * 4.5
+        local id_pixel = id * 2.5 * 4.5
+
+        local i, j
+        if math.abs(ox) < iw_pixel / 2 then
+            i = 0
+        else
+            local interior_num = (math.abs(ox) - iw_pixel / 2) / (iw_pixel + 80)
+            local interior_num_int = math.ceil(interior_num)
+            local interior_num_deci = interior_num - interior_num_int + 1
+            if interior_num_deci < 80 / (iw_pixel + 80) then
+                return
+            end
+            i = interior_num_int * ox / math.abs(ox)
+        end
+
+        if math.abs(oy) < id_pixel / 2 then
+            j = 0
+        else
+            local interior_num = (math.abs(oy) - id_pixel / 2) / (id_pixel + 80)
+            local interior_num_int = math.ceil(interior_num)
+            local interior_num_deci = interior_num - interior_num_int + 1
+            if interior_num_deci < 80 / (id_pixel + 80) then
+                return
+            end
+            j = interior_num_int * oy / math.abs(oy)
+        end
+        local room_map_layout = self:GetRoomMapLayout()
+        return room_map_layout and room_map_layout[tostring(i) .. "_" .. tostring(j)]
     end
 end)
 

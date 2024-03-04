@@ -395,6 +395,8 @@ Transform = {}
 ---@field GetScreenSize fun(self):w:integer,h:integer
 ---@field ProfilerPush fun(self,profile:string)
 ---@field ProfilerPop fun(self)
+---@field GetPersistentString fun(self,filepath:string,fn:fun(load_success:boolean,str:string))
+---@field SetPersistentString fun(self,name:string,data:string,encode:boolean,callback?:function,local_save?:boolean)
 TheSim = {}
 
 ---@class Input:Class

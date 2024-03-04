@@ -1,4 +1,4 @@
-local str448 = [[
+local str452 = [[
 function TaxueOnKilled(player, target)
     local showBanner = TaxuePatch.cfg.EXP_BANNER and TaxuePatch.dyc
     local BANNER_COLOR = TaxuePatch.cfg.BANNER_COLOR
@@ -375,7 +375,7 @@ end
 ]]
 
 local lines = {
-    [448] = { index = 448, endIndex = 738, content = str448 }
+    [452] = { index = 452, endIndex = 742, content = str452 }
 }
 
 return lines
