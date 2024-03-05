@@ -130,6 +130,16 @@ local function ListenFueledChange(inst, data)
     end
 end
 
+local headwear = {
+    blooming_headwear = true,
+    black_blooming_headwear = true,
+}
+
+local armors = {
+    blooming_armor = true,
+    black_blooming_armor = true,
+}
+
 -- 护符主人穿戴装备
 local function OwnerOnEquip(owner, data)
     local item = data.item
@@ -151,11 +161,11 @@ local function OwnerOnEquip(owner, data)
         end
 
         -- 盔甲
-    elseif eslot == EQUIPSLOTS.BODY and item.prefab == "blooming_armor" then
+    elseif eslot == EQUIPSLOTS.BODY and armors[item.prefab] then
         item:ListenForEvent("armorhit", ListenDurableConsume)
 
         -- 头盔
-    elseif eslot == EQUIPSLOTS.HEAD and item.prefab == "blooming_headwear" then
+    elseif eslot == EQUIPSLOTS.HEAD and headwear[item.prefab] then
         item:ListenForEvent("armorhit", ListenDurableConsume)
     end
 end

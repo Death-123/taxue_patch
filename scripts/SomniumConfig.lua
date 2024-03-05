@@ -9,15 +9,24 @@ local DataSave = require "dataSave"
 ---@field name string
 ---@field description? string
 ---@field type? string
+---@field forceDisable? boolean
 ---@field options? option[]
 ---@field default? any
 ---@field value? any
 ---@field subConfigs? ConfigEntry[]
+---@field parent? ConfigEntry
+---@field Get fun(self,key:string):ConfigEntry
+---@field GetValue fun(self,key?:string):any
 
 ---@type option[]
 local enableOptions = {
     { des = "启用", value = true },
     { des = "禁用", value = false },
+}
+
+---@type option[]
+local forceDisableOptions = {
+    { des = "强制禁用", value = true }
 }
 
 ---@type option[]
@@ -476,6 +485,10 @@ local Config = Class(
     end)
 
 function Config:Init()
+    self:TraversalAllConfigEntry(function(ConfigEntry, parent)
+        setmetatable(ConfigEntry, Config)
+        ConfigEntry.parent = parent
+    end)
     local oldInitializeModInfo = KnownModIndex.InitializeModInfo
     function KnownModIndex.InitializeModInfo(_self, name, ...)
         local info = oldInitializeModInfo(_self, name, ...)
@@ -556,15 +569,23 @@ end
 ---@return any value
 ---@return boolean isDefault
 function Config:GetValue(key)
-    local configEntry = key and self:Get(key) or self
+    local configEntry = self:Get(key)
     if not configEntry then return nil, false end
-    if configEntry.value ~= nil then
-        return configEntry.value, false
+    local value, isDefault = nil, false
+    if configEntry.forceDisable then
+        return false, false
+    elseif configEntry.value ~= nil then
+        value = configEntry.value
     elseif configEntry.default then
-        return configEntry.default, true
+        value, isDefault = configEntry.default, true
     else
-        return true, true
+        value, isDefault = true, true
     end
+    local parent = configEntry.parent
+    if parent then
+        value = value and parent:GetValue()
+    end
+    return value, isDefault
 end
 
 ---设置配置值
@@ -587,7 +608,9 @@ end
 ---@param configEntry ConfigEntry
 ---@return option[]?
 function Config.getOptions(configEntry)
-    if configEntry.options then
+    if configEntry.forceDisable then
+        return 
+    elseif configEntry.options then
         return configEntry.options
     elseif configEntry.type then
         if configEntry.type == "color" then
@@ -627,17 +650,24 @@ function Config:GetDefault(key)
     return Config.getDefault(configEntry)
 end
 
+function Config:forceDisable(key)
+    local configEntry = self:Get(key)
+    if configEntry then
+        configEntry.forceDisable = true
+    end
+end
+
 ---遍历所有配置项
----@param fn fun(ConfigEntry:ConfigEntry): stop:boolean?
+---@param fn fun(ConfigEntry:ConfigEntry,parent?:ConfigEntry): stop:boolean?
 ---@param ConfigEntrys? ConfigEntry[]
+---@param parent? ConfigEntry
 ---@return boolean? stop
-function Config:TraversalAllConfigEntry(fn, ConfigEntrys)
+function Config:TraversalAllConfigEntry(fn, ConfigEntrys, parent)
     ConfigEntrys = ConfigEntrys or self.cfg
     for _, ConfigEntry in pairs(ConfigEntrys) do
-        ConfigEntry = setmetatable(ConfigEntry, Config)
-        if fn(ConfigEntry) then return true end
+        if fn(ConfigEntry, parent) then return true end
         if ConfigEntry.subConfigs then
-            self:TraversalAllConfigEntry(fn, ConfigEntry.subConfigs)
+            self:TraversalAllConfigEntry(fn, ConfigEntry.subConfigs, ConfigEntry)
         end
     end
 end

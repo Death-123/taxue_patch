@@ -65,6 +65,9 @@ GLOBAL.TaxuePatch = {
 local TaxuePatch = GLOBAL.TaxuePatch
 
 -- TaxuePatch.config = require("SomniumConfig")(modname)
+-- TaxuePatch.cfg = function (key)
+--     return TaxuePatch.config:GetValue(key)
+-- end
 
 for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
     TaxuePatch.cfg[option.name] = GetModConfigData(option.name)

@@ -596,7 +596,7 @@ local function getItemInfo(target)
                     getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. TaxuePatch.DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
                     showLines = table.containskey(TaxuePatch.ItemDataMap, singleItem)
 
-                    singleData = showLines and table.count(list) == 1 and next(list)
+                    singleData = showLines ~= "nodata" and table.count(list) == 1 and next(list)
                     if singleData then
                         amountMap = amountMap[singleData]
                         valueMap = valueMap[singleData]
@@ -611,7 +611,7 @@ local function getItemInfo(target)
                 local lineNumFlag = false
                 for _, order in pairs(orders) do
                     for name, subList in pairs(list) do
-                        if (showLines == nil or showLines) and (order == "noOrder" or name == order) then
+                        if (showLines == nil or showLines ~= "nodata") and (order == "noOrder" or name == order) then
                             if lineNum <= maxLineNum then
                                 local nameStr = order == "noOrder" and getNameStr(name) or getNameStr(order)
                                 local valueStr = valueMap[name].hasValue and "/总价值:" .. formatCoins(valueMap[name].value) or "/无法售出"
@@ -637,8 +637,10 @@ local function getItemInfo(target)
                 end
             end
             local str
-            if showLines == nil or showLines then
+            if showLines == nil or showLines ~= "nodata" then
                 str = ("%d%s物品,物品总数量: %s"):format(table.count(list), singleType and "种" or "类", formatNumber(totalAmount))
+            elseif showLines == "nodata" then
+                str = ("%s: %s"):format(TaxueToChs(singleItem) ,formatNumber(totalAmount))
             else
                 str = ("物品数量: %s"):format(formatNumber(totalAmount))
             end
