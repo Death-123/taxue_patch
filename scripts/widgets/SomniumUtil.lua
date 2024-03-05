@@ -23,7 +23,7 @@ SomniumUtil.Aligns = {
 }
 
 --#region RGBAColor
-local Colors = {}
+SomniumUtil.Colors = {}
 
 ---@class RGBAColor:Class
 ---@overload fun(r?:integer|integer[]|string, g?:integer, b?:integer, a?:integer, raw?:boolean):RGBAColor
@@ -35,11 +35,15 @@ local RGBAColor = Class(
     function(self, r, g, b, a, raw)
         if not r then return self:RawSet(r, g, b, a) end
         if type(r) == "table" then
-            return self:Set(r[1], r[2], r[3], r[4], raw)
+            self:Set(r[1], r[2], r[3], r[4], raw)
         elseif type(r) == "string" then
-            return Colors[r] or self:RawSet()
-        else
-            return self:Set(r, g, b, a, raw)
+            if SomniumUtil.Colors[r] then
+                self:RawSet(SomniumUtil.Colors[r]:Get())
+            else
+                self:RawSet()
+            end
+        elseif type(r) == "number" then
+            self:Set(r, g, b, a, raw)
         end
     end)
 
@@ -140,7 +144,7 @@ end
 
 SomniumUtil.RGBAColor = RGBAColor
 
-Colors = {
+SomniumUtil.Colors = {
     aquamarine = RGBAColor(127, 255, 212),
     magenta = RGBAColor(255, 108, 180),
     cyan = RGBAColor(0, 255, 255),

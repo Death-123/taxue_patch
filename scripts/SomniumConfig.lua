@@ -9,14 +9,16 @@ local DataSave = require "dataSave"
 ---@field name string
 ---@field description? string
 ---@field type? string
----@field forceDisable? boolean
+---@field forceDisabled? boolean
 ---@field options? option[]
 ---@field default? any
 ---@field value? any
 ---@field subConfigs? ConfigEntry[]
 ---@field parent? ConfigEntry
----@field Get fun(self,key:string):ConfigEntry
----@field GetValue fun(self,key?:string):any
+---@field Get? fun(self,key:string):ConfigEntry
+---@field GetValue? fun(self,key?:string):value:any,isDefault:boolean
+---@field ForceDisable? fun(self,key?:string)
+---@field IsForceDisabled? fun(self,key?:string):isForceDisabled:boolean
 
 ---@type option[]
 local enableOptions = {
@@ -26,7 +28,7 @@ local enableOptions = {
 
 ---@type option[]
 local forceDisableOptions = {
-    { des = "强制禁用", value = true }
+    { des = "强制禁用", value = false }
 }
 
 ---@type option[]
@@ -144,8 +146,64 @@ local cfg = {
                         description = "掉落物会自动堆叠进附近已存在的物品"
                     }
                 }
-            }
-        }
+            },
+            {
+                id = "taxueMoe",
+                name = "空格收菜修复",
+                description = "修复专属镰刀空格收割",
+            },
+            {
+                id = "levelWidgetFix",
+                name = "难度未初始化修复",
+                description = "修复难度未初始化导致的崩溃",
+            },
+            {
+                id = "treasureEggFix",
+                name = "宝藏普通蛋修复",
+                description = "修复宝藏中普通蛋的拼写错误",
+            },
+            {
+                id = "itemSort",
+                name = "增强物品排序",
+                description = "使物品排序可以排序掉包券,定向刷新券等",
+            },
+            {
+                id = "intoChestFix",
+                name = "修复入箱丢失物品",
+                description = "使一键入箱转移无法进入的物品时不会丢失物品",
+            },
+            {
+                id = "seedsMachineFix",
+                name = "种子机修复",
+                description = "修复种子机崩溃",
+            },
+            {
+                id = "fishTankFix",
+                name = "鱼缸卡顿优化",
+            },
+            {
+                id = "harvestBookPatch",
+                name = "收获书优化",
+                description = "优化收获书收获花盆时的性能",
+            },
+            {
+                id = "autoSavePatch",
+                name = "自动保存CD",
+                description = "强制为自动保存增加冷却时间,冷却中无法自动保存",
+                type = "number",
+                options = {
+                    { des = "1分钟", value = 1 },
+                    { des = "2分钟", value = 2 },
+                    { des = "3分钟", value = 3 },
+                    { des = "5分钟", value = 5 },
+                    { des = "10分钟", value = 10 },
+                    { des = "15分钟", value = 15 },
+                    { des = "30分钟", value = 30 },
+                    { des = "禁用", value = false },
+                },
+                default = false
+            },
+        },
     },
     {
         id = "teleportCat",
@@ -160,7 +218,25 @@ local cfg = {
         name = "一键使用",
         description = "利息券,战利品券等一键使用",
         subConfigs = {
-
+            {
+                id = "ticket",
+                name = "券类",
+                description = "利息券连锁使用,战利品券一键填装",
+            },
+            {
+                id = "blueStaff",
+                name = "湛青法杖一键升级",
+            },
+            {
+                id = "agentiaCompressor",
+                name = "药水压缩机",
+                description = "药水压缩机可以使用宝箱药水",
+            },
+            {
+                id = "goldBook",
+                name = "点怪成金书",
+                description = "点怪成金书可以点地上的召唤书",
+            },
         }
     },
     {
@@ -226,6 +302,11 @@ local cfg = {
                 description = "让打包机只能被黄金法杖摧毁"
             },
             {
+                id = "lightPearlBuff",
+                name = "夜明珠地上发光",
+                description = "让夜明珠在地上时光照范围等于数值大小",
+            },
+            {
                 id = "disableGemSave",
                 name = "禁止宝石自动保存",
                 description = "移除使用宝石时的保存"
@@ -247,70 +328,71 @@ local cfg = {
             },
             {
                 id = "buffStaff",
-                name = "增强湛青法杖",
-                description = "提高湛青,锻造法杖的锤,铲工作效率"
-            },
-            {
-                id = "staffSpeed",
-                name = "湛青锻造速度",
-                description = "湛青/锻造法杖提高的速度",
-                type = "number",
-                options = {
-                    { des = "20%(默认)", value = 0.2 },
-                    { des = "35%", value = 0.35 },
-                    { des = "50%", value = 0.5 },
-                    { des = "75%", value = 0.75 },
-                    { des = "100%", value = 1 },
-                    { des = "150%", value = 1.5 },
-                    { des = "300%", value = 3 },
-                },
-                default = 0.2
-            },
-            {
-                id = "colorfulStaffSpeed",
-                name = "五彩法杖速度",
-                description = "五彩法杖提高的速度",
-                type = "number",
-                options = {
-                    { des = "20%", value = 0.2 },
-                    { des = "35%(默认)", value = 0.35 },
-                    { des = "50%", value = 0.5 },
-                    { des = "75%", value = 0.75 },
-                    { des = "100%", value = 1 },
-                    { des = "150%", value = 1.5 },
-                    { des = "300%", value = 3 },
-                },
-                default = 0.35
-            },
-            {
-                id = "staffMult",
-                name = "增强效率",
-                description = "湛青法杖提高的工作效率",
-                type = "number",
-                options = {
-                    { des = "1.33(默认)", value = 1.33 },
-                    { des = "2", value = 2 },
-                    { des = "3", value = 3 },
-                    { des = "4", value = 4 },
-                    { des = "5", value = 5 },
-                    { des = "6", value = 6 },
-                },
-                default = 1.33
-            },
-            {
-                id = "forgeStaffMult",
-                name = "增强效率",
-                description = "锻造法杖提高的工作效率",
-                type = "number",
-                options = {
-                    { des = "2(默认)", value = 2 },
-                    { des = "4", value = 4 },
-                    { des = "6", value = 6 },
-                    { des = "8", value = 8 },
-                    { des = "10", value = 10 },
-                    { des = "12", value = 12 },
-                },
-                default = 2
+                name = "法杖增强",
+                subConfigs = {
+                    {
+                        id = "staffSpeed",
+                        name = "湛青锻造速度",
+                        description = "湛青/锻造法杖提高的速度",
+                        type = "number",
+                        options = {
+                            { des = "20%(默认)", value = 0.2 },
+                            { des = "35%", value = 0.35 },
+                            { des = "50%", value = 0.5 },
+                            { des = "75%", value = 0.75 },
+                            { des = "100%", value = 1 },
+                            { des = "150%", value = 1.5 },
+                            { des = "300%", value = 3 },
+                        },
+                        default = 0.2
+                    },
+                    {
+                        id = "colorfulStaffSpeed",
+                        name = "五彩法杖速度",
+                        description = "五彩法杖提高的速度",
+                        type = "number",
+                        options = {
+                            { des = "20%", value = 0.2 },
+                            { des = "35%(默认)", value = 0.35 },
+                            { des = "50%", value = 0.5 },
+                            { des = "75%", value = 0.75 },
+                            { des = "100%", value = 1 },
+                            { des = "150%", value = 1.5 },
+                            { des = "300%", value = 3 },
+                        },
+                        default = 0.35
+                    },
+                    {
+                        id = "staffMult",
+                        name = "湛青增强效率",
+                        description = "湛青法杖提高的工作效率",
+                        type = "number",
+                        options = {
+                            { des = "1.33(默认)", value = 1.33 },
+                            { des = "2", value = 2 },
+                            { des = "3", value = 3 },
+                            { des = "4", value = 4 },
+                            { des = "5", value = 5 },
+                            { des = "6", value = 6 },
+                        },
+                        default = 1.33
+                    },
+                    {
+                        id = "forgeStaffMult",
+                        name = "锻造增强效率",
+                        description = "锻造法杖提高的工作效率",
+                        type = "number",
+                        options = {
+                            { des = "2(默认)", value = 2 },
+                            { des = "4", value = 4 },
+                            { des = "6", value = 6 },
+                            { des = "8", value = 8 },
+                            { des = "10", value = 10 },
+                            { des = "12", value = 12 },
+                        },
+                        default = 2
+                    },
+                }
             },
             {
                 id = "greenAmulet",
@@ -326,7 +408,7 @@ local cfg = {
                     { des = "10", value = 10 },
                 },
                 default = 4
-            }
+            },
         }
     },
     {
@@ -536,7 +618,7 @@ function Config:Init()
 end
 
 ---获取配置
----@param key string
+---@param key? string
 ---@return ConfigEntry|nil configEntry
 function Config:Get(key)
     if not key then
@@ -566,13 +648,14 @@ end
 
 ---获取配置值
 ---@param key? string
+---@param skipForce? boolean
 ---@return any value
 ---@return boolean isDefault
-function Config:GetValue(key)
+function Config:GetValue(key, skipForce)
     local configEntry = self:Get(key)
     if not configEntry then return nil, false end
     local value, isDefault = nil, false
-    if configEntry.forceDisable then
+    if not skipForce and configEntry.forceDisabled then
         return false, false
     elseif configEntry.value ~= nil then
         value = configEntry.value
@@ -583,7 +666,7 @@ function Config:GetValue(key)
     end
     local parent = configEntry.parent
     if parent then
-        value = value and parent:GetValue()
+        value = parent:GetValue() and value
     end
     return value, isDefault
 end
@@ -608,8 +691,8 @@ end
 ---@param configEntry ConfigEntry
 ---@return option[]?
 function Config.getOptions(configEntry)
-    if configEntry.forceDisable then
-        return 
+    if configEntry:IsForceDisabled() then
+        return forceDisableOptions
     elseif configEntry.options then
         return configEntry.options
     elseif configEntry.type then
@@ -650,10 +733,26 @@ function Config:GetDefault(key)
     return Config.getDefault(configEntry)
 end
 
-function Config:forceDisable(key)
+---设置强制禁用
+---@param key? string
+function Config:ForceDisable(key)
     local configEntry = self:Get(key)
     if configEntry then
-        configEntry.forceDisable = true
+        configEntry.forceDisabled = true
+    end
+end
+
+---是否强制禁用
+---@param key? string
+---@return boolean?
+function Config:IsForceDisabled(key)
+    local configEntry = self:Get(key)
+    if configEntry then
+        local forceDisabled = configEntry.forceDisabled
+        if configEntry.parent then
+            forceDisabled = forceDisabled or configEntry.parent:IsForceDisabled()
+        end
+        return forceDisabled
     end
 end
 

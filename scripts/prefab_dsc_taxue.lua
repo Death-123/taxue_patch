@@ -4,7 +4,7 @@ local ItemTile = require "widgets/itemtile"
 local OldGDS = ItemTile.GetDescriptionString --原版显示物品描述
 local Text = require "widgets/text"
 
-local textColor = TaxuePatch and TaxuePatch.cfg.DSC_COLOR or { 255, 108, 180 }
+local textColor = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.desColor"))
 
 --#region tool functions
 
@@ -256,7 +256,7 @@ local function getItemInfo(target)
         Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. delicious_value)
         Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. title)
         Info:Add("已收获利息:" .. formatCoins(player.interest_num * 100))
-        if TaxuePatch and TaxuePatch.cfg.FORTUNE_PATCH then
+        if TaxuePatch.cfg("fortunePatch.usePatch") then
             local str = ""
             if player.fortune_day and player.fortune_day > 0 then
                 local fortune_list = {
@@ -277,7 +277,7 @@ local function getItemInfo(target)
                         break
                     end
                 end
-                if TaxuePatch.cfg.FORTUNE_NUM then
+                if TaxuePatch.cfg("fortunePatch.showNum", true) then
                     str = str .. ("(%.2f)"):format(player.badluck_num)
                 end
             end
@@ -459,7 +459,7 @@ local function getItemInfo(target)
     if target.prefab and target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
-        if interior and (TaxuePatch == nil and true or TaxuePatch.cfg.SHOW_SHOP) then
+        if interior and TaxuePatch.cfg("displaySetting.showShop") then
             local shopItemList = {}
             local maxNameLength = 0
             local maxCostLength = 0
@@ -569,7 +569,7 @@ local function getItemInfo(target)
     if target.prefab == "super_package" then
         if target.isPatched then
             local totalAmount = target.amount
-            local maxLineNum = TaxuePatch.cfg.PACKAGE_DES_MAX_LINES
+            local maxLineNum = TaxuePatch.cfg("package.desMaxLines")
             local singleType = target.type
             local singleItem
             local singleData
@@ -594,7 +594,7 @@ local function getItemInfo(target)
                     list = list[singleItem]
                     orders = { "noOrder" }
                     getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. TaxuePatch.DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
-                    showLines = table.containskey(TaxuePatch.ItemDataMap, singleItem)
+                    showLines = table.containskey(TaxuePatch.ItemDataMap, singleItem) or "nodata"
 
                     singleData = showLines ~= "nodata" and table.count(list) == 1 and next(list)
                     if singleData then
@@ -856,7 +856,7 @@ end
 --修改鼠标覆盖显示内容
 AddClassPostConstruct("widgets/hoverer", function(self)
     local old_SetString = self.text.SetString
-    self.text:SetColour(textColor[1] / 255, textColor[2] / 255, textColor[3] / 255, 1)
+    self.text:SetColour(textColor:Get())
     self.text.SetString = function(text, str)
         if Info.type == "text" then
             local target = TheInput:GetWorldEntityUnderMouse() --获取鼠标所指的实体
@@ -869,14 +869,13 @@ end)
 
 AddPlayerPostInit(function(inst)
     inst:DoTaskInTime(0.1, function()
-        if (DYCInfoPanel and DYCInfoPanel.objectDetailWindow) or (DYCLegendary and DYCLegendary.objectDetailWindow) then
-            local dyc = DYCLegendary and DYCLegendary or DYCInfoPanel
-            TaxuePatch.dyc = dyc
+        local dyc = TaxuePatch.dyc
+        if dyc and dyc.objectDetailWindow then
             local oldSetObjectDetail = dyc.objectDetailWindow.SetObjectDetail
             dyc.objectDetailWindow.SetObjectDetail = function(self, page)
                 for _, item in ipairs(page.lines) do
                     if item.component == 'custom' then
-                        item.color = dyc.RGBAColor(textColor[1] / 255, textColor[2] / 255, textColor[3] / 255)
+                        item.color = dyc.RGBAColor(textColor:Get())
                     end
                 end
                 oldSetObjectDetail(self, page)

@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "3.81.1"
+version = "3.81.2"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""
@@ -14,8 +14,8 @@ hamlet_compatible = true
 
 icon_atlas = "modicon.xml"
 icon = "modicon.tex"
-
-configuration_options = {
+configuration_options = {}
+--[[ configuration_options = {
     {
         name = "PATCH_ENABLE",
         label = "补丁启用",
@@ -523,4 +523,4 @@ configuration_options = {
         },
         default = 0.5,
     },
-}
+} ]]

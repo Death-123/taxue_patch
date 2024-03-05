@@ -90,7 +90,8 @@ end
 local function ListenDurableConsume(inst, ...)
     local owner = inst.components.inventoryitem.owner
     if owner and owner:HasTag("auto_amulet") then
-        if TaxuePatch.cfg.AUTO_AMULET_ARMOR and inst.components.armor:GetPercent() < TaxuePatch.cfg.AUTO_AMULET_ARMOR then
+        local armorPer = TaxuePatch.cfg("autoAmulet.armorPercent")
+        if armorPer and inst.components.armor:GetPercent() < armorPer then
             local repairMaterial = GetOne(owner, "core_gem")
             if repairMaterial then
                 inst.components.trader:AcceptGift(owner, repairMaterial)
@@ -106,7 +107,8 @@ end
 local function ListenFueledChange(inst, data)
     local owner = inst.components.inventoryitem.owner
     if owner:HasTag("auto_amulet") then
-        if TaxuePatch.cfg.AUTO_AMULET_WEAPON and data.percent < TaxuePatch.cfg.AUTO_AMULET_WEAPON then
+        local weaponPer = TaxuePatch.cfg("autoAmulet.weaponPercent")
+        if weaponPer and data.percent < weaponPer then
             if inst.components.fueled then
                 local fueled = inst.components.fueled
                 local repairMaterial = GetOne(owner, function(item) return fueled:CanAcceptFuelItem(item) end)
@@ -211,15 +213,15 @@ local function onTemperaturedelta(owner, data)
     end
 end
 
-local enableHeal = TaxuePatch.cfg.AUTO_AMULET_HEAL
-
+local enableHeal = TaxuePatch.cfg("autoAmulet.autoHeal")
 local function onHealthdelta(owner, data)
     if enableHeal then
         if not (owner and owner.components and owner.components.health and owner.components.eater) then return end
         local health = owner.components.health
         if health.currenthealth == health.maxhealth or not data.cause then return end
-        if (TaxuePatch.cfg.AUTO_AMULET_HEAL_NUM and health.currenthealth < TaxuePatch.cfg.AUTO_AMULET_HEAL_NUM) or
-            (TaxuePatch.cfg.AUTO_AMULET_HEAL_PER and data.newpercent < TaxuePatch.cfg.AUTO_AMULET_HEAL_PER) then
+        local autoHealNum, autoHealPer = TaxuePatch.cfg("autoAmulet.autoHealNum"), TaxuePatch.cfg("autoAmulet.autoHealPer")
+        if (autoHealNum and health.currenthealth < autoHealNum) or
+            (autoHealPer and data.newpercent < autoHealPer) then
             local health_agentia = GetOne(owner, "health_agentia")
             if health_agentia and health_agentia.components.edible then
                 health:DoDelta(health_agentia.components.edible.healthvalue, nil, health_agentia.prefab)
@@ -230,7 +232,7 @@ local function onHealthdelta(owner, data)
     end
 end
 
-TheInput:AddKeyDownHandler(TaxuePatch.cfg.AUTO_AMULET_HEAL_KEY, function()
+TheInput:AddKeyDownHandler(TaxuePatch.cfg("autoAmulet.autoHealKeybind"), function()
     if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
     enableHeal = not enableHeal
     TaXueSay(enableHeal and "自动喝血启用" or "自动喝血禁用")

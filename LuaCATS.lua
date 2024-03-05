@@ -347,6 +347,25 @@ function CreateEntity() end
 ---@field noneexchangeable boolean
 --#endregion
 
+---@class Taxue:entityPrefab
+---@field exp number
+---@field combat_capacity number
+---@field charm_value number
+---@field exp_extra number
+---@field charm_value_extra number
+---@field has_ticket? boolean
+---@field gamble_multiple? integer
+---@field loot_multiple? integer
+---@field substitute_item? string
+---@field faceblack number
+---@field golden number
+---@field lockpick_chance number
+---@field variation_chance number
+---@field thieves_chance number
+---@field lollipop_chance number
+---@field colourful_windmill_chance number
+---@field loaded_dice_chance number
+
 ---@return entityPrefab
 function GetPlayer() end
 
