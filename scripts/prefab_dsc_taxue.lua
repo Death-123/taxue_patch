@@ -606,12 +606,21 @@ local function getItemInfo(target)
                 end
             end
 
+            if target.name == TaxueToChs(target.prefab) and target.type then
+                local packageName
+                if singleData or singleItem then
+                    packageName = TaxueToChs(singleItem)
+                else
+                    packageName = TaxuePatch.ItemTypeNameMap[target.type]
+                end
+                if packageName then Info:Add(("超级包裹: %s"):format(packageName)) end
+            end
             local lineNum = 0
             if maxLineNum > 0 then
                 local lineNumFlag = false
                 for _, order in pairs(orders) do
                     for name, subList in pairs(list) do
-                        if (showLines == nil or showLines ~= "nodata") and (order == "noOrder" or name == order) then
+                        if (showLines ~= false and showLines ~= "nodata") and (order == "noOrder" or name == order) then
                             if lineNum <= maxLineNum then
                                 local nameStr = order == "noOrder" and getNameStr(name) or getNameStr(order)
                                 local valueStr = valueMap[name].hasValue and "/总价值:" .. formatCoins(valueMap[name].value) or "/无法售出"
@@ -637,11 +646,12 @@ local function getItemInfo(target)
                 end
             end
             local str
-            if showLines == nil or showLines ~= "nodata" then
+            if showLines ~= false and showLines ~= "nodata" then
                 str = ("%d%s物品,物品总数量: %s"):format(table.count(list), singleType and "种" or "类", formatNumber(totalAmount))
             elseif showLines == "nodata" then
-                str = ("%s: %s"):format(TaxueToChs(singleItem) ,formatNumber(totalAmount))
+                str = ("%s: %s"):format(TaxueToChs(singleItem), formatNumber(totalAmount))
             else
+                if singleData then Info:Add(getNameStr(singleData)) end
                 str = ("物品数量: %s"):format(formatNumber(totalAmount))
             end
             Info:Add(str)
