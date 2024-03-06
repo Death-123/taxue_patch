@@ -659,7 +659,7 @@ function Config:GetValue(key, skipForce)
         return false, false
     elseif configEntry.value ~= nil then
         value = configEntry.value
-    elseif configEntry.default then
+    elseif configEntry.default ~= nil then
         value, isDefault = configEntry.default, true
     else
         value, isDefault = true, true
@@ -722,7 +722,11 @@ end
 ---@param configEntry ConfigEntry
 ---@return any
 function Config.getDefault(configEntry)
-    return configEntry.default or true
+    if configEntry.default == nil then
+        return true
+    else
+        return configEntry.default
+    end
 end
 
 ---获取默认值

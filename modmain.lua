@@ -671,7 +671,8 @@ addPatchFn("taxueFix.autoSavePatch", function ()
     AddComponentPostInit("autosaver", function (comp, inst)
         local doSave = comp.DoSave
         comp.DoSave = function (self)
-            if not self.lastSaveTime or GetTime() - self.lastSaveTime > TaxuePatch.cfg("taxueFix.autoSavePatch") * 60 then
+            local cd = TaxuePatch.cfg("taxueFix.autoSavePatch")
+            if cd and (not self.lastSaveTime or GetTime() - self.lastSaveTime > cd * 60) then
                 self.lastSaveTime = GetTime()
                 doSave(self)
             end
