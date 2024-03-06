@@ -14,6 +14,10 @@ function string.split(input, delimiter)
     return arr
 end
 
+---如果字符串开头是strStart
+---@param str string
+---@param strStart string
+---@return boolean
 function string.startWith(str, strStart)
     return str:sub(1, #strStart) == strStart
 end
@@ -667,15 +671,25 @@ addPatchs("scripts/prefabs/taxue_book.lua", "taxueFix.harvestBookPatch", {
     { index = 46, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
 })
 --自动保存CD
-addPatchFn("taxueFix.autoSavePatch", function ()
-    AddComponentPostInit("autosaver", function (comp, inst)
+addPatchFn("taxueFix.autoSavePatch", function()
+    AddComponentPostInit("autosaver", function(comp, inst)
         local doSave = comp.DoSave
-        comp.DoSave = function (self)
+        comp.DoSave = function(self)
             local cd = TaxuePatch.cfg("taxueFix.autoSavePatch")
             if cd and (not self.lastSaveTime or GetTime() - self.lastSaveTime > cd * 60) then
                 self.lastSaveTime = GetTime()
                 doSave(self)
             end
+        end
+    end)
+end)
+--修复哈姆大蛇初始化崩溃
+addPatchFn("taxueFix.fixPugalisk", function()
+    AddPrefabPostInit("pugalisk", function(inst)
+        local oldOnLoadPostPass = inst.OnLoadPostPass
+        inst.OnLoadPostPass = function(inst, newents, data)
+            if not (data and data.home and newents and newents[data.home]) then return end
+            return oldOnLoadPostPass(inst, newents, data)
         end
     end)
 end)
@@ -691,7 +705,8 @@ addPatchFn("teleportCat", function()
             end
         end)
     end)
-
+end)
+addPatchFn("teleportCat.mapTeleport", function()
     AddClassPostConstruct("screens/mapscreen", function(MapScreen)
         local _oldOnControl = MapScreen.OnControl
         function MapScreen:OnControl(control, down)

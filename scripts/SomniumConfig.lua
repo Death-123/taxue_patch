@@ -187,6 +187,11 @@ local cfg = {
                 description = "优化收获书收获花盆时的性能",
             },
             {
+                id = "fixPugalisk",
+                name = "哈姆大蛇修复",
+                description = "修复哈姆泉水被拿走但是大蛇没有死亡导致的崩溃",
+            },
+            {
                 id = "autoSavePatch",
                 name = "自动保存CD",
                 description = "强制为自动保存增加冷却时间,冷却中无法自动保存",
@@ -210,7 +215,11 @@ local cfg = {
         name = "定位猫猫",
         description = "强制检查猫猫地灯会传送到猫猫地灯位置",
         subConfigs = {
-
+            {
+                id = "mapTeleport",
+                name = "地图传送",
+                description = "在地图上点击猫猫可以折跃到猫猫的位置,消耗饥饿值和精神值",
+            },
         }
     },
     {
@@ -268,6 +277,11 @@ local cfg = {
                 id = "showShop",
                 name = "商店显示",
                 description = "显示商店售卖物品"
+            },
+            {
+                id = "showCopyChance",
+                name = "显示复制成功率",
+                description = "显示复制宝石复制装备成功率"
             }
         }
     },

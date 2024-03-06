@@ -21,14 +21,6 @@ local function GetEquipmentName(position)
     end
 end
 
----如果字符串开头是strStart
----@param str string
----@param strStart string
----@return boolean
-function string.startWith(str, strStart)
-    return str:sub(1, #strStart) == strStart
-end
-
 --buff名表
 local buffNameMap = {
     taxue_tep_cold = "寒冷药剂",
@@ -749,48 +741,54 @@ local function getItemInfo(target)
         end
     end
     --特殊装备
-    --显示信息（参数：1字符串，2物品特有属性-用于判断,3需要乘的系数-方便显示百分比，4保留小数点,5前显示字符，6后显示字符）
-    local function ShowStr(name, num1, num2, str_first, str_last)
-        if target.equip_sign == name then
-            local value = string.format("%." .. num2 .. "f", target.equip_value * num1) --保留小数点后两位
-            Info:Add(str_first .. value .. str_last)
-        end
-    end
-
-    if target.components and target.components.equippable then
-        ShowStr("equipment_unforgettable", 1, 2, "血量上限:", "") --刻骨铭心
-        ShowStr("equipment_baby_dragon", 60, 2, "精神回复:", "/分钟") --幼龙
-        ShowStr("equipment_light_pearl", 1, 2, "发光范围:", "") --夜明珠
-        ShowStr("equipment_nobel_faceblack", 100, 2, "欧气值:", "%") --诺贝尔脸黑奖
-        ShowStr("equipment_fast_sandclock", 100, 2, "移速:", "%") --迅捷沙漏
-        ShowStr("equipment_fire_scale", 1, 2, "伤害:", "") --熔岩火鳞
-        ShowStr("equipment_golden_ring", 100, 2, "金肉掉落率:", "%") --黄金戒指
-        ShowStr("equipment_fire_horn", 100, 2, "暴击率:", "%") --熔岩火角
-        ShowStr("equipment_fire_claw", 1, 2, "暴击伤害加成:", "倍") --熔岩火爪
-        ShowStr("equipment_magic_conch", 100, 2, "变异率:", "%") --魔法海螺
-        ShowStr("equipment_crown", 100, 2, "攻速:", "%") --皇冠
-        ShowStr("equipment_lockpick", 100, 2, "钥匙掉率:", "%") --撬锁器
-        ShowStr("equipment_clover", 100, 2, "植物精华掉率:", "%") --四叶草
-        ShowStr("equipment_sweetheart_hairpin", 1, 2, "魅力值:", "") --甜心发卡
-        ShowStr("equipment_crystal_hat", 100, 0, "防水:", "%") --黯晶礼帽
-        ShowStr("equipment_exp_book", 1, 2, "额外经验值:", "") --经验秘籍
-        ShowStr("equipment_fire_tooth", 1, 2, "真实伤害:", "") --熔岩火牙
-        ShowStr("equipment_sea_clover", 100, 2, "海洋精华掉率:", "%") --海洋四叶草
-        ShowStr("equipment_thieves_gloves", 100, 2, "银梅币爆率:", "%") --窃贼手套
-        ShowStr("equipment_snowflake", 1, 2, "冰冻层数:", "层") --雪花
-        ShowStr("equipment_volcano_clover", 100, 2, "火山精华掉率:", "%") --火山四叶草
-        ShowStr("equipment_threecolour_clover", 100, 2, "精华掉率:", "%") --三色四叶草
-        ShowStr("equipment_lollipop", 100, 2, "孵化蛋掉率:", "%") --波板糖
-        ShowStr("equipment_pearl_mussel", 100, 2, "珍珠精华掉率:", "%") --珍珠蚌
-        ShowStr("equipment_loaded_dice", 100, 2, "灌铅包裹掉率:", "%") --灌铅骰子
-        ShowStr("equipment_colourful_windmill", 100, 2, "特殊奖励掉率:", "%") --炫彩风车
-
-        if target.prefab == "equipment_crystal_hat" or target.prefab == "equipment_crystal_hat_re" then
-            Info:Add("防雷:100%")
-        end
-
-        if target.equip_position then
+    if target.components and target.equip_position then
+        local value = target.equip_value
+        local sign = target.equip_sign
+        local formatStrs = {
+            equipment_unforgettable      = "血量上限:%s", --刻骨铭心
+            equipment_baby_dragon        = "精神回复:%s/分钟", --幼龙
+            equipment_light_pearl        = "发光范围:%s", --夜明珠
+            equipment_nobel_faceblack    = "欧气值:%s%%", --诺贝尔脸黑奖
+            equipment_fast_sandclock     = "移速:%s%%", --迅捷沙漏
+            equipment_fire_scale         = "伤害:%s", --熔岩火鳞
+            equipment_golden_ring        = "金肉掉落率:%s%%", --黄金戒指
+            equipment_fire_horn          = "暴击率:%s%%", --熔岩火角
+            equipment_fire_claw          = "暴击伤害加成:%s倍", --熔岩火爪
+            equipment_magic_conch        = "变异率:%s%%", --魔法海螺
+            equipment_crown              = "攻速:%s%%", --皇冠
+            equipment_lockpick           = "钥匙掉率:%s%%", --撬锁器
+            equipment_clover             = "植物精华掉率:%s%%", --四叶草
+            equipment_sweetheart_hairpin = "魅力值:%s", --甜心发卡
+            equipment_crystal_hat        = "防水:%s%%", --黯晶礼帽
+            equipment_exp_book           = "额外经验值:%s", --经验秘籍
+            equipment_fire_tooth         = "真实伤害:%s", --熔岩火牙
+            equipment_sea_clover         = "海洋精华掉率:%s%%", --海洋四叶草
+            equipment_thieves_gloves     = "银梅币爆率:%s%%", --窃贼手套
+            equipment_snowflake          = "冰冻层数:%s层", --雪花
+            equipment_volcano_clover     = "火山精华掉率:%s%%", --火山四叶草
+            equipment_threecolour_clover = "精华掉率:%s%%", --三色四叶草
+            equipment_lollipop           = "孵化蛋掉率:%s%%", --波板糖
+            equipment_pearl_mussel       = "珍珠精华掉率:%s%%", --珍珠蚌
+            equipment_loaded_dice        = "灌铅包裹掉率:%s%%", --灌铅骰子
+            equipment_colourful_windmill = "特殊奖励掉率:%s%%", --炫彩风车
+        }
+        local formatStr = formatStrs[sign]
+        if formatStr then
+            local showValue = value
+            if formatStr:endsWith("%%") then
+                showValue = value * 100
+            elseif formatStr:endsWith("分钟") then
+                showValue = value * 60
+            end
+            if sign == "equipment_crystal_hat" then
+                Info:Add("防雷:100%")
+            end
+            Info:Add(formatStr:format(formatNumber(showValue)))
             Info:Add("穿戴位置:" .. GetEquipmentName(target.equip_position))
+        end
+        local activeitem = player.components.inventory.activeitem
+        if activeitem and activeitem.prefab == "copy_gem" and TaxuePatch.cfg("displaySetting.showCopyChance") then
+            Info:Add(("复制成功率:%.2f%%"):format(100 / (math.ceil(value / target.MAX_EQUIP_VALUE))))
         end
     end
     --货币价值物品
