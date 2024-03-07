@@ -58,6 +58,34 @@ function string.compare(s1, s2)
     end
 end
 
+---覆写保存加载数据
+---@param inst entityPrefab
+---@param dataItems table<string, boolean>
+---@param after? boolean
+function OverrideSLData(inst, dataItems, after)
+    local onsave = inst.OnSave
+    inst.OnSave = function(self, data)
+        if after then onsave(self, data) end
+        for dataItem, save in pairs(dataItems) do
+            if save then
+                if self[dataItem] then data[dataItem] = self[dataItem] end
+            end
+        end
+        if not after then onsave(self, data) end
+    end
+
+    local onload = inst.OnLoad
+    inst.OnLoad = function(self, data)
+        if after then onload(self, data) end
+        for dataItem, save in pairs(dataItems) do
+            if save then
+                if data[dataItem] then self[dataItem] = data[dataItem] end
+            end
+        end
+        if not after then onload(self, data) end
+    end
+end
+
 --#endregion
 
 GLOBAL.TaxuePatch = {
@@ -82,6 +110,18 @@ local cfg = TaxuePatch.cfg
 local md5lib
 local fileCheck = cfg("fileCheck")
 if cfg("fileCheck.md5Bytes") == "C" then
+    local removeFiles = {
+        "lua51.DLL",
+        "lua51DS.DLL",
+        "WINMM.DLL",
+    }
+    for _, name in pairs(removeFiles) do
+        local path = "..\\bin\\" .. name
+        if kleifileexists(path) then
+            local file = io.popen("del " .. path)
+            if file then file:close() end
+        end
+    end
     local luaBin = io.open("../bin/lua5.1.dll")
     if not luaBin then
         print(luaBin)
@@ -127,6 +167,7 @@ end
 local json = require "json"
 require "publicList"
 TaxuePatch.patchlib = require "patchlib"
+TaxuePatch.superPackageLib = require "superPackageLib"
 TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
 TaxuePatch.RGBAColor = TaxuePatch.SomniumUtil.RGBAColor
 TaxuePatch.SomniumButton = require "widgets/SomniumButton"
@@ -201,10 +242,20 @@ local PATCHS = {
     ["scripts/prefabs/taxue_greenamulet.lua"] = { md5 = "9cd5d16770da66120739a4b260f23b4d", lines = {} },
     ["scripts/prefabs/taxue_agentia_compressor.lua"] = { md5 = "a4d92b944eb75c53a8280966ee18ef79", lines = {} },
 }
-
 local PATCH_FN = {}
+local playerSavedDataItems = {}
+TaxuePatch.PATCHS = PATCHS
+TaxuePatch.PATCH_FN = PATCH_FN
+TaxuePatch.playerSavedDataItems = playerSavedDataItems
 
---#region
+--#region patch
+---@class cfgLine
+---@field index integer
+---@field endIndex? integer
+---@field type? string
+---@field content? string
+---@field cfgKey? string
+
 local function patchFile(filePath, data)
     local oringinContents = {}
     local contents = {}
@@ -348,7 +399,7 @@ local function patchFile(filePath, data)
     end
 end
 
-local function testAllMd5()
+function TaxuePatch.TestAllMd5()
     if taxueLoaded then
         for path, data in pairs(PATCHS) do
             local originPath = taxuePath .. path
@@ -374,7 +425,7 @@ local function testAllMd5()
     end
 end
 
-local function patchAll(unpatch)
+function TaxuePatch.PatchAll(unpatch)
     for path, data in pairs(PATCHS) do
         local isPatched = false
         local originPath = taxuePath .. path
@@ -437,6 +488,10 @@ local function disablePatch(key)
     PATCHS[key].mode = "unpatch"
 end
 
+---添加patch
+---@param key string
+---@param cfgKey? string
+---@param line cfgLine
 local function addPatch(key, cfgKey, line)
     local patch = PATCHS[key]
     if cfgKey then
@@ -447,6 +502,10 @@ local function addPatch(key, cfgKey, line)
     table.insert(patch.lines, line)
 end
 
+---添加多个patch
+---@param key string
+---@param cfgKey? string
+---@param lines cfgLine[]
 local function addPatchs(key, cfgKey, lines)
     for _, line in ipairs(lines) do
         if not PATCHS[key] then
@@ -455,25 +514,37 @@ local function addPatchs(key, cfgKey, lines)
         addPatch(key, cfgKey, line)
     end
 end
-
+TaxuePatch.addPatchs = addPatchs
+---添加patch方法
+---@param cfgKey string
+---@param fn function
 local function addPatchFn(cfgKey, fn)
     PATCH_FN[cfgKey] = fn
 end
 
 local cfgKey
 
+---压入cfgkey
+---@param key string
 local function pushCfgKey(key)
     cfgKey = key
 end
 
+---弹出cfgkey
 local function popCfgKey()
     cfgKey = nil
 end
 
+---推送patch
+---@param key string
+---@param line cfgLine
 local function pushPatch(key, line)
     addPatch(key, cfgKey, line)
 end
 
+---推送多个patch
+---@param key string
+---@param lines cfgLine[]
 local function pushPatchs(key, lines)
     addPatchs(key, cfgKey, lines)
 end
@@ -606,15 +677,16 @@ addPatchs("scripts/public_method_taxue.lua", "taxueFix.intoChestFix", {
 --种子机修复
 addPatchFn("taxueFix.seedsMachineFix", function()
     local function pressButton(inst)
-        local slots = inst.components.container.slots --获取物品栏
+        local slots = inst.components.container.slots
         local has = false
         local resultList = { seeds = 0 }
-        for slot, v in pairs(slots) do --遍历一遍物品栏
+        for slot, v in pairs(slots) do
             local seed_name = string.lower(v.prefab .. "_seeds")
-            local can_accept = v and v.components.edible and Prefabs[seed_name] and
-                (v.components.edible.foodtype == "VEGGIE" or v.components.edible.foodtype == "FRUIT") --物品列表有改物品的_seeds后缀，那么该物品可分解
-            --处理分解
-            if can_accept then
+            local canAccept = v and v.components.edible and GLOBAL.Prefabs[seed_name] and
+                (v.components.edible.foodtype == "VEGGIE" or v.components.edible.foodtype == "FRUIT")
+            mprint(seed_name, canAccept)
+            mprint(v, v.components.edible, GLOBAL.Prefabs[seed_name], v.components.edible.foodtype == "VEGGIE" or v.components.edible.foodtype == "FRUIT")
+            if canAccept then
                 has = true
                 --处理原材料堆叠数量
                 local stacksize = v.components.stackable and v.components.stackable.stacksize or 1
@@ -629,7 +701,7 @@ addPatchFn("taxueFix.seedsMachineFix", function()
                 resultList.seeds = resultList.seeds + nomal_seeds
             end
         end
-        if has == false then
+        if not has then
             GetPlayer().components.talker:Say("你在分解个寂寞呢？")
         else
             for seedName, amount in pairs(resultList) do
@@ -865,7 +937,7 @@ addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", "oneClickUse.agentiaCo
     }
 })
 --点怪成金可以点召唤书
-addPatchs("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
+addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
     index = 695,
     endIndex = 718,
     content = [[
@@ -910,30 +982,71 @@ addPatchs("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
                     if num == 0 then break end
             ]]
 })
+--一键水晶煤球
+addPatchFn("oneClickUse.crystalBall", function()
+    AddPrefabPostInit("crystal_ball_taxue", function(_inst)
+        _inst:AddComponent("useableitem")
+        _inst.components.useableitem:SetCanInteractFn(function(inst) return GetPlayer().bank_value > 0.01 and inst.lv < 10 end)
+        _inst.components.useableitem:SetOnUseFn(function(inst)
+            if not inst.task then
+                inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function()
+                    local player = GetPlayer()
+                    if player.bank_value > 0.01 and inst.lv < 10 then
+                        player.bank_value = player.bank_value - 0.01
+                        inst.components.trader.onaccept(inst)
+                        TaXueSay("给梅老板投币喵！")
+                        local soundNum = cfg("oneClickUse.crystalBall.soundNum")
+                        if soundNum then
+                            player.SoundEmitter:PlaySound("drop/sfx/drop", nil, soundNum)
+                        end
+                    else
+                        inst.task:Cancel()
+                        inst.task = nil
+                    end
+                end)
+            end
+        end)
+    end)
+    AddPrefabPostInit("golden_statue", function(_inst)
+        _inst:ListenForEvent("trade", function(inst, data)
+            if data.item.prefab == "crystal_ball_taxue" then
+                if not inst.task then
+                    local ball
+                    inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function()
+                        if ball then
+                            if ball.task then
+                            else
+                                inst.components.trader:AcceptGift(GetPlayer(), ball)
+                                TaXueSay("给梅老板喂球喵！")
+                                ball = nil
+                            end
+                            return
+                        end
+                        local ents = TaxuePatch.GetNearByEntities(inst, 15, "crystal_ball_taxue")
+                        local _, ent = next(ents)
+                        if ent then
+                            if ent.components.useableitem:CanInteract() then
+                                ent.components.useableitem:StartUsingItem()
+                                ball = ent
+                                return
+                            end
+                        else
+                            inst.task:Cancel()
+                            inst.task = nil
+                        end
+                    end)
+                end
+            end
+        end)
+    end)
+end)
 --#endregion
 
 --#region 梅运券修改
+
+playerSavedDataItems.fortune_day = true
 addPatchFn("fortunePatch.usePatch", function()
     AddPrefabPostInit("taxue", function(inst)
-        local dataItems = {
-            "fortune_day"
-        }
-        local onsave = inst.OnSave
-        inst.OnSave = function(inst, data)
-            for _, dataItem in pairs(dataItems) do
-                if inst[dataItem] then data[dataItem] = inst[dataItem] end
-            end
-            onsave(inst, data)
-        end
-
-        local onload = inst.OnLoad
-        inst.OnLoad = function(inst, data)
-            for _, dataItem in pairs(dataItems) do
-                if data[dataItem] then inst[dataItem] = data[dataItem] end
-            end
-            onload(inst, data)
-        end
-
         local function daycomplete(inst, data)
             if TUNING.FUCK_DAY == true then
                 local player = GetPlayer()
@@ -945,16 +1058,17 @@ addPatchFn("fortunePatch.usePatch", function()
     AddPrefabPostInit("fortune_ticket", function(inst)
         inst.components.book:SetOnReadFn(function(inst, reader)
             local amount = inst.components.stackable.stacksize
-            GetPlayer().fortune_day = GetPlayer().fortune_day and GetPlayer().fortune_day + amount or amount
+            reader.fortune_day = reader.fortune_day and reader.fortune_day + amount or amount
             TaXueSay("已装载梅运券: " .. amount)
             inst:Remove()
+            return true
         end)
     end)
     AddPrefabPostInit("fortune_change_ticket", function(inst)
         local onread = inst.components.book.onread
         inst.components.book:SetOnReadFn(function(inst, reader)
-            onread(inst, reader)
             if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end
+            return onread(inst, reader)
         end)
     end)
 end)
@@ -1071,9 +1185,11 @@ addPatchFn("buffThings.buffStaff", function()
     local function changeTool(inst, dig)
         if dig ~= nil then inst.dig = dig end
         local symbol = "swap_" .. inst.prefab .. (inst.dig and "_dig" or "")
-        GetPlayer().AnimState:OverrideSymbol("swap_object", symbol, symbol)
-        GetPlayer().AnimState:Show("ARM_carry")
-        GetPlayer().AnimState:Hide("ARM_normal")
+        if inst.components.useableitem:CanInteract() then
+            GetPlayer().AnimState:OverrideSymbol("swap_object", symbol, symbol)
+            GetPlayer().AnimState:Show("ARM_carry")
+            GetPlayer().AnimState:Hide("ARM_normal")
+        end
         if inst.dig then
             inst:RemoveTag("taxue_mow")
             inst:RemoveComponent("tool")
@@ -1131,11 +1247,126 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
 --#endregion
 
 --#region 打包系统
-pushCfgKey("package")
-pushPatchs("scripts/prefabs/taxue_super_package_machine.lua", require("patchData/taxue_super_package_machine"))
-pushPatchs("scripts/prefabs/taxue_bundle.lua", require("patchData/taxue_bundle"))
-pushPatchs("scripts/prefabs/taxue_book.lua", require("patchData/taxue_book"))
-popCfgKey()
+addPatchFn("package", function()
+    AddPrefabPostInit("super_package", function(inst)
+        local dataItems = {
+            isPatched = true,
+            name = true,
+            type = true,
+            amount = true,
+            amountMap = true,
+            hasValue = true,
+            valueMap = true,
+            taxue_coin_value = true,
+        }
+        OverrideSLData(inst, dataItems)
+        inst.components.unwrappable:SetOnUnwrappedFn(function(inst, pos, doer)
+            TaxuePatch.superPackageLib.UnpackSuperPackage(inst)
+        end)
+    end)
+    AddPrefabPostInit("book_package_super", function(inst)
+        inst.components.book.onread = function(inst, reader)
+            if inst.time > 0 then
+                TaxuePatch.superPackageLib.DoPack(inst, true)
+                inst.time = inst.time - 1
+            else
+                GetPlayer().components.talker:Say("耐久都没了你在读个寂寞呢！")
+            end
+        end
+    end)
+    AddPrefabPostInit("super_package_machine", function(inst)
+        local dataItems = {
+            isPatched = true,
+        }
+        OverrideSLData(inst, dataItems)
+        inst.getPackage = function(self)
+            if self.switch == "off" then return nil end
+            local slots = self.components.container.slots
+            local package = nil
+            for _, v in pairs(slots) do
+                if v.prefab == "super_package" then
+                    package = v
+                    break
+                end
+            end
+            if package == nil then
+                package = TaxuePatch.superPackageLib.SpawnPackage()
+                self.components.container:GiveItem(package)
+            end
+            return package
+        end
+
+        inst.components.machine.turnonfn = function(self)
+            self.components.container:Close()
+            self.components.container.canbeopened = false
+
+            local diamond_num = self.components.container:Count("taxue_diamond")
+            local slots = self.components.container.slots
+            local package = nil
+            for __, v in pairs(slots) do
+                if v.prefab == "super_package" then
+                    package = v
+                end
+            end
+            if diamond_num < 1 and self.switch == "off" then
+                TaXueSay("请至少放入一颗钻石再启动！")
+                self:DoTaskInTime(0, function()
+                    self.components.machine:TurnOff()
+                end)
+                return
+            end
+            if self.components.container:IsFull() and package == nil then
+                TaXueSay("内部空间已满，请留出空余位置！")
+                self:DoTaskInTime(0, function()
+                    self.components.machine:TurnOff()
+                end)
+                return
+            end
+            TaXueSay("启动成功！")
+            TaxueFx(self, "clouds_bombsplash", 1, { 148, 0, 211 })
+            self.Light:Enable(true)
+            if self.switch == "off" then
+                self.components.container:ConsumeByName("taxue_diamond", 1)
+            end
+            if not self.isPatched and self.item_list and next(self.item_list) then
+                local tempPackage = SpawnPrefab("super_package")
+                tempPackage.item_list = self.item_list
+                if package then
+                    package = TaxuePatch.superPackageLib.MergePackage(package, tempPackage)
+                else
+                    package = TaxuePatch.superPackageLib.TransformPackage(tempPackage)
+                end
+            end
+            if package and not package.isPatched then
+                package = TaxuePatch.superPackageLib.TransformPackage(package)
+            end
+            self.isPatched = true
+            self.switch = "on"
+            self.task = self:DoPeriodicTask(5, function()
+                TaxuePatch.superPackageLib.DoPack(inst, false)
+            end)
+        end
+        inst.components.machine.turnofffn = function(self)
+            --移除空包裹
+            local container = self.components.container
+            for slot, v in pairs(container.slots) do
+                if v.prefab == "super_package" then
+                    if next(v.item_list) == nil and container:IsEmpty() then
+                        container:RemoveItemBySlot(slot):Remove()
+                        print("包裹已移除")
+                    end
+                end
+            end
+            self.Light:Enable(false)
+            self.switch = "off"
+            self.components.container.canbeopened = true
+            if self.task then
+                self.task:Cancel()
+                self.task = nil
+            end
+        end
+    end)
+end)
 --#endregion
 
 --#region 自动护符
@@ -1159,14 +1390,14 @@ end
 local customPatch = kleiloadlua(modPath .. "custompatch.lua")()
 if next(customPatch) then
     for path, lines in pairs(customPatch) do
-        addPatchs(path, lines)
+        addPatchs(path, nil, lines)
     end
 end
 
 --开始patch
 if taxueLoaded then
     local patchEnable = cfg("patchEnable")
-    patchAll(not patchEnable)
+    TaxuePatch.PatchAll(not patchEnable)
 
     if patchEnable then
         for key, fn in pairs(PATCH_FN) do
@@ -1175,6 +1406,9 @@ if taxueLoaded then
             end
         end
     end
+    AddPrefabPostInit("taxue", function(inst)
+        OverrideSLData(inst, playerSavedDataItems)
+    end)
 end
 
 local command = require "command"
@@ -1467,6 +1701,31 @@ AddClassPostConstruct("widgets/mapwidget", function(MapWidget)
     end
 end)
 
+AddComponentPostInit("useableitem", function(comp)
+    function comp:CollectSceneActions(doer, actions, right)
+        ACTIONS.USEITEM.priority = 3
+        ACTIONS.USEITEM.rmb = true
+        ACTIONS.USEITEM.distance = 5
+        ACTIONS.USEITEM.fn = function(act)
+            local target = act.target or act.invobject
+            if target and target.components.useableitem then
+                if target.components.useableitem:CanInteract() then
+                    target.components.useableitem:StartUsingItem()
+                end
+            end
+        end
+        ACTIONS.USEITEM.strfn = function(act)
+            local target = act.target or act.invobject
+            if target and target.components.useableitem then
+                return target.components.useableitem.verb
+            end
+        end
+        if right and self:CanInteract() then
+            table.insert(actions, ACTIONS.USEITEM)
+        end
+    end
+end)
+
 AddSimPostInit(function(player)
     player:DoTaskInTime(0, function()
         TaxuePatch.dyc = DYCLegendary or DYCInfoPanel
@@ -1478,4 +1737,4 @@ end)
 -- TaxuePatch.test = test
 
 -- test()
--- testAllMd5()
+TaxuePatch.TestAllMd5()

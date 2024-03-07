@@ -1,4 +1,5 @@
 local Image = require "widgets/image"
+local superPackageLib = require "superPackageLib"
 
 local cfg = TaxuePatch.cfg
 
@@ -153,7 +154,10 @@ end
 
 TaxuePatch.RemoveItem = RemoveItem
 
-local function giveItem(inst, item)
+---给予物品
+---@param inst entityPrefab
+---@param item entityPrefab
+function GiveItem(inst, item)
     if not item or not item.components or not inst or not inst.components then return end
     local container
     if inst.components.inventoryitem then
@@ -175,6 +179,8 @@ local function giveItem(inst, item)
     end
 end
 
+TaxuePatch.GiveItem = GiveItem
+
 ---给予物品
 ---@param inst entityPrefab
 ---@param itemList table<string, integer>
@@ -183,11 +189,11 @@ function GiveItems(inst, itemList)
         local item = SpawnPrefab(name)
         if item.components and item.components.stackable then
             item.components.stackable.stacksize = amount
-            giveItem(inst, item)
+            GiveItem(inst, item)
         else
             item:Remove()
             for _ = 1, amount do
-                giveItem(inst, SpawnPrefab(name))
+                GiveItem(inst, SpawnPrefab(name))
             end
         end
     end
@@ -220,432 +226,6 @@ local function getStackedItem(name, amount, maxsize)
     return items
 end
 TaxuePatch.getStackedItem = getStackedItem
-
-local function addToList(list, entity, number, data)
-    local amount = 1
-    local name = entity
-    if type(entity) == "string" then
-        amount = number or 1
-    else
-        name = entity.prefab
-        amount = entity.components.stackable and entity.components.stackable.stacksize or 1
-    end
-    if type(entity) == "string" or entity.components.stackable then
-        list[name] = list[name] and list[name] + amount or amount
-    else
-        list[name] = list[name] or {}
-        local listItem = list[name]
-        if data then
-            list[name][data] = list[name][data] or {}
-            listItem = list[name][data]
-        end
-        local saveData = entity:GetSaveRecord()
-        table.insert(listItem, saveData)
-    end
-end
-TaxuePatch.addToList = addToList
-
-local function processPackageData(package, itemType, itemName, amount, value, data)
-    package.amount = package.amount or 0
-    package.amount = amount and package.amount + amount or package.amount
-
-    package.amountMap = package.amountMap or {}
-    package.amountMap[itemType] = package.amountMap[itemType] or { amount = 0, sub = {} }
-    local aIndex = package.amountMap[itemType]
-    aIndex.amount = amount and aIndex.amount + amount or aIndex.amount
-
-    if package.hasValue == nil then package.hasValue = true end
-    package.hasValue = package.hasValue and (value ~= nil)
-    if package.hasValue then
-        package.taxue_coin_value = package.taxue_coin_value and package.taxue_coin_value + value or value
-    else
-        package.taxue_coin_value = nil
-    end
-
-    package.valueMap = package.valueMap or {}
-    package.valueMap[itemType] = package.valueMap[itemType] or { hasValue = true, value = 0, sub = {} }
-    local vIndex = package.valueMap[itemType]
-    vIndex.hasValue = vIndex.hasValue and (value ~= nil)
-    vIndex.value = value and vIndex.value + value or vIndex.value
-
-    for _, i in pairs({ itemName, data }) do
-        if i then
-            aIndex.sub = aIndex.sub or {}
-            aIndex.sub[i] = aIndex.sub[i] or { amount = 0 }
-            aIndex = aIndex.sub[i]
-
-            aIndex.amount = amount and aIndex.amount + amount or aIndex.amount
-
-            vIndex.sub = vIndex.sub or {}
-            vIndex.sub[i] = vIndex.sub[i] or { hasValue = true, value = 0 }
-            vIndex = vIndex.sub[i]
-
-            vIndex.hasValue = vIndex.hasValue and (value ~= nil)
-            vIndex.value = value and vIndex.value + value or vIndex.value
-        end
-    end
-end
-
----@class package:entityPrefab
----@field isPatched boolean
----@field type string
----@field amount integer
----@field amountMap table
----@field hasValue boolean
----@field valueMap table
----@field item_list table<string, table>
-
----spawn a super package
----@param name? string package display name
----@param type? string|nil package type
----@return package package
-function SpawnPackage(name, type)
-    local package = SpawnPrefab("super_package")
-    package.isPatched = true
-    package.name = name or package.name
-    package.type = type
-    package.amount = 0
-    package.amountMap = {}
-    package.hasValue = true
-    package.valueMap = {}
-    return package
-end
-
-TaxuePatch.SpawnPackage = SpawnPackage
-
----检查包裹类型
----@param package package
-function CheckPackageType(package)
-    if TableCount(package.item_list) == 1 then
-        local type, _ = next(package.item_list)
-        package.name = TaxuePatch.ItemTypeNameMap[type] or type
-        package.type = type
-    else
-        package.type = nil
-        package.name = TaxueToChs(package.prefab)
-    end
-end
-
-TaxuePatch.CheckPackageType = CheckPackageType
-
----transform package to patched package
----@param package package
----@return package newPackage
-function TransformPackage(package)
-    local slots = package.components.container.slots
-    local newPackage = SpawnPackage()
-    for _, v in pairs(slots) do
-        AddItemToSuperPackage(newPackage, v)
-    end
-    for k, v in pairs(package.item_list) do
-        if type(v) == "table" then
-            for name, items in pairs(v) do
-                if type(items) == "number" then
-                    local item = SpawnPrefab(name)
-                    item.components.stackable.stacksize = items
-                    AddItemToSuperPackage(newPackage, item)
-                else
-                    for _, itemData in pairs(items) do
-                        if itemData.prefab then
-                            local item = SpawnSaveRecord(itemData)
-                            AddItemToSuperPackage(newPackage, item)
-                        else
-                            for _, itemData in pairs(itemData) do
-                                local item = SpawnSaveRecord(itemData)
-                                AddItemToSuperPackage(newPackage, item)
-                            end
-                        end
-                    end
-                end
-            end
-        else
-            local newItem = SpawnPrefab(k)
-            newItem.components.stackable.stacksize = v
-            AddItemToSuperPackage(newPackage, newItem)
-        end
-    end
-    if TableCount(newPackage.item_list) == 1 then
-        for type, _ in pairs(newPackage.item_list) do
-            newPackage.type = type
-        end
-    end
-    local owner = package.components.inventoryitem.owner
-    if owner then
-        newPackage.components.inventoryitem.owner = owner
-        local container, slots
-        if owner == GetPlayer() then
-            container = owner.components.inventory
-            slots = container.itemslots
-        else
-            container = owner.components.container
-            slots = container.slots
-        end
-        for i, item in pairs(slots) do
-            if item == package then
-                container:RemoveItemBySlot(i)
-                container:GiveItem(newPackage, i)
-                break
-            end
-        end
-    else
-        newPackage.Transform:SetPosition(Vector3(package.Transform:GetWorldPosition()):Get())
-    end
-    package:Remove()
-    return newPackage
-end
-
-TaxuePatch.TransformPackage = TransformPackage
-
----merge two packages into one
----@param package package
----@param packageM package
----@return package package
-function MergePackage(package, packageM)
-    if not package.isPatched then package = TransformPackage(package) end
-    if not packageM.isPatched then packageM = TransformPackage(packageM) end
-    if packageM.amount == 0 then return package end
-
-    local item_list = package.item_list
-    for itemType, list1 in pairs(packageM.item_list) do
-        item_list[itemType] = item_list[itemType] or {}
-        for itemName, list2 in pairs(list1) do
-            if type(list2) == "table" then
-                item_list[itemType][itemName] = item_list[itemType][itemName] or {}
-                for data, list3 in pairs(list2) do
-                    if list3.prefab then
-                        table.insert(item_list[itemType][itemName], list3)
-                        local value = packageM.valueMap[itemType].sub[itemName].hasValue and packageM.valueMap[itemType].sub[itemName].value / #list2 or nil
-                        processPackageData(package, itemType, itemName, 1, value)
-                    else
-                        for _, item in pairs(list3) do
-                            item_list[itemType][itemName][data] = item_list[itemType][itemName][data] or {}
-                            table.insert(item_list[itemType][itemName][data], item)
-                            local value = packageM.valueMap[itemType].sub[itemName].hasValue and packageM.valueMap[itemType].sub[itemName].sub[data].value / #list3 or nil
-                            processPackageData(package, itemType, itemName, 1, value, data)
-                        end
-                    end
-                end
-            else
-                item_list[itemType][itemName] = item_list[itemType][itemName] and item_list[itemType][itemName] + list2 or list2
-                local value = packageM.valueMap[itemType].sub[itemName].hasValue and packageM.valueMap[itemType].sub[itemName].value or nil
-                processPackageData(package, itemType, itemName, list2, value)
-            end
-        end
-    end
-    packageM:Remove()
-    return package
-end
-
-TaxuePatch.MergePackage = MergePackage
-
----将物品添加到超级包裹
----@param package package
----@param entity entityPrefab|package
----@param showFx? boolean
----@param testFn? fun(ent:entityPrefab):boolean
-function AddItemToSuperPackage(package, entity, showFx, testFn)
-    if not entity or testFn and not testFn(entity) then return end
-    --特效
-    if showFx then SpawnPrefab("small_puff").Transform:SetPosition(entity.Transform:GetWorldPosition()) end
-    --fx.Transform:SetScale(0.5,0.5,0.5)
-    if not package.isPatched then
-        package = TransformPackage(package)
-        if not package then return end
-    end
-
-    local item_list = package.item_list
-    if entity.prefab == "super_package" then
-        MergePackage(package, entity)
-        return
-    end
-    if entity:HasTag("loaded_package") and entity.loaded_item_list then
-        local loaded_item_list = {}
-        for _, name in pairs(entity.loaded_item_list) do
-            loaded_item_list[name] = loaded_item_list[name] and loaded_item_list[name] + 1 or 1
-        end
-        AddItemsToSuperPackage(package, loaded_item_list)
-        entity:Remove()
-        return
-    end
-    local itemType
-    for type, list in pairs(TaxuePatch.ItemTypeMap) do
-        if table.contains(list, entity.prefab) then
-            if type == "equipment" then
-                local isHigh = entity.equip_value >= TaxuePatch.cfg("package.highEquipmentPercent") * entity.MAX_EQUIP_VALUE
-                type = isHigh and "equipmentHigh" or "equipmentLow"
-            end
-            itemType = type
-            break
-        end
-    end
-    itemType = itemType or "others"
-    local data
-    if table.containskey(TaxuePatch.ItemDataMap, entity.prefab) then
-        data = entity[TaxuePatch.ItemDataMap[entity.prefab]]
-    end
-    item_list[itemType] = item_list[itemType] or {}
-    addToList(item_list[itemType], entity, nil, data)
-
-    local amount = entity.components.stackable and entity.components.stackable.stacksize or 1
-    local coinValue = entity.taxue_coin_value and entity.taxue_coin_value * amount
-
-    local specialValueMap = {
-        taxue_coin = 100,
-        taxue_coin_silver = 1,
-        taxue_coin_copper = 0.01
-    }
-
-    for name, value in pairs(specialValueMap) do
-        if entity.prefab == name then
-            coinValue = value * amount
-            break
-        end
-    end
-
-    processPackageData(package, itemType, entity.prefab, amount, coinValue, data)
-
-    entity:Remove()
-end
-
-TaxuePatch.AddItemToSuperPackage = AddItemToSuperPackage
-
----将表中物品添加到超级包裹中
----@param package package
----@param items table<string, integer>
----@param showFx? boolean
----@param testFn? fun(ent:entityPrefab):boolean
-function AddItemsToSuperPackage(package, items, showFx, testFn)
-    for name, amount in pairs(items) do
-        local prefab = SpawnPrefab(name)
-        if prefab and prefab.components.stackable then
-            prefab.components.stackable.stacksize = amount
-            AddItemToSuperPackage(package, prefab, showFx, testFn)
-        elseif prefab then
-            prefab:Remove()
-            for _ = 1, amount do
-                AddItemToSuperPackage(package, SpawnPrefab(name), showFx, testFn)
-            end
-        end
-    end
-    CheckPackageType(package)
-end
-
-TaxuePatch.AddItemsToSuperPackage = AddItemsToSuperPackage
-
----打包所有实体
----@param package package
----@param entities entityPrefab[]
----@param testFn fun(entity:entityPrefab):boolean
----@param isBook? boolean
-function PackAllEntities(package, entities, testFn, isBook)
-    local treasures = {}
-    for _, ent in ipairs(entities) do
-        if TaxuePatch.cfg("package.openTreasures") and ent:HasTag("taxue_treasure") and (isBook or TaxuePatch.cfg("package.machineTreasures")) then
-            table.insert(treasures, ent)
-        elseif testFn(ent) then
-            AddItemToSuperPackage(package, ent, true)
-        end
-    end
-    if next(treasures) then
-        AddTreasuresToPackage(package, treasures)
-    end
-    CheckPackageType(package)
-end
-
-TaxuePatch.PackAllEntities = PackAllEntities
-
----打开超级包裹
----@param package package
-function UnpackSuperPackage(package)
-    if package.isPatched and package.amountMap then
-        if package.amount == 0 then RemoveItem(package) return end
-        local item_list = package.item_list
-        if not package.type then
-            for itemType, list in pairs(item_list) do
-                local typeName = TaxuePatch.ItemTypeNameMap[itemType] or itemType
-                local newPackage = SpawnPackage()
-                newPackage.name = typeName
-                newPackage.type = itemType
-                newPackage.amount = package.amountMap[itemType].amount
-                newPackage.amountMap = newPackage.amountMap or {}
-                newPackage.amountMap[itemType] = package.amountMap[itemType]
-                newPackage.hasValue = package.valueMap[itemType].hasValue
-                newPackage.valueMap = newPackage.valueMap or {}
-                newPackage.valueMap[itemType] = package.valueMap[itemType]
-                newPackage.taxue_coin_value = newPackage.hasValue and package.valueMap[itemType] and package.valueMap[itemType].value or nil
-                newPackage.item_list[itemType] = list
-                giveItem(package, newPackage)
-            end
-        else
-            local list = package.item_list[package.type]
-            local maxAmount = TaxuePatch.cfg("package.maxAmount")
-            local isSingle = TableCount(list) == 1
-            for itemName, items in pairs(list) do
-                local itemList = {}
-                if type(items) == "number" then
-                    local tempItem = SpawnPrefab(itemName)
-                    local maxsize = tempItem.components.stackable.maxsize
-                    tempItem:Remove()
-                    itemList = getStackedItem(itemName, items, maxsize)
-                else
-                    local isSingleData = TableCount(items) == 1
-                    local newPackage
-                    for value, item in pairs(items) do
-                        if item.prefab then
-                            table.insert(itemList, SpawnSaveRecord(item))
-                        elseif isSingleData or package.amountMap[package.type].amount < maxAmount then
-                            for _, item_ in ipairs(item) do
-                                table.insert(itemList, SpawnSaveRecord(item_))
-                            end
-                        elseif isSingle then
-                            local packageName = TaxueToChs(itemName) .. "  " .. TaxuePatch.DataStrMap[itemName]:format(type(value) == "number" and value or TaxueToChs(value))
-                            local newPackage = SpawnPackage(packageName, package.type)
-                            for _, item_ in ipairs(item) do
-                                AddItemToSuperPackage(newPackage, SpawnSaveRecord(item_))
-                            end
-                            giveItem(package, newPackage)
-                        else
-                            newPackage = newPackage or SpawnPackage(TaxueToChs(itemName), package.type)
-                            for _, item_ in ipairs(item) do
-                                AddItemToSuperPackage(newPackage, SpawnSaveRecord(item_))
-                            end
-                        end
-                    end
-                    if newPackage then giveItem(package, newPackage) end
-                end
-                local itemNum = #itemList
-                if itemNum > maxAmount * 1.5 then
-                    local packageName = TaxueToChs(itemName)
-                    local packageType = package.type
-                    local newPackage = SpawnPackage(packageName, packageType)
-                    local i = 0
-                    for _, item in ipairs(itemList) do
-                        if isSingle then
-                            if i >= maxAmount and itemNum - i > maxAmount / 2 then
-                                giveItem(package, newPackage)
-                                newPackage = SpawnPackage(packageName, packageType)
-                                itemNum = itemNum - i
-                                i = 0
-                            end
-                            i = i + 1
-                        end
-                        AddItemToSuperPackage(newPackage, item)
-                    end
-                    giveItem(package, newPackage)
-                else
-                    for _, item in pairs(itemList) do
-                        giveItem(package, item)
-                    end
-                end
-            end
-        end
-    else
-        TransformPackage(package)
-    end
-    RemoveItem(package)
-end
-
-TaxuePatch.UnpackSuperPackage = UnpackSuperPackage
 
 ---删除容器内物品
 ---@param container table
@@ -753,135 +333,6 @@ function SellPavilionSellItems(inst)
 end
 
 TaxuePatch.SellPavilionSellItems = SellPavilionSellItems
-
----开宝藏
----@param treasures entityPrefab[]
----@return table loots
----@return table[] numbers
-function OpenTreasures(treasures)
-    treasures[1].SoundEmitter:PlaySound("dontstarve_DLC002/common/loot_reveal")
-
-    local numbers = { {}, {} }
-
-    local loots = { boneshard = 2 * #treasures }
-
-    loots["obsidian"] = 0
-
-    for _, treasure in pairs(treasures) do
-        for i = 1, treasure.components.workable.workleft do
-            if math.random() <= 0.2 then
-                loots["obsidian"] = loots["obsidian"] + 1
-            end
-        end
-
-        for _, entry in ipairs(LootTables[treasure.prefab]) do
-            local prefab = entry[1]
-            local chance = entry[2]
-            if math.random() <= chance then
-                loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
-            end
-        end
-
-        local books = { "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone", "book_gardening",
-            "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone" }                                --原版书籍
-        local statues = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
-        if math.random() <= 0.1 then
-            local book = books[math.random(#books)]
-            loots[book] = loots[book] and loots[book] + 1 or 1
-        end
-
-        if treasure.prefab == "taxue_buriedtreasure_monster" then --怪物宝藏
-            local str = treasure.advance_list[1] or "spider"
-            local monster = SpawnPrefab(str)
-            if monster then
-                monster.Transform:SetPosition(treasure.Transform:GetWorldPosition())
-            end
-        else
-            local chanceChest = 0
-            local chanceStatue = 0
-            local chest
-            if treasure.prefab == "taxue_buriedtreasure" then
-                chanceChest = 0.5
-                chanceStatue = 0.2
-                chest = "taxue_treasurechest"
-            elseif treasure.prefab == "taxue_buriedtreasure_luxury" then
-                chanceChest = 0.3
-                chanceStatue = 0.3
-                chest = "taxue_pandoraschest"
-            end
-
-            if math.random() <= chanceChest then
-                numbers[2][chest] = numbers[2][chest] and numbers[2][chest] + 1 or 1
-                if cfg("package.destoryChest") then
-                    loots.boards = loots.boards and loots.boards + 1 or 1
-                    for __, prefab in ipairs(treasure.advance_list) do
-                        loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
-                    end
-                else
-                    local chest = SpawnPrefab(chest)
-                    for __, v in ipairs(treasure.advance_list) do
-                        local item = SpawnPrefab(v)
-                        if item ~= nil then
-                            chest.components.container:GiveItem(item)
-                        end
-                    end
-                    chest.Transform:SetPosition(treasure.Transform:GetWorldPosition())
-                end
-            elseif math.random() <= chanceStatue then
-                numbers[2]["statue"] = numbers[2]["statue"] and numbers[2]["statue"] + 1 or 1
-                local statue = SpawnPrefab(statues[math.random(#statues)])
-                if cfg("package.destoryStatue") then
-                    local dorps = statue.components.lootdropper:GetAllLoot()
-                    for _, prefab in ipairs(dorps) do
-                        loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
-                        statue:Remove()
-                    end
-                else
-                    statue.Transform:SetPosition(treasure.Transform:GetWorldPosition()) --生成随机雕像
-                end
-            end
-        end
-        numbers[1][treasure.prefab] = numbers[1][treasure.prefab] and numbers[1][treasure.prefab] + 1 or 1
-        treasure:Remove()
-    end
-    return loots, numbers
-end
-
-TaxuePatch.OpenTreasures = OpenTreasures
-
----开启所有宝藏并将物品添加进包裹
----@param package package
----@param treasures entityPrefab[]
-function AddTreasuresToPackage(package, treasures)
-    local loots, numbers = OpenTreasures(treasures)
-    for name, amount in pairs(loots) do
-        local prefab = SpawnPrefab(name)
-        if prefab and prefab.components.stackable then
-            prefab.components.stackable.stacksize = amount
-            AddItemToSuperPackage(package, prefab)
-        elseif prefab then
-            prefab:Remove()
-            for _ = 1, amount do
-                AddItemToSuperPackage(package, SpawnPrefab(name))
-            end
-        end
-    end
-    local str = "这波打包了:\n"
-    for _, line in pairs(numbers) do
-        for name, number in pairs(line) do
-            local name = name == "statue" and "雕像" or TaxueToChs(name)
-            str = str .. name .. number .. "个 "
-        end
-        str = str .. "\n"
-    end
-    if not package.components.talker then package:AddComponent("talker") end
-    package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
-    package.components.talker.offset = Vector3(0, 100, 0)
-    package.components.talker:Say(str, 10)
-    package:ListenForEvent("onremove", function() package.components.talker:ShutUp() end)
-end
-
-TaxuePatch.AddTreasuresToPackage = AddTreasuresToPackage
 
 ---将掉落物添加到列表中
 ---@param lootDropper table
@@ -1004,7 +455,7 @@ function StackDrops(target, dorpList, package)
             end
             return flag
         end
-        AddItemsToSuperPackage(package, dorpList, nil, testFn)
+        superPackageLib.AddItemsToSuperPackage(package, dorpList, nil, testFn)
         if next(dorpList) then TaxueFx(target, "small_puff") end
     elseif TaxuePatch.cfg("taxueFix.betterDrop.stackDrop") then
         for name, amount in pairs(dorpList) do
@@ -1370,8 +821,8 @@ function TaxueOnKilled(player, target)
         charm = math.random() * 1 + 1 + player.charm_value_extra --魅力值1~2
     end
     if IsBoss or NotSmall then
-        player.exp = player.exp and player.exp + exp                                --经验值
-        player.combat_capacity = player.combat_capacity and player.combat_capacity + combat     --战斗力
+        player.exp = player.exp and player.exp + exp                                        --经验值
+        player.combat_capacity = player.combat_capacity and player.combat_capacity + combat --战斗力
         player.charm_value = player.charm_value and player.charm_value + charm              --魅力值
         if showBanner then
             local bannerExp
@@ -1403,14 +854,14 @@ function TaxueOnKilled(player, target)
     --变异撬锁蜘蛛
     if target:HasTag("spider") then
         if math.random() <= 0.01 then
-            SpawnPrefab("collapse_small").Transform:SetPosition(player.Transform:GetWorldPosition())  --生成摧毁动画
-            SpawnPrefab("taxue_spider_dropper_key").Transform:SetPosition(target.Transform:GetWorldPosition())  --生成钥匙蜘蛛
+            SpawnPrefab("collapse_small").Transform:SetPosition(player.Transform:GetWorldPosition())           --生成摧毁动画
+            SpawnPrefab("taxue_spider_dropper_key").Transform:SetPosition(target.Transform:GetWorldPosition()) --生成钥匙蜘蛛
         end
     end
 
     --处理多倍战利品和装备掉落	
     if target.components.lootdropper and not IsSpecial then
-        local has_save = false  --是否保存
+        local has_save = false --是否保存
         local dorpList = {}
         local lootdropper = target.components.lootdropper
         local package
@@ -1424,7 +875,7 @@ function TaxueOnKilled(player, target)
                 if showBanner then
                     TaxuePatch.dyc.bannerSystem:ShowMessage("赌狗成功! 额外" .. player.gamble_multiple .. "倍掉落", 5, bannerColor)
                 else
-                    player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+                    player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
                 end
                 TaxuePatch.AddLootsToList(lootdropper, dorpList, player.gamble_multiple)
             else
@@ -1432,18 +883,18 @@ function TaxueOnKilled(player, target)
                     TaxuePatch.dyc.bannerSystem:ShowMessage("赌狗失败!", 5, bannerColor)
                 end
                 lootdropper:SetChanceLootTable()
-                lootdropper:SetLoot({"poop","poop","poop","poop","poop","poop","poop","poop","poop","poop"})
+                lootdropper:SetLoot({ "poop", "poop", "poop", "poop", "poop", "poop", "poop", "poop", "poop", "poop" })
             end
             player.gamble_multiple = 0
             player.has_ticket = false
         end
         --处理战利品券
-        if player.loot_multiple > 0 then	--触发战利品券
+        if player.loot_multiple > 0 then --触发战利品券
             has_save = true
             if showBanner then
                 TaxuePatch.dyc.bannerSystem:ShowMessage("触发战利品券! 额外" .. player.loot_multiple .. "倍掉落", 5, bannerColor)
             else
-                player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+                player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
             end
             TaxuePatch.AddLootsToList(lootdropper, dorpList, player.loot_multiple)
             player.loot_multiple = 0
@@ -1455,12 +906,12 @@ function TaxueOnKilled(player, target)
             if showBanner then
                 TaxuePatch.dyc.bannerSystem:ShowMessage("触发掉包券! 掉包物品: " .. TaxueToChs(player.substitute_item), 5, bannerColor)
             else
-                player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+                player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
             end
-            local item_list = lootdropper:GenerateLoot()   --战利品表
+            local item_list = lootdropper:GenerateLoot()       --战利品表
             local loot_list = {}
             for _ = 1, #item_list do
-                table.insert(loot_list,player.substitute_item)
+                table.insert(loot_list, player.substitute_item)
             end
             lootdropper:SetChanceLootTable()
             lootdropper:SetLoot(loot_list)
@@ -1490,27 +941,27 @@ function TaxueOnKilled(player, target)
                     bannerFaceBlack:OnUpdate(0)
                 end
             end
-            player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+            player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
             -- print("触发脸黑奖掉落")
             --超级掉落
-            if math.random() <= 0.005 then	--拥有奖杯则0.5%触发总概率1/3(向下取整)的数量掉落			
-                TaxuePatch.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100 )/3))
-                player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+            if math.random() <= 0.005 then                     --拥有奖杯则0.5%触发总概率1/3(向下取整)的数量掉落			
+                TaxuePatch.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100) / 3))
+                player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
                 if showBanner then
-                    TaxuePatch.dyc.bannerSystem:ShowMessage("哇！欧气爆炸！！！" .. math.floor((player.faceblack * 100 )/3) .. " 倍多爆！", 5, bannerColor)
+                    TaxuePatch.dyc.bannerSystem:ShowMessage("哇！欧气爆炸！！！" .. math.floor((player.faceblack * 100) / 3) .. " 倍多爆！", 5, bannerColor)
                 else
                     TaXueSay("哇！欧气爆炸！！！")
                 end
-                TaxueFx(player,"metal_hulk_ring_fx")
+                TaxueFx(player, "metal_hulk_ring_fx")
                 -- print("触发超级掉落")
             end
         end
         -------------------------------------------------
-        if math.random() <= 0.01 then	--默认1%概率双倍战利品
-            player.SoundEmitter:PlaySound("drop/sfx/drop")	--播放掉落音效
+        if math.random() <= 0.01 then                      --默认1%概率双倍战利品
+            player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
             TaxuePatch.AddLootsToList(lootdropper, dorpList)
             -- print("双倍掉落")
-        end	
+        end
         ----------------------------------------------------
         if NotSmall then
             --#region 处理黄金戒指
@@ -1521,9 +972,9 @@ function TaxueOnKilled(player, target)
 
             --#region 处理撬锁器
             local key_1 = {
-                "corkchest_key", --软木桶钥匙
+                "corkchest_key",     --软木桶钥匙
                 "treasurechest_key", --木箱钥匙
-                "skullchest_key", --骨钥匙
+                "skullchest_key",    --骨钥匙
             }
             local key_2 = {
                 "pandoraschest_key", --精致钥匙
@@ -1541,7 +992,7 @@ function TaxueOnKilled(player, target)
 
             --#region 处理魔法海螺
             if player.variation_chance > 0 and math.random() <= player.variation_chance and target.prefab ~= "taxue_spider_dropper_red" then
-                SpawnPrefab("collapse_small").Transform:SetPosition(player.Transform:GetWorldPosition()) --生成摧毁动画
+                SpawnPrefab("collapse_small").Transform:SetPosition(player.Transform:GetWorldPosition())           --生成摧毁动画
                 SpawnPrefab("taxue_spider_dropper_red").Transform:SetPosition(target.Transform:GetWorldPosition()) --生成吸血蜘蛛
             end
             --#endregion
@@ -1561,22 +1012,22 @@ function TaxueOnKilled(player, target)
                 "taxue_egg_nomal", --普通蛋
             }
             local egg_2 = {
-                "taxue_egg_doydoy",                                               --嘟嘟鸟蛋
-                "taxue_egg_tallbird",                                             --高鸟蛋
-                "taxue_egg_taxue",                                                --煤炭蛋
-                "taxue_egg_wave",                                                 --波浪蛋
-                "taxue_egg_star",                                                 --星斑蛋
-                "taxue_egg_grassland",                                            --绿茵蛋
-                "taxue_egg_whiteblue",                                            --白蓝蛋
-                "taxue_egg_eddy",                                                 --漩涡蛋
-                "taxue_egg_tigershark",                                           --虎纹蛋
-                "taxue_egg_hatch",                                                --哈奇蛋
-                "taxue_egg_rainbow",                                              --彩虹蛋
-                "taxue_egg_lava",                                                 --熔岩蛋
-                "taxue_egg_decorate",                                             --装饰蛋
-                "taxue_egg_ancient",                                              --远古蛋
-                "taxue_egg_skin",                                                 --装饰皮肤蛋
-                "taxue_egg_ampullaria_gigas",                                     --福寿蛋
+                "taxue_egg_doydoy",                                                       --嘟嘟鸟蛋
+                "taxue_egg_tallbird",                                                     --高鸟蛋
+                "taxue_egg_taxue",                                                        --煤炭蛋
+                "taxue_egg_wave",                                                         --波浪蛋
+                "taxue_egg_star",                                                         --星斑蛋
+                "taxue_egg_grassland",                                                    --绿茵蛋
+                "taxue_egg_whiteblue",                                                    --白蓝蛋
+                "taxue_egg_eddy",                                                         --漩涡蛋
+                "taxue_egg_tigershark",                                                   --虎纹蛋
+                "taxue_egg_hatch",                                                        --哈奇蛋
+                "taxue_egg_rainbow",                                                      --彩虹蛋
+                "taxue_egg_lava",                                                         --熔岩蛋
+                "taxue_egg_decorate",                                                     --装饰蛋
+                "taxue_egg_ancient",                                                      --远古蛋
+                "taxue_egg_skin",                                                         --装饰皮肤蛋
+                "taxue_egg_ampullaria_gigas",                                             --福寿蛋
             }
             if player.lollipop_chance > 0 and math.random() < player.lollipop_chance then --掉落蛋
                 local num = math.random()
@@ -1634,15 +1085,15 @@ function TaxueOnKilled(player, target)
         end
         --#region  处理灌铅骰子
         --print("处理灌铅骰子",inst.loaded_dice_chance)
-        if player.loaded_dice_chance > 0 and math.random() < player.loaded_dice_chance then     --触发包裹掉落
+        if player.loaded_dice_chance > 0 and math.random() < player.loaded_dice_chance then --触发包裹掉落
             local monster_item_list = {}
             if lootdropper then
-                monster_item_list = lootdropper:GenerateLoot()     --战利品表
-                for i = #monster_item_list, 1, -1 do                                 --这里把非物品栏物品剔除（注：用table库这种方式剔除一定要倒着干，不然无法全部删除）
+                monster_item_list = lootdropper:GenerateLoot() --战利品表
+                for i = #monster_item_list, 1, -1 do           --这里把非物品栏物品剔除（注：用table库这种方式剔除一定要倒着干，不然无法全部删除）
                     local item = SpawnPrefab(monster_item_list[i])
                     if item then
                         if not item.components.inventoryitem then
-                            table.remove(monster_item_list, i)    --用nil置空元素不前移，影响我判断数组长度，还是用库方法
+                            table.remove(monster_item_list, i) --用nil置空元素不前移，影响我判断数组长度，还是用库方法
                         end
                         item:Remove()
                     end
@@ -1664,7 +1115,7 @@ function TaxueOnKilled(player, target)
                 if #monster_item_list > 0 then
                     table.insert(loadedPackage.loaded_item_list, monster_item_list[math.random(#monster_item_list)])
                 else
-                    table.insert(loadedPackage.loaded_item_list, "taxue_coin_silver")    --防空表
+                    table.insert(loadedPackage.loaded_item_list, "taxue_coin_silver") --防空表
                 end
             end
             if package then
@@ -1678,7 +1129,7 @@ function TaxueOnKilled(player, target)
         TaxuePatch.StackDrops(target, dorpList)
 
         if has_save then
-            GetPlayer().components.autosaver:DoSave() 
+            GetPlayer().components.autosaver:DoSave()
         end
     end
 end

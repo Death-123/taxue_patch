@@ -217,6 +217,8 @@ function CreateEntity() end
 ---@field PushEvent fun(self,event:string,data?:any)
 ---@field RemoveEventCallback fun(self,envent:string,fn:fun(ent:EntityScript,data?:any),source?:table)
 ---@field RemoveAllEventCallbacks fun(self)
+---@field OnSave fun(self, data:table)
+---@field OnLoad fun(self, data:table)
 ---@field _ctor function
 ---@field __tostring function
 ---@field is_a function

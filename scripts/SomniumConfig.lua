@@ -246,6 +246,42 @@ local cfg = {
                 name = "点怪成金书",
                 description = "点怪成金书可以点地上的召唤书",
             },
+            {
+                id = "crystalBall",
+                name = "一键水晶煤球",
+                description = "右键使用水晶煤球可以用银行存款给煤球投币,每0.5秒自动投一次,将煤球给金猫会自动给附近的煤球投币并给予金猫",
+                subConfigs = {
+                    {
+                        id = "timeGap",
+                        name = "检测时间间隔",
+                        type = "number",
+                        options = {
+                            { des = "0.05秒", value = 0.05 },
+                            { des = "0.1秒", value = 0.1 },
+                            { des = "0.2秒", value = 0.2 },
+                            { des = "0.3秒", value = 0.3 },
+                            { des = "0.5秒", value = 0.5 },
+                            { des = "1秒", value = 1 },
+                        },
+                        default = 0.5
+                    },
+                    {
+                        id = "soundNum",
+                        name = "音效大小",
+                        type = "number",
+                        options = {
+                            { des = "0.05", value = 0.05 },
+                            { des = "0.1", value = 0.1 },
+                            { des = "0.2", value = 0.2 },
+                            { des = "0.3", value = 0.3 },
+                            { des = "0.5", value = 0.5 },
+                            { des = "1", value = 1 },
+                            { des = "禁用", value = false },
+                        },
+                        default = 0.3
+                    },
+                }
+            },
         }
     },
     {
@@ -629,6 +665,8 @@ function Config:Init()
         end
         oldSaveConfigurationOptions(_self, callback, modname, configdata, ...)
     end
+
+    KnownModIndex:LoadModInfo(self.modname)
 end
 
 ---获取配置

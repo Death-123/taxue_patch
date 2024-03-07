@@ -787,7 +787,7 @@ local function getItemInfo(target)
             Info:Add("穿戴位置:" .. GetEquipmentName(target.equip_position))
         end
         local activeitem = player.components.inventory.activeitem
-        if activeitem and activeitem.prefab == "copy_gem" and TaxuePatch.cfg("displaySetting.showCopyChance") then
+        if activeitem and activeitem.prefab == "copy_gem" and target.components.trader:CanAccept(activeitem, player) and TaxuePatch.cfg("displaySetting.showCopyChance") then
             Info:Add(("复制成功率:%.2f%%"):format(100 / (math.ceil(value / target.MAX_EQUIP_VALUE))))
         end
     end
