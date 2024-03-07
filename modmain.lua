@@ -217,24 +217,22 @@ local PATCHS = {
     ["scripts/prefabs/taxue_fish_tank.lua"] = { md5 = "4512a2847f757c7a2355f3f620a286a8", lines = {} },
     --定位猫猫
     ["scripts/prefabs/taxue_cat_floorlamp.lua"] = { md5 = "2344dc25f5ce1fbba5efa5ad726859c7", lines = {} },
-
-    --打包系统
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
-    --打包系统,优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "c0012c48eb693c79576bcc90a45d198e", lines = {} },
+    --优化收获书
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "f20227424235f2c550ff6ec7e5a3d426", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
     ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "59ee9457c09e523d48bdfc87d5be9fa0", lines = {} },
     --打包机防破坏,法杖增强
-    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "5fd18dbd5ccc618ffdbc79dd09d049c0", lines = {} },
+    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "f08909ea02e011f75e1540e40e2a050f", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
-    --梅运券修改,利息券连地上一起读
-    -- ["scripts/prefabs/taxue.lua"] = { md5 = "6aaab1b9655ca1ab06ae727d17c28afd", lines = {} },
+    --恐怖游戏修复
+    ["scripts/prefabs/taxue.lua"] = { md5 = "09e1731c8705c80c63dc7ee25ca47845", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -478,7 +476,7 @@ function TaxuePatch.PatchAll(unpatch)
                 target:write(io.open(modPath .. data.path, "rb"):read("*a"))
                 target:close()
             end
-        else
+        elseif data.isPatched or data.mode ~= "unpatch" then
             patchFile(path, data)
         end
     end
@@ -765,6 +763,8 @@ addPatchFn("taxueFix.fixPugalisk", function()
         end
     end)
 end)
+--修复恐怖游戏无限发生
+addPatch("scripts/prefabs/taxue.lua", "taxueFix.horrorGameFix", {index = 249, content = [[      if inst.has_horrorgame and math.random() < 0.1 then]]})
 --#endregion
 
 --#region 猫猫定位
@@ -938,8 +938,8 @@ addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", "oneClickUse.agentiaCo
 })
 --点怪成金可以点召唤书
 addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
-    index = 695,
-    endIndex = 718,
+    index = 725,
+    endIndex = 748,
     content = [[
             local goldenMap = {
                 bunnyman = "golden_bunnyman",
@@ -1027,9 +1027,8 @@ addPatchFn("oneClickUse.crystalBall", function()
                         if ent then
                             if ent.components.useableitem:CanInteract() then
                                 ent.components.useableitem:StartUsingItem()
-                                ball = ent
-                                return
                             end
+                            ball = ent
                         else
                             inst.task:Cancel()
                             inst.task = nil
@@ -1737,4 +1736,4 @@ end)
 -- TaxuePatch.test = test
 
 -- test()
-TaxuePatch.TestAllMd5()
+-- TaxuePatch.TestAllMd5()

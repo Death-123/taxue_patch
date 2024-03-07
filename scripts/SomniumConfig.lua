@@ -254,6 +254,7 @@ local cfg = {
                     {
                         id = "timeGap",
                         name = "检测时间间隔",
+                        description = "一键水晶煤球检测时间间隔",
                         type = "number",
                         options = {
                             { des = "0.05秒", value = 0.05 },
@@ -268,6 +269,7 @@ local cfg = {
                     {
                         id = "soundNum",
                         name = "音效大小",
+                        description = "一键水晶煤球投币音效大小",
                         type = "number",
                         options = {
                             { des = "0.05", value = 0.05 },
