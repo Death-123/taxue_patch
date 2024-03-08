@@ -4,7 +4,15 @@ local ItemTile = require "widgets/itemtile"
 local OldGDS = ItemTile.GetDescriptionString --原版显示物品描述
 local Text = require "widgets/text"
 
-local textColor = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.desColor"))
+local function cfg(key, notUsePatch)
+    if not TaxuePatch then
+        return notUsePatch == true
+    else
+        return not key or TaxuePatch.cfg(key)
+    end
+end
+
+local textColor = cfg() and TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.desColor")) or { 127, 255, 212, 1 }
 
 --#region tool functions
 
@@ -30,6 +38,12 @@ local buffNameMap = {
     taxue_bloodsucking = "嗜血药水",
     taxue_bramble_eggroll = "荆刺蛋卷",
 }
+
+if not cfg() then
+    function string.startWith(str, strStart)
+        return str:sub(1, #strStart) == strStart
+    end
+end
 
 ---将字符串以delimiter分割
 ---@param input string
@@ -248,7 +262,7 @@ local function getItemInfo(target)
         Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. delicious_value)
         Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. title)
         Info:Add("已收获利息:" .. formatCoins(player.interest_num * 100))
-        if TaxuePatch.cfg("fortunePatch.usePatch") then
+        if cfg("fortunePatch.usePatch") then
             local str = ""
             if player.fortune_day and player.fortune_day > 0 then
                 local fortune_list = {
@@ -269,7 +283,7 @@ local function getItemInfo(target)
                         break
                     end
                 end
-                if TaxuePatch.cfg("fortunePatch.showNum", true) then
+                if cfg("fortunePatch.showNum", true) then
                     str = str .. ("(%.2f)"):format(player.badluck_num)
                 end
             end
@@ -451,7 +465,7 @@ local function getItemInfo(target)
     if target.prefab and target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
-        if interior and TaxuePatch.cfg("displaySetting.showShop") then
+        if interior and cfg("displaySetting.showShop", true) then
             local shopItemList = {}
             local maxNameLength = 0
             local maxCostLength = 0
@@ -561,7 +575,7 @@ local function getItemInfo(target)
     if target.prefab == "super_package" then
         if target.isPatched then
             local totalAmount = target.amount
-            local maxLineNum = TaxuePatch.cfg("package.desMaxLines")
+            local maxLineNum = cfg("package.desMaxLines")
             local singleType = target.type
             local singleItem
             local singleData
@@ -683,6 +697,10 @@ local function getItemInfo(target)
     if target.prefab == "book_touch_golden" then
         Info:Add("点金数量: " .. target.golden_num .. "只")
     end
+    --宝藏去质
+    if target.prefab == "book_treasure_deprotonation" then
+        Info:Add("去质宝藏数量:" .. target.treasure_num .. "个")
+    end
     --灌铅包裹
     if target.loaded_item_list then
         Info:Add("物品数量: " .. #target.loaded_item_list .. "个")
@@ -787,7 +805,7 @@ local function getItemInfo(target)
             Info:Add("穿戴位置:" .. GetEquipmentName(target.equip_position))
         end
         local activeitem = player.components.inventory.activeitem
-        if activeitem and activeitem.prefab == "copy_gem" and target.components.trader:CanAccept(activeitem, player) and TaxuePatch.cfg("displaySetting.showCopyChance") then
+        if activeitem and activeitem.prefab == "copy_gem" and target.components.trader:CanAccept(activeitem, player) and cfg("displaySetting.showCopyChance", true) then
             Info:Add(("复制成功率:%.2f%%"):format(100 / (math.ceil(value / target.MAX_EQUIP_VALUE))))
         end
     end
@@ -861,10 +879,18 @@ function Text:GetStringAdd()
     end
 end
 
+local r, g, b, a
+if cfg() then
+    r, g, b, a = textColor:Get()
+else
+    r, g, b, a = textColor[1] / 255, textColor[2] / 255, textColor[3] / 255, textColor[4]
+end
+
 --修改鼠标覆盖显示内容
 AddClassPostConstruct("widgets/hoverer", function(self)
     local old_SetString = self.text.SetString
-    self.text:SetColour(textColor:Get())
+
+    self.text:SetColour(r, g, b, a)
     self.text.SetString = function(text, str)
         if Info.type == "text" then
             local target = TheInput:GetWorldEntityUnderMouse() --获取鼠标所指的实体
@@ -877,13 +903,13 @@ end)
 
 AddPlayerPostInit(function(inst)
     inst:DoTaskInTime(0.1, function()
-        local dyc = TaxuePatch.dyc
+        local dyc = DYCLegendary or DYCInfoPanel
         if dyc and dyc.objectDetailWindow then
             local oldSetObjectDetail = dyc.objectDetailWindow.SetObjectDetail
             dyc.objectDetailWindow.SetObjectDetail = function(self, page)
                 for _, item in ipairs(page.lines) do
                     if item.component == 'custom' then
-                        item.color = dyc.RGBAColor(textColor:Get())
+                        item.color = dyc.RGBAColor(r, g, b, a)
                     end
                 end
                 oldSetObjectDetail(self, page)

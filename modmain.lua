@@ -512,7 +512,7 @@ local function addPatchs(key, cfgKey, lines)
         addPatch(key, cfgKey, line)
     end
 end
-TaxuePatch.addPatchs = addPatchs
+
 ---添加patch方法
 ---@param cfgKey string
 ---@param fn function

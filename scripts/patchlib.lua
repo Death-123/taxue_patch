@@ -1126,7 +1126,7 @@ function TaxueOnKilled(player, target)
         end
         --#endregion
 
-        TaxuePatch.StackDrops(target, dorpList)
+        TaxuePatch.StackDrops(target, dorpList, package)
 
         if has_save then
             GetPlayer().components.autosaver:DoSave()
