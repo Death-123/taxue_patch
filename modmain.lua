@@ -1014,8 +1014,7 @@ addPatchFn("oneClickUse.crystalBall", function()
                     local ball
                     inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function()
                         if ball then
-                            if ball.task then
-                            else
+                            if not ball.task then
                                 inst.components.trader:AcceptGift(GetPlayer(), ball)
                                 TaXueSay("给梅老板喂球喵！")
                                 ball = nil

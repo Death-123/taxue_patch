@@ -1119,7 +1119,7 @@ function TaxueOnKilled(player, target)
                 end
             end
             if package then
-                TaxuePatch.AddItemToSuperPackage(package, loadedPackage)
+                superPackageLib.AddItemToSuperPackage(package, loadedPackage)
             else
                 TaxuePrefabDrop(target, loadedPackage, 1)
             end

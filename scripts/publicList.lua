@@ -39,15 +39,20 @@ ItemTypeMap = {
         "book_seeder_golden",   --黄金播种书
     },
     golden_food = {
-        "golden_ham",       --黄金火腿
-        "golden_meat",      --黄金大肉
-        "golden_pork",      --黄金五花肉
-        "golden_egg",       --黄金蛋
-        "golden_drumstick", --黄金鸡腿
-        "golden_clownfish", --黄金小丑鱼
-        "golden_tomato",    --黄金番茄
-        "golden_carrot",    --黄金胡萝卜
-        "golden_poop",      --黄金便便
+        "golden_ham",           --黄金火腿
+        "golden_meat",          --黄金大肉
+        "golden_pork",          --黄金五花肉
+        "golden_egg",           --黄金蛋
+        "golden_drumstick",     --黄金鸡腿
+        "golden_clownfish",     --黄金小丑鱼
+        "golden_tomato",        --黄金番茄
+        "golden_carrot",        --黄金胡萝卜
+        "golden_poop",          --黄金便便
+        "golden_smallrocky",    --黄金小石虾
+        "golden_smallpigman",   --黄金小猪人
+        "golden_smallbunnyman", --黄金小兔人
+        "golden_ingot",         --金元宝
+        "silver_ingot",         --银元宝
     },
     gem = {
         "redgem",        --红
@@ -106,6 +111,7 @@ ItemTypeMap = {
         "shop_refresh_ticket_rare",     --商店稀有物品刷新券
         "refreshticket_ticket",         --刷券券
         "fortune_change_ticket",        --转运券
+        "loot_ticket_fill",             --填充式战利品券
     },
     egg_all = {
         "taxue_egg_nomal",

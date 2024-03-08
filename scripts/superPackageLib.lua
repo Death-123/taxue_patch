@@ -347,7 +347,7 @@ function superPackageLib.DoPack(inst, isBook)
     if not isBook then
         TaxueFx(inst, "clouds_bombsplash", 1, { 148, 0, 211 })
         local blackListMachine = { "blooming_armor", "blooming_headwear" }
-        local notagsMachine = { "taxue_ultimate_weapon" }
+        local notagsMachine = { "taxue_ultimate_weapon", "taxue_armor_advanced", "taxue_hats_advanced" }
         for _, name in pairs(blackListMachine) do table.insert(blackList, name) end
         for _, name in pairs(notagsMachine) do table.insert(notags, name) end
     end
