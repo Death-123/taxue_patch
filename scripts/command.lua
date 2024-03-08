@@ -34,7 +34,7 @@ function command.test()
 end
 
 function command.mprint(...)
-    TaxuePatch.print(...)
+    TaxuePatch.mprint(...)
 end
 
 function command.getArgs(fun)

@@ -1,5 +1,11 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
 
+GLOBAL.TaxuePatch = {
+    id = "TaxuePatch",
+    name = "踏雪补丁",
+    cfg = {},
+}
+
 --#region tool functions
 function string.split(input, delimiter)
     input = tostring(input)
@@ -44,6 +50,7 @@ local function mprint(...)
     return print(prefix .. "[" .. modname .. " (" .. prettyname:trim() .. ")" .. "]:", msg)
 end
 local print = mprint
+TaxuePatch.mprint = mprint
 
 function string.compare(s1, s2)
     if type(s1) == "string" and type(s2) == "string" then
@@ -57,6 +64,42 @@ function string.compare(s1, s2)
         return false
     end
 end
+
+---比较两个表是否相同
+---@param t1 table
+---@param t2 table
+---@return boolean equal
+function TableEq(t1, t2)
+    if t1 == t2 then return true end
+    for key, value in pairs(t1) do
+        if value ~= t2[key] then return false end
+    end
+    for key, value in pairs(t2) do
+        if value ~= t1[key] then return false end
+    end
+    return true
+end
+
+TaxuePatch.TableEq = TableEq
+
+---深度比较比较两个表是否相同
+---@param t1 table
+---@param t2 table
+---@return boolean equal
+function TableDeepEq(t1, t2)
+    if not (type(t1) == "table" and type(t2) == "table") then
+        return t1 == t2
+    end
+    for key, value in pairs(t1) do
+        if not TableDeepEq(value, t2[key]) then return false end
+    end
+    for key, value in pairs(t2) do
+        if not TableDeepEq(value, t1[key]) then return false end
+    end
+    return true
+end
+
+TaxuePatch.TableDeepEq = TableDeepEq
 
 ---覆写保存加载数据
 ---@param inst entityPrefab
@@ -88,14 +131,9 @@ end
 
 --#endregion
 
-GLOBAL.TaxuePatch = {
-    id = "TaxuePatch",
-    name = "踏雪补丁",
-    print = mprint,
-    cfg = {},
-}
 local TaxuePatch = GLOBAL.TaxuePatch
 
+TaxuePatch.dataSaver = require("dataSave")(modname)
 local config = require("SomniumConfig")(modname)
 TaxuePatch.config = config
 TaxuePatch.cfg = function(key)
@@ -201,12 +239,12 @@ local PATCHS = {
     --面板兼容
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
-    --空格收菜,打包机防破坏
-    ["scripts/game_changed_taxue.lua"] = { md5 = "e7c36f924a5bb7525905db4525b8d92d", lines = {} },
+    --空格收菜
+    ["scripts/game_changed_taxue.lua"] = { md5 = "1590aee1b4b5e95754af8ebaab714ea3", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     --修复宝藏不出普通蛋
-    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "dd9f7d8822c70e2a6bc7a23f26569b92", lines = {} },
+    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "7882f3ec82d87c3cae69780c22846bf3", lines = {} },
     --按键排序
     ["scripts/press_key_taxue.lua"] = { md5 = "ade5dc0c6421c5817ac22e3f6b5e5159", lines = {} },
     --入箱丢包修复
@@ -220,7 +258,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "f20227424235f2c550ff6ec7e5a3d426", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "97f56a1eef47029c52ee983c8f1e4cbf", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
@@ -633,7 +671,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3086, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3087, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -763,8 +801,6 @@ addPatchFn("taxueFix.fixPugalisk", function()
         end
     end)
 end)
---修复恐怖游戏无限发生
-addPatch("scripts/prefabs/taxue.lua", "taxueFix.horrorGameFix", {index = 249, content = [[      if inst.has_horrorgame and math.random() < 0.1 then]]})
 --#endregion
 
 --#region 猫猫定位
@@ -803,6 +839,7 @@ end)
 --#endregion
 
 --#region 一键使用
+--券类
 addPatchs("scripts/prefabs/taxue_other_items.lua", "oneClickUse.ticket", {
     --利息券连地上一起读
     {
@@ -823,7 +860,7 @@ addPatchs("scripts/prefabs/taxue_other_items.lua", "oneClickUse.ticket", {
         if inst.prefab == "loot_ticket_fill" and inst.loot_multiple and inst.loot_multiple < 20 then
 			local hasLootTicket
 			local function fill(container, item, slot)
-				if item.prefab == "loot_ticket" then
+				if item.prefab == "loot_ticket" and item.loot_multiple < 20 then
 					hasLootTicket = true
 					if inst.loot_multiple + item.loot_multiple <= 20 then
 						inst.loot_multiple = inst.loot_multiple + item.loot_multiple
@@ -1241,6 +1278,22 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
             self.inst.time = self.inst.time + num * stacksize
             GetPlayer().components.talker:Say("耐久+"..(num * stacksize).."次")
     ]]
+})
+--宝藏去质黑名单
+addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", {
+    {
+        index = 1009,
+        content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
+    },
+    {
+        index = 1017,
+        content = [[
+                                local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
+                                if not table.contains(blackList, str) then
+                                    monster.components.health:Kill()
+                                end
+        ]]
+    }
 })
 --#endregion
 

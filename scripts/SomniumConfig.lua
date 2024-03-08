@@ -11,14 +11,25 @@ local DataSave = require "dataSave"
 ---@field type? string
 ---@field forceDisabled? boolean
 ---@field options? option[]
+---@field sels? option[]
 ---@field default? any
 ---@field value? any
 ---@field subConfigs? ConfigEntry[]
 ---@field parent? ConfigEntry
 ---@field Get? fun(self,key:string):ConfigEntry
 ---@field GetValue? fun(self,key?:string):value:any,isDefault:boolean
+---@field GetDefault? fun(self,key?:string):value:any
 ---@field ForceDisable? fun(self,key?:string)
 ---@field IsForceDisabled? fun(self,key?:string):isForceDisabled:boolean
+
+local mt = {}
+mt.__eq = TaxuePatch.TableDeepEq
+
+---为表添加__eq元方法
+---@param t table
+local function AddTableDeepEq(t)
+    setmetatable(t, mt)
+end
 
 ---@type option[]
 local enableOptions = {
@@ -461,6 +472,28 @@ local cfg = {
                 },
                 default = 4
             },
+            {
+                id = "treasureDeprotonation",
+                name = "宝藏去质黑名单",
+                description = "宝藏去质不会击杀黑名单中的怪物",
+                type = "multSel",
+                sels = {
+                    { des = "肥美金蛆", value = "taxue_giantgrub_golden" },
+                    { des = "巨型钢羊", value = "taxue_spat" },
+                    { des = "犀牛", value = "minotaur" },
+                    { des = "巨鹿", value = "deerclops" },
+                    { des = "鹿鸭", value = "moose" },
+                    { des = "熊大", value = "bearger" },
+                    { des = "龙蝇", value = "dragonfly" },
+                },
+                options = {
+                    { des = "金蛆,红钢羊", value = { 1, 2 } },
+                    { des = "金蛆,红钢羊,BOSS", value = { 1, 2, 3, 4, 5, 6, 7 } },
+                    { des = "金蛆,红钢羊,BOSS(排除熊大)", value = { 1, 2, 3, 4, 5, 7 } },
+                    { des = "禁用", value = false },
+                },
+                default = 2
+            },
         }
     },
     {
@@ -523,6 +556,7 @@ local cfg = {
             {
                 id = "machineTreasures",
                 name = "打包机能否开宝藏",
+                default = false
             },
             {
                 id = "destoryChest",
@@ -627,6 +661,7 @@ function Config:Init()
     function KnownModIndex.InitializeModInfo(_self, name, ...)
         local info = oldInitializeModInfo(_self, name, ...)
         if name == self.modname then
+            if not info.configuration_options then info.configuration_options = {} end
             self:InjectModConfig(info.configuration_options)
         end
         return info
@@ -655,17 +690,33 @@ function Config:Init()
         local configuration_options = oldLoadModConfigurationOptions(_self, modname, ...)
         if modname == self.modname and configuration_options then
             overWriteConfig(configuration_options)
+            for _, option in pairs(configuration_options) do
+                if type(option.saved) == "table" then
+                    AddTableDeepEq(option.saved)
+                end
+            end
         end
         return configuration_options
     end
 
     local oldSaveConfigurationOptions = KnownModIndex.SaveConfigurationOptions
-    function KnownModIndex.SaveConfigurationOptions(_self, callback, modname, configdata, ...)
-        if modname == self.modname and configdata then
-            overWriteConfig(configdata)
+    function KnownModIndex.SaveConfigurationOptions(_self, callback, modname, configuration_options, ...)
+        if modname == self.modname and configuration_options then
+            overWriteConfig(configuration_options)
             self:SaveCfg()
+            for _, option in pairs(configuration_options) do
+                option.options = nil
+                option.default = nil
+                local saved = option.saved
+                if type(saved) == "table" then
+                    option.saved = {}
+                    for key, value in pairs(saved) do
+                        option.saved[key] = value
+                    end
+                end
+            end
         end
-        oldSaveConfigurationOptions(_self, callback, modname, configdata, ...)
+        oldSaveConfigurationOptions(_self, callback, modname, configuration_options, ...)
     end
 
     KnownModIndex:LoadModInfo(self.modname)
@@ -682,22 +733,23 @@ function Config:Get(key)
         else
             return nil
         end
-    end
-    local keys = key:split(".")
-    local data = self.cfg or self
-    local found
-    for _, key in pairs(keys) do
-        found = nil
-        for _, configEntry in pairs(data) do
-            if configEntry.id == key then
-                found = configEntry
-                data = configEntry.subConfigs
-                break
+    else
+        local keys = key:split(".")
+        local data = self.cfg or self
+        local found
+        for _, key in pairs(keys) do
+            found = nil
+            for _, configEntry in pairs(data) do
+                if configEntry.id == key then
+                    found = configEntry
+                    data = configEntry.subConfigs
+                    break
+                end
             end
+            if not found then return nil end
         end
-        if not found then return nil end
+        return setmetatable(found, Config)
     end
-    return setmetatable(found, Config)
 end
 
 ---获取配置值
@@ -714,7 +766,7 @@ function Config:GetValue(key, skipForce)
     elseif configEntry.value ~= nil then
         value = configEntry.value
     elseif configEntry.default ~= nil then
-        value, isDefault = configEntry.default, true
+        value, isDefault = configEntry:GetDefault(), true
     else
         value, isDefault = true, true
     end
@@ -723,6 +775,22 @@ function Config:GetValue(key, skipForce)
         value = parent:GetValue() and value
     end
     return value, isDefault
+end
+
+function Config:GetSelectdValues(key)
+    local configEntry = self:Get(key)
+    if not configEntry then return nil, false end
+    local selValues, isDefault = {}, false
+    if configEntry.type == "multSel" and next(configEntry.sels) then
+        local value
+        value, isDefault = configEntry:GetValue()
+        if type(value) == "table" then
+            for _, sel in pairs(value) do
+                table.insert(selValues, configEntry.sels[sel].value)
+            end
+        end
+    end
+    return selValues, isDefault
 end
 
 ---设置配置值
@@ -745,23 +813,30 @@ end
 ---@param configEntry ConfigEntry
 ---@return option[]?
 function Config.getOptions(configEntry)
+    local options
     if configEntry:IsForceDisabled() then
-        return forceDisableOptions
+        options = forceDisableOptions
     elseif configEntry.options then
-        return configEntry.options
+        options = configEntry.options
     elseif configEntry.type then
         if configEntry.type == "color" then
-            return colorOptions
+            options = colorOptions
         elseif configEntry.type == "percent" then
-            return percentOptions
+            options = percentOptions
         elseif configEntry.type == "keybind" then
-            return keybindOptions
+            options = keybindOptions
         else
-            return { { des = " ", value = true } }
+            options = { { des = " ", value = true } }
         end
     else
-        return enableOptions
+        options = enableOptions
     end
+    for _, option in pairs(options) do
+        if type(option.value) == "table" and not getmetatable(option.value) then
+            AddTableDeepEq(option.value)
+        end
+    end
+    return options
 end
 
 ---获取配置选项
@@ -778,6 +853,8 @@ end
 function Config.getDefault(configEntry)
     if configEntry.default == nil then
         return true
+    elseif configEntry.type == "multSel" then
+        return configEntry.options[configEntry.default].value
     else
         return configEntry.default
     end

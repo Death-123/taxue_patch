@@ -24,19 +24,20 @@ ItemTypeMap = {
         "book_grow_spiderden",    --蜘蛛生长
     },
     book3 = {
-        "book_clear",           --清理书
-        "book_harvest",         --收获书
-        "book_pickup",          --拾取书
-        "book_seeder",          --播种书
-        "book_hatch",           --孵化书
-        "book_gardening",       --应用园艺学
-        "book_incubate",        --应用孵化学
-        "book_pisciculture",    --应用渔业学
-        "book_pigman_golden",   --猪人点金
-        "book_bunnyman_golden", --兔人点金
-        "book_golden_rocky",    --黄金石虾
-        "book_touch_golden",    --点怪成金书
-        "book_seeder_golden",   --黄金播种书
+        "book_clear",                  --清理书
+        "book_harvest",                --收获书
+        "book_pickup",                 --拾取书
+        "book_seeder",                 --播种书
+        "book_hatch",                  --孵化书
+        "book_gardening",              --应用园艺学
+        "book_incubate",               --应用孵化学
+        "book_pisciculture",           --应用渔业学
+        "book_pigman_golden",          --猪人点金
+        "book_bunnyman_golden",        --兔人点金
+        "book_golden_rocky",           --黄金石虾
+        "book_touch_golden",           --点怪成金书
+        "book_seeder_golden",          --黄金播种书
+        "book_treasure_deprotonation", --宝藏去质
     },
     golden_food = {
         "golden_ham",           --黄金火腿

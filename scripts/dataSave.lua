@@ -8,6 +8,7 @@ local json = require "json"
 ---@field load_success boolean
 ---@field data string
 local DataSave = Class(function(self, modname, data)
+    data = data or {}
     self.modname = modname
     self.path = data.path or self:GetDefaultPath() .. (data.name or "_savedData")
     self.encode = data.encode or false
