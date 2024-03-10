@@ -36,20 +36,20 @@ function SomniumText:__tostring()
 end
 
 ---设置颜色
----@param r? RGBAColor|number
+---@param color? RGBAColor|number
 ---@param g? number
 ---@param b? number
 ---@param a? number
-function SomniumText:SetColour(r, g, b, a)
-    if type(r) == "number" then
-        self.color = RGBAColor(r, g, b, a, true)
-        self.TextWidget:SetColour(r, g, b, a)
+function SomniumText:SetColour(color, g, b, a)
+    if type(color) == "number" then
+        self.color = RGBAColor(color, g, b, a, true)
+        self.TextWidget:SetColour(color, g, b, a)
     else
-        if not r then
-            r = RGBAColor()
+        if not color then
+            color = self.color or RGBAColor()
         end
-        self.color = RGBAColor(r[1], r[2], r[3], r[4], true)
-        self.TextWidget:SetColour(r[1], r[2], r[3], r[4])
+        self.color = RGBAColor(color[1], color[2], color[3], color[4], true)
+        self.TextWidget:SetColour(color[1], color[2], color[3], color[4])
     end
 end
 
@@ -62,11 +62,13 @@ function SomniumText:SetAlpha(a)
 end
 
 function SomniumText:SetFont(font)
+    if not font then return end
     self.font = font
     self.TextWidget:SetFont(font)
 end
 
 function SomniumText:SetFontSize(fontSize)
+    if not fontSize then return end
     if LOC then
         fontSize = fontSize * LOC.GetTextScale()
     end

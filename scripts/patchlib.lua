@@ -3,31 +3,33 @@ local superPackageLib = require "superPackageLib"
 
 local cfg = TaxuePatch.cfg
 
+local patchLib = {}
+
 ---count table
 ---@param table table
 ---@return integer
-TableCount = function(table)
+function patchLib.TableCount(table)
     local count = 0
     for _, _ in pairs(table) do count = count + 1 end
     return count
 end
-table.count = TableCount
+
+table.count = patchLib.TableCount
 
 ---给列表key对应的值加value
 ---@param List table
 ---@param key any
 ---@param value any
-ListAdd = function(List, key, value)
+function patchLib.ListAdd(List, key, value)
     value = value or 1
     List[key] = List[key] and List[key] + value or value
 end
-TaxuePatch.ListAdd = ListAdd
 
 ---测试物品是否符合条件
 ---@param item entityPrefab
 ---@param test string|string[]|fun(item:entityPrefab):boolean
 ---@return boolean
-function TestItem(item, test)
+function patchLib.TestItem(item, test)
     if not item then return false end
     local testFn
     if type(test) == "table" then
@@ -42,30 +44,26 @@ function TestItem(item, test)
     return testFn(item)
 end
 
-TaxuePatch.TestItem = TestItem
-
 ---返回slots中找到的第一个符合的物品
 ---@param slots entityPrefab[]
 ---@param itemTest string|string[]|fun(item:entityPrefab):boolean
 ---@return entityPrefab|nil item
 ---@return integer|nil slot
-function FindItem(slots, itemTest)
+function patchLib.FindItem(slots, itemTest)
     if not slots then return nil, nil end
     for slot, item in pairs(slots) do
-        if TestItem(item, itemTest) then
+        if patchLib.TestItem(item, itemTest) then
             return item, slot
         end
     end
 end
-
-TaxuePatch.FindItem = FindItem
 
 ---遍历物品栏
 ---@param owner entityPrefab
 ---@param fn fun(container:table,item:entityPrefab,slot:integer):shouldEnd:boolean
 ---@param opencontainer? boolean
 ---@return boolean
-function TraversalAllInventory(owner, fn, opencontainer)
+function patchLib.TraversalAllInventory(owner, fn, opencontainer)
     if not (owner and owner.components) then return false end
     local allSlots = {}
     if owner.components.container then
@@ -83,13 +81,11 @@ function TraversalAllInventory(owner, fn, opencontainer)
     for slots, container in pairs(allSlots) do
         for slot, item in pairs(slots) do
             if fn(container, item, slot) then return true end
-            if item.components and item.components.container then TraversalAllInventory(item, fn) end
+            if item.components and item.components.container then patchLib.TraversalAllInventory(item, fn) end
         end
     end
     return false
 end
-
-TaxuePatch.TraversalAllInventory = TraversalAllInventory
 
 ---查找周围实体
 ---@param inst entityPrefab
@@ -98,7 +94,7 @@ TaxuePatch.TraversalAllInventory = TraversalAllInventory
 ---@param tags? string[]
 ---@param notags? string[]
 ---@return entityPrefab[]|table[]
-function GetNearByEntities(inst, radius, testFn, tags, notags)
+function patchLib.GetNearByEntities(inst, radius, testFn, tags, notags)
     if not inst or not inst:IsValid() then return {} end
     local pos = Vector3(inst.Transform:GetWorldPosition())
     local notags = notags or { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
@@ -120,13 +116,11 @@ function GetNearByEntities(inst, radius, testFn, tags, notags)
     return list
 end
 
-TaxuePatch.GetNearByEntities = GetNearByEntities
-
 ---计算概率次数结果
 ---@param chance number
 ---@param times integer
 ---@return integer
-function GetChanceResult(chance, times)
+function patchLib.GetChanceResult(chance, times)
     local result = 0
     for _ = 1, times do
         if math.random() < chance then
@@ -136,11 +130,9 @@ function GetChanceResult(chance, times)
     return result
 end
 
-TaxuePatch.GetChanceResult = GetChanceResult
-
 ---移除物品
 ---@param item entityPrefab
-function RemoveItem(item)
+function patchLib.RemoveItem(item)
     local owner = item.components.inventoryitem.owner
     if owner then
         if owner == GetPlayer() then
@@ -152,12 +144,10 @@ function RemoveItem(item)
     item:Remove()
 end
 
-TaxuePatch.RemoveItem = RemoveItem
-
 ---给予物品
 ---@param inst entityPrefab
 ---@param item entityPrefab
-function GiveItem(inst, item)
+function patchLib.GiveItem(inst, item)
     if not item or not item.components or not inst or not inst.components then return end
     local container
     if inst.components.inventoryitem then
@@ -179,29 +169,30 @@ function GiveItem(inst, item)
     end
 end
 
-TaxuePatch.GiveItem = GiveItem
-
 ---给予物品
 ---@param inst entityPrefab
 ---@param itemList table<string, integer>
-function GiveItems(inst, itemList)
+function patchLib.GiveItems(inst, itemList)
     for name, amount in pairs(itemList) do
         local item = SpawnPrefab(name)
         if item.components and item.components.stackable then
             item.components.stackable.stacksize = amount
-            GiveItem(inst, item)
+            patchLib.GiveItem(inst, item)
         else
             item:Remove()
             for _ = 1, amount do
-                GiveItem(inst, SpawnPrefab(name))
+                patchLib.GiveItem(inst, SpawnPrefab(name))
             end
         end
     end
 end
 
-TaxuePatch.GiveItems = GiveItems
-
-local function getStackedItem(name, amount, maxsize)
+---获取对应数量的堆叠物品
+---@param name string
+---@param amount integer
+---@param maxsize integer
+---@return entityPrefab[]
+function patchLib.GetStackedItem(name, amount, maxsize)
     local items = {}
     if not maxsize then
         local tempItem = SpawnPrefab(name)
@@ -225,22 +216,19 @@ local function getStackedItem(name, amount, maxsize)
     end
     return items
 end
-TaxuePatch.getStackedItem = getStackedItem
 
 ---删除容器内物品
 ---@param container table
 ---@param itemList entityPrefab[]
-function RemoveSlotsItems(container, itemList)
+function patchLib.RemoveSlotsItems(container, itemList)
     for slot, _ in pairs(itemList) do
         container:RemoveItemBySlot(slot):Remove()
     end
 end
 
-TaxuePatch.RemoveSlotsItems = RemoveSlotsItems
-
 ---售货亭卖东西
 ---@param inst entityPrefab
-function SellPavilionSellItems(inst)
+function patchLib.SellPavilionSellItems(inst)
     local container = inst.components.container
     local slots = container.slots
 
@@ -304,12 +292,12 @@ function SellPavilionSellItems(inst)
     --如果是银行模式并且有钻石,存银行
     if diamond and coins + tempCoins > 0 then
         container:RemoveItem(diamond):Remove()
-        RemoveSlotsItems(container, coinList)
+        patchLib.RemoveSlotsItems(container, coinList)
         GetPlayer().bank_value = GetPlayer().bank_value + (coins + tempCoins) / 100
         playSound = true
         --如果不是禁用,并且金额大于500梅币
     elseif cfg("buffThings.sellPavilion") and coins + tempCoins >= 50000 then
-        RemoveSlotsItems(container, coinList)
+        patchLib.RemoveSlotsItems(container, coinList)
         local goldBrick = SpawnPrefab("gold_brick")
         goldBrick.taxue_coin_value = coins + tempCoins
         container:GiveItem(goldBrick)
@@ -332,13 +320,11 @@ function SellPavilionSellItems(inst)
     if playSound then inst.SoundEmitter:PlaySound("money/sfx/money") end
 end
 
-TaxuePatch.SellPavilionSellItems = SellPavilionSellItems
-
 ---将掉落物添加到列表中
 ---@param lootDropper table
 ---@param dorpList table<string, integer>
 ---@param times? integer
-function AddLootsToList(lootDropper, dorpList, times)
+function patchLib.AddLootsToList(lootDropper, dorpList, times)
     times = times or 1
     for _ = 1, times do
         if lootDropper.numrandomloot and math.random() <= (lootDropper.chancerandomloot or 1) then
@@ -436,13 +422,11 @@ function AddLootsToList(lootDropper, dorpList, times)
     end
 end
 
-TaxuePatch.AddLootsToList = AddLootsToList
-
 ---堆叠掉落物
 ---@param target entityPrefab
 ---@param dorpList table<string, integer>
 ---@param package? package
-function StackDrops(target, dorpList, package)
+function patchLib.StackDrops(target, dorpList, package)
     if package then
         local blackList = { "chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone" }
         local function testFn(ent)
@@ -461,7 +445,7 @@ function StackDrops(target, dorpList, package)
         for name, amount in pairs(dorpList) do
             local item = SpawnPrefab(name)
             if item and item.components and item.components.stackable then
-                local o = GetNearByEntities(target, 15, name)
+                local o = patchLib.GetNearByEntities(target, 15, name)
                 if #o > 0 and o[1].components and o[1].components.stackable then
                     local oitem = o[1]
                     local maxsize = oitem.components.stackable.maxsize
@@ -500,21 +484,24 @@ function StackDrops(target, dorpList, package)
     end
 end
 
-TaxuePatch.StackDrops = StackDrops
-
 ---获得距离最近的开启的打包机中的包裹
 ---@param target entityPrefab
 ---@return package|nil
-function GetNearestPackageMachine(target)
+function patchLib.GetNearestPackageMachine(target)
     local player = GetPlayer()
-    if player.nearestPackageMachine and player.nearestPackageMachine.switch == "on" and player.nearestPackageMachine:GetDistanceSqToInst(target) <= 2500 then
-        return player.nearestPackageMachine.getPackage and player.nearestPackageMachine:getPackage()
+    if player.nearestPackageMachine then
+        local machie = player.nearestPackageMachine
+        if target:IsValid() and machie:IsValid() and machie.switch == "on" and machie:GetDistanceSqToInst(target) <= 2500 then
+            return machie.getPackage and machie:getPackage()
+        else
+            player.nearestPackageMachine = nil
+        end
     elseif not player.lastScanPackage or GetTime() - player.lastScanPackage > 1 then
         player.lastScanPackage = GetTime()
         local testFn = function(ent)
             return ent.prefab == "super_package_machine" and ent.switch == "on"
         end
-        local packageMachines = GetNearByEntities(target, 50, testFn)
+        local packageMachines = patchLib.GetNearByEntities(target, 50, testFn)
         if #packageMachines > 0 then
             player.nearestPackageMachine = packageMachines[1]
             return packageMachines[1].getPackage and packageMachines[1]:getPackage()
@@ -525,8 +512,6 @@ function GetNearestPackageMachine(target)
     return nil
 end
 
-TaxuePatch.GetNearestPackageMachine = GetNearestPackageMachine
-
 local itemImageCache = {}
 
 ---播放物品移动的动画
@@ -534,7 +519,7 @@ local itemImageCache = {}
 ---@param src table
 ---@param target table
 ---@param time? number
-function PlayItemMove(item, src, target, time)
+function patchLib.PlayItemMove(item, src, target, time)
     local im
     if not itemImageCache[item] then
         local temp = SpawnPrefab(item)
@@ -548,13 +533,11 @@ function PlayItemMove(item, src, target, time)
     im:MoveTo(src, target, time or 0.3, function() im:Kill() end)
 end
 
-TaxuePatch.PlayItemMove = PlayItemMove
-
 ---批量收获
 ---@param crop table
 ---@param itemList table<string, integer>
 ---@param isBook? boolean
-function MultHarvest(crop, itemList, isBook)
+function patchLib.MultHarvest(crop, itemList, isBook)
     if not crop.matured or crop.withered then return end
     local player = GetPlayer()
     local product, amount = nil, 1
@@ -575,15 +558,15 @@ function MultHarvest(crop, itemList, isBook)
     -----------------处理特殊种子额外收获-----------------
     --仙人掌额外收获花
     if crop.inst.prefab == "plant_cactus" then
-        ListAdd(itemList, "cactus_flower")
-        PlayItemMove("cactus_flower", srcPos, targetPos)
+        patchLib.ListAdd(itemList, "cactus_flower")
+        patchLib.PlayItemMove("cactus_flower", srcPos, targetPos)
 
         --蘑菇
     elseif crop.inst.prefab == "plant_mushroom" then
-        ListAdd(itemList, "green_cap")
-        ListAdd(itemList, "blue_cap")
-        PlayItemMove("green_cap", srcPos, targetPos)
-        PlayItemMove("blue_cap", srcPos, targetPos)
+        patchLib.ListAdd(itemList, "green_cap")
+        patchLib.ListAdd(itemList, "blue_cap")
+        patchLib.PlayItemMove("green_cap", srcPos, targetPos)
+        patchLib.PlayItemMove("blue_cap", srcPos, targetPos)
 
         --蜜花额外收获
     elseif crop.inst.prefab == "plant_nectar" then
@@ -637,26 +620,26 @@ function MultHarvest(crop, itemList, isBook)
             local shoudSay
             --处理四叶草
             if cloverChance and threecolourclover_chance and math.random() < (cloverChance + threecolourclover_chance) then
-                ListAdd(itemList, cloverEssence)
-                PlayItemMove(cloverEssence, srcPos, targetPos)
+                patchLib.ListAdd(itemList, cloverEssence)
+                patchLib.PlayItemMove(cloverEssence, srcPos, targetPos)
                 shoudSay = true
             end
             --处理三色四叶草
             if threecolourclover_chance and math.random() < (threecolourclover_chance / 3) then
-                ListAdd(itemList, "threecolor_essence")
-                PlayItemMove("threecolor_essence", srcPos, targetPos)
+                patchLib.ListAdd(itemList, "threecolor_essence")
+                patchLib.PlayItemMove("threecolor_essence", srcPos, targetPos)
             end
             if shoudSay then player.components.talker:Say("我转运啦！") end
             --处理蛋蛋
             if isBook and math.random() < 0.005 then
-                ListAdd(itemList, "taxue_egg_harvest")
-                PlayItemMove("taxue_egg_harvest", srcPos, targetPos)
+                patchLib.ListAdd(itemList, "taxue_egg_harvest")
+                patchLib.PlayItemMove("taxue_egg_harvest", srcPos, targetPos)
             end
         end
     end
 
-    ListAdd(itemList, product, amount)
-    PlayItemMove(product, srcPos, targetPos)
+    patchLib.ListAdd(itemList, product, amount)
+    patchLib.PlayItemMove(product, srcPos, targetPos)
 
     ProfileStatsAdd("grown_" .. product)
 
@@ -691,8 +674,6 @@ function MultHarvest(crop, itemList, isBook)
     end
 end
 
-TaxuePatch.MultHarvest = MultHarvest
-
 local TRAVEL_COST = 32
 local max_hunger_cost = 100
 local sanity_cost_ratio = 25 / 75
@@ -700,7 +681,7 @@ local sanity_cost_ratio = 25 / 75
 ---有消耗传送
 ---@param inst entityPrefab|Vector3
 ---@param must? boolean
-function CostTeleport(inst, must)
+function patchLib.CostTeleport(inst, must)
     local x, y, z
     local player = GetPlayer()
     if inst.prefab then
@@ -736,7 +717,7 @@ function CostTeleport(inst, must)
         end
     end
 
-    TraversalAllInventory(player, function(container, item, slot)
+    patchLib.TraversalAllInventory(player, function(container, item, slot)
         if item.components.leader and item.components.leader.followers then
             for follower, _ in pairs(item.components.leader.followers) do
                 table.insert(followers, follower)
@@ -755,12 +736,10 @@ function CostTeleport(inst, must)
     TaXueSay("折越成功！")
 end
 
-TaxuePatch.CostTeleport = CostTeleport
-
 ---击杀结算
 ---@param player Taxue
 ---@param target entityPrefab
-function TaxueOnKilled(player, target)
+function patchLib.TaxueOnKilled(player, target)
     local showBanner = TaxuePatch.cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
     local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
     local bannerColor = showBanner and TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
@@ -866,7 +845,7 @@ function TaxueOnKilled(player, target)
         local lootdropper = target.components.lootdropper
         local package
         if TaxuePatch.cfg("taxueFix.betterDrop") then
-            package = TaxuePatch.GetNearestPackageMachine(target)
+            package = patchLib.GetNearestPackageMachine(target)
         end
         --处理赌狗
         if player.gamble_multiple > 0 then
@@ -877,7 +856,7 @@ function TaxueOnKilled(player, target)
                 else
                     player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
                 end
-                TaxuePatch.AddLootsToList(lootdropper, dorpList, player.gamble_multiple)
+                patchLib.AddLootsToList(lootdropper, dorpList, player.gamble_multiple)
             else
                 if showBanner then
                     TaxuePatch.dyc.bannerSystem:ShowMessage("赌狗失败!", 5, bannerColor)
@@ -896,7 +875,7 @@ function TaxueOnKilled(player, target)
             else
                 player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
             end
-            TaxuePatch.AddLootsToList(lootdropper, dorpList, player.loot_multiple)
+            patchLib.AddLootsToList(lootdropper, dorpList, player.loot_multiple)
             player.loot_multiple = 0
             player.has_ticket = false
         end
@@ -920,7 +899,7 @@ function TaxueOnKilled(player, target)
         end
         --处理脸黑值,概率为0~0.2
         if player.faceblack > 0 and math.random() <= player.faceblack then
-            TaxuePatch.AddLootsToList(lootdropper, dorpList)
+            patchLib.AddLootsToList(lootdropper, dorpList)
             if showBanner then
                 local bannerFaceBlack
                 local dyc = TaxuePatch.dyc
@@ -945,7 +924,7 @@ function TaxueOnKilled(player, target)
             -- print("触发脸黑奖掉落")
             --超级掉落
             if math.random() <= 0.005 then                     --拥有奖杯则0.5%触发总概率1/3(向下取整)的数量掉落			
-                TaxuePatch.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100) / 3))
+                patchLib.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100) / 3))
                 player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
                 if showBanner then
                     TaxuePatch.dyc.bannerSystem:ShowMessage("哇！欧气爆炸！！！" .. math.floor((player.faceblack * 100) / 3) .. " 倍多爆！", 5, bannerColor)
@@ -959,7 +938,7 @@ function TaxueOnKilled(player, target)
         -------------------------------------------------
         if math.random() <= 0.01 then                      --默认1%概率双倍战利品
             player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
-            TaxuePatch.AddLootsToList(lootdropper, dorpList)
+            patchLib.AddLootsToList(lootdropper, dorpList)
             -- print("双倍掉落")
         end
         ----------------------------------------------------
@@ -1126,7 +1105,7 @@ function TaxueOnKilled(player, target)
         end
         --#endregion
 
-        TaxuePatch.StackDrops(target, dorpList, package)
+        patchLib.StackDrops(target, dorpList, package)
 
         if has_save then
             GetPlayer().components.autosaver:DoSave()
@@ -1134,4 +1113,209 @@ function TaxueOnKilled(player, target)
     end
 end
 
-TaxuePatch.TaxueOnKilled = TaxueOnKilled
+---计算踏雪等级
+---@param player Taxue
+---@return integer level
+function patchLib.GetTaxueLevel(player)
+    local d, one, exp = player.EXP_PER, player.EXP_ONE, player.exp
+    local b = 0.5 * d - one
+    local level = (math.sqrt(b * b - 2 * d * exp) + b) / d
+    return math.floor(level)
+end
+
+---计算当前等级经验和当前等级升级经验
+---@param player Taxue
+---@return number currentLevelExp
+---@return number currentNeed
+function patchLib.GetTaxueExp(player)
+    local d, one, exp, level = player.EXP_PER, player.EXP_ONE, player.exp, player.level
+    local currentNeed = one + level * d
+    local currentLevelExp = exp - (one + (one + d * (level - 1))) * level / 2
+    return currentLevelExp, currentNeed
+end
+
+---获取美味称号
+---@param player Taxue
+---@return string
+function patchLib.GetDeliciousStr(player)
+    local deliciousStr = "无美味称号"
+    if player:HasTag("nausea") then
+        deliciousStr = "恶心至极"
+    elseif player:HasTag("delicious_small") then
+        deliciousStr = "美味初成"
+    elseif player:HasTag("delicious_nomal") then
+        deliciousStr = "美味专家"
+    elseif player:HasTag("delicious_big") then
+        deliciousStr = "美味大师"
+    elseif player:HasTag("delicious_huge") then
+        deliciousStr = "美味巅峰"
+    end
+    return deliciousStr
+end
+
+---获取银行称号
+---@param player Taxue
+---@return string
+function patchLib.GetBankStr(player)
+    local bankStr = "身无分文"
+    local bankStrMap = {
+        ["顶级富豪"] = 1000000000,
+        ["亿万富翁"] = 100000000,
+        ["千万富翁"] = 10000000,
+        ["百万富翁"] = 1000000,
+        ["特富阶级"] = 500000,
+        ["富人阶级"] = 100000,
+        ["中产阶级"] = 50000,
+        ["小产阶级"] = 20000,
+        ["万元户"] = 10000,
+        ["小康水平"] = 3000,
+        ["温饱户"] = 1000,
+        ["困难户"] = 500,
+        ["贫困户"] = 300,
+        ["赤贫户"] = 100,
+        ["特困户"] = 0,
+    }
+    for str, value in pairs(bankStrMap) do
+        if player.bank_value > value then
+            bankStr = str
+            break
+        end
+    end
+    return bankStr
+end
+
+---获取幸运描述
+---@param player Taxue
+---@return string
+function patchLib.GetFortuneStr(player)
+    local fortune_list = {
+        ["巅峰运势"] = 1.8,
+        ["极品欧皇"] = 1.5,
+        ["普通欧皇"] = 1.2,
+        ["超级好运"] = 1.1,
+        ["运气不错"] = 1.05,
+        ["普普通通"] = 0.95,
+        ["有点小霉"] = 0.85,
+        ["倒了大霉"] = 0.7,
+        ["霉上加霉"] = 0.4,
+        ["梅老板附体"] = 0.2,
+    }
+    for str, value in pairs(fortune_list) do
+        if player.badluck_num >= value then
+            return str
+        end
+    end
+    return "比煤老板还煤"
+end
+
+local function compare(a, b, up)
+    up = up or true
+    if a ~= b then
+        if a == nil then return not up end
+        if b == nil then return up end
+        if up then
+            return a > b
+        else
+            return a < b
+        end
+    end
+    return false
+end
+
+---物品排序比较方法
+---@param item1 entityPrefab
+---@param item2 entityPrefab
+---@return boolean
+function patchLib.TaxueSortItem(item1, item2)
+    assert(item1 and item2 and item1.prefab == item2.prefab)
+    local valueMap = {
+        loot_ticket = "loot_multiple",
+        gamble_ticket = "gamble_multiple",
+        refreshticket_ticket = "refresh_num",
+        book_touch_golden = "golden_num",
+        book_touch_spiderqueen = "spiderqueen_num",
+        substitute_ticket = "substitute_item",
+        shop_refresh_ticket_directed = "refresh_item",
+        book_touch_leif = "leif_num",
+        book_treasure_deprotonation = "treasure_num",
+        armor_penetration_staff = "armor_penetration",
+    }
+    local key = valueMap[item1.prefab]
+    if key then
+        return item1[key] > item2[key]
+    end
+    if item1:HasTag("taxue_equipment_all") then
+        return item1.equip_value > item2.equip_value
+    elseif item1.components.weapon and item1.components.weapon.damage ~= item2.components.weapon.damage then
+        return item1.components.weapon.damage > item2.components.weapon.damage
+    elseif item1.components.armor then
+        if item1.components.armor.absorb_percent ~= item2.components.armor.absorb_percent then
+            return compare(item1.components.armor.absorb_percent, item2.components.armor.absorb_percent)
+        elseif item1.components.armor.maxcondition ~= item2.components.armor.maxcondition then
+            return compare(item1.components.armor.maxcondition, item2.components.armor.maxcondition)
+        elseif item1.components.armor.condition ~= item2.components.armor.condition then
+            return compare(item1.components.armor.condition, item2.components.armor.condition)
+        end
+    elseif item1.taxue_coin_value then
+        if not item2.taxue_coin_value then return true end
+        return item1.taxue_coin_value > item2.taxue_coin_value
+    end
+    return false
+end
+
+---排序格子
+---@param slots entityPrefab[]
+function patchLib.TaxueSortSlots(slots)
+    local itemOders = {}
+    local allItems = {}
+    for i, item in pairs(slots) do
+        if item then
+            if not table.contains(itemOders, item.prefab) then
+                table.insert(itemOders, item.prefab)
+            end
+            allItems[item.prefab] = allItems[item.prefab] or {}
+            local itemList = allItems[item.prefab]
+            if item.components.stackable then
+                local preItem = itemList[#itemList]
+                if preItem and preItem.components.stackable and not preItem.components.stackable:IsFull() then
+                    item = preItem.components.stackable:Put(item)
+                end
+            end
+            if item then table.insert(itemList, item) end
+            slots[i] = nil
+        end
+    end
+    for _, key in pairs(itemOders) do
+        table.sort(allItems[key], patchLib.TaxueSortItem)
+        for name, item in pairs(allItems[key]) do
+            table.insert(slots, item)
+        end
+    end
+end
+
+---排序打开的物品栏
+---@param inst entityPrefab
+---@param backpack? boolean
+function patchLib.TaxueSortContainer(inst, backpack)
+    local inventory = inst.components.inventory
+    local has
+    for container, _ in pairs(inventory.opencontainers) do
+        local isequipped = container.components.equippable and container.components.equippable.isequipped
+        if not isequipped or (backpack and isequipped) then
+            has = true
+            patchLib.TaxueSortSlots(container.components.container.slots)
+            container.components.container:Close(inst)
+            container.components.container:Open(inst)
+        end
+    end
+    if has then
+        inst.SoundEmitter:PlaySound("dontstarve_DLC003/common/objects/honey_chest/open")
+        TaXueSay("整理成功！")
+    else
+        TaXueSay("你在乱按什么？")
+    end
+end
+
+for key, value in pairs(patchLib) do
+    TaxuePatch[key] = value
+end

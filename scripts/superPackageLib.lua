@@ -92,7 +92,7 @@ end
 ---检查包裹类型
 ---@param package package
 function superPackageLib.CheckPackageType(package)
-    if TableCount(package.item_list) == 1 then
+    if TaxuePatch.TableCount(package.item_list) == 1 then
         local type, _ = next(package.item_list)
         package.name = TaxuePatch.ItemTypeNameMap[type] or type
         package.type = type
@@ -138,7 +138,7 @@ function superPackageLib.TransformPackage(package)
             superPackageLib.AddItemToSuperPackage(newPackage, newItem)
         end
     end
-    if TableCount(newPackage.item_list) == 1 then
+    if TaxuePatch.TableCount(newPackage.item_list) == 1 then
         for type, _ in pairs(newPackage.item_list) do
             newPackage.type = type
         end
@@ -379,7 +379,7 @@ end
 function superPackageLib.UnpackSuperPackage(package)
     if package.isPatched and package.amountMap then
         if package.amount == 0 then
-            RemoveItem(package)
+            TaxuePatch.RemoveItem(package)
             return
         end
         local item_list = package.item_list
@@ -402,16 +402,16 @@ function superPackageLib.UnpackSuperPackage(package)
         else
             local list = package.item_list[package.type]
             local maxAmount = TaxuePatch.cfg("package.maxAmount")
-            local isSingle = TableCount(list) == 1
+            local isSingle = TaxuePatch.TableCount(list) == 1
             for itemName, items in pairs(list) do
                 local itemList = {}
                 if type(items) == "number" then
                     local tempItem = SpawnPrefab(itemName)
                     local maxsize = tempItem.components.stackable.maxsize
                     tempItem:Remove()
-                    itemList = TaxuePatch.getStackedItem(itemName, items, maxsize)
+                    itemList = TaxuePatch.GetStackedItem(itemName, items, maxsize)
                 else
-                    local isSingleData = TableCount(items) == 1
+                    local isSingleData = TaxuePatch.TableCount(items) == 1
                     local newPackage
                     for value, item in pairs(items) do
                         if item.prefab then
@@ -465,7 +465,7 @@ function superPackageLib.UnpackSuperPackage(package)
     else
         superPackageLib.TransformPackage(package)
     end
-    RemoveItem(package)
+    TaxuePatch.RemoveItem(package)
 end
 
 ---开宝藏

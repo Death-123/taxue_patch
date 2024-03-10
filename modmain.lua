@@ -147,7 +147,7 @@ local cfg = TaxuePatch.cfg
 
 local md5lib
 local fileCheck = cfg("fileCheck")
-if cfg("fileCheck.md5Bytes") == "C" then
+if cfg("fileCheck.md5Bytes") == "C" and PLATFORM:startWith("WIN32") then
     local removeFiles = {
         "lua51.DLL",
         "lua51DS.DLL",
@@ -270,7 +270,7 @@ local PATCHS = {
     --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
     --恐怖游戏修复
-    ["scripts/prefabs/taxue.lua"] = { md5 = "09e1731c8705c80c63dc7ee25ca47845", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "b65c4a40e3cba570314a41e477587151", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -682,29 +682,13 @@ addPatchs("scripts/prefabs/taxue_treasure.lua", "taxueFix.treasureEggFix", {
     { index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]] },
 })
 --按键排序
-addPatchs("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
+addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", 
     {
-        index = 297,
-        endIndex = 299,
-        content = [[
-            if item1.prefab == name and item2.prefab == name then
-                if type(value1) == "number" then
-                    return value1 < value2
-                else
-                    return value2:compare(value1)
-                end
-            end
-        ]]
-    },
-    {
-        index = 312,
-        content = [[
-            or CanSort(item1,item2,"substitute_ticket",item1.substitute_item,item2.substitute_item)   --掉包券
-            or CanSort(item1,item2,"shop_refresh_ticket_directed",item1.refresh_item,item2.refresh_item)   --定向商店刷新
-            or CanSort(item1,item2,"book_touch_leif",item1.leif_num,item2.leif_num)) then   --点树成精
-        ]]
+        index = 223,
+        endIndex = 328,
+        content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
     }
-})
+)
 --入箱丢包修复,空掉落物崩溃修复
 addPatchs("scripts/public_method_taxue.lua", "taxueFix.intoChestFix", {
     { index = 151, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
@@ -1053,6 +1037,7 @@ addPatchFn("oneClickUse.crystalBall", function()
                         if ball then
                             if not ball.task then
                                 inst.components.trader:AcceptGift(GetPlayer(), ball)
+                                TaxueFx(ball, "small_puff")
                                 TaXueSay("给梅老板喂球喵！")
                                 ball = nil
                             end
@@ -1323,6 +1308,7 @@ addPatchFn("package", function()
             else
                 GetPlayer().components.talker:Say("耐久都没了你在读个寂寞呢！")
             end
+            return true
         end
     end)
     AddPrefabPostInit("super_package_machine", function(inst)
@@ -1460,6 +1446,15 @@ if taxueLoaded then
     AddPrefabPostInit("taxue", function(inst)
         OverrideSLData(inst, playerSavedDataItems)
     end)
+    local oldSave = KnownModIndex.Save
+    function KnownModIndex:Save(...)
+        for name, data in pairs(self.savedata.known_mods) do
+            if name == modname and not data.enabled then
+                TaxuePatch.PatchAll(true)
+            end
+        end
+        oldSave(self, ...)
+    end
 end
 
 local command = require "command"
@@ -1752,36 +1747,72 @@ AddClassPostConstruct("widgets/mapwidget", function(MapWidget)
     end
 end)
 
+--#region 修改useitem
+AddStategraphState("wilson",
+    State {
+        name = "useitem",
+        onenter = function(inst)
+            inst.components.locomotor:Stop()
+            inst.AnimState:PlayAnimation("give")
+        end,
+
+        timeline =
+        {
+            TimeEvent(4 * FRAMES, function(inst)
+                inst:PerformBufferedAction()
+            end),
+        },
+
+        events =
+        {
+            EventHandler("animover", function(inst) inst.sg:GoToState("idle") end),
+        },
+    })
+AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.USEITEM, "useitem"))
+ACTIONS.USEITEM.priority = 3
+ACTIONS.USEITEM.rmb = true
+ACTIONS.USEITEM.instant = false
+ACTIONS.USEITEM.distance = 1
+ACTIONS.USEITEM.fn = function(act)
+    local target = act.target or act.invobject
+    if target and target.components.useableitem then
+        if target.components.useableitem:CanInteract() then
+            target.components.useableitem:StartUsingItem()
+            return true
+        end
+    end
+end
+ACTIONS.USEITEM.strfn = function(act)
+    local target = act.target or act.invobject
+    if target and target.components.useableitem then
+        return target.components.useableitem.verb
+    end
+end
 AddComponentPostInit("useableitem", function(comp)
     function comp:CollectSceneActions(doer, actions, right)
-        ACTIONS.USEITEM.priority = 3
-        ACTIONS.USEITEM.rmb = true
-        ACTIONS.USEITEM.distance = 5
-        ACTIONS.USEITEM.fn = function(act)
-            local target = act.target or act.invobject
-            if target and target.components.useableitem then
-                if target.components.useableitem:CanInteract() then
-                    target.components.useableitem:StartUsingItem()
-                end
-            end
-        end
-        ACTIONS.USEITEM.strfn = function(act)
-            local target = act.target or act.invobject
-            if target and target.components.useableitem then
-                return target.components.useableitem.verb
-            end
-        end
         if right and self:CanInteract() then
             table.insert(actions, ACTIONS.USEITEM)
         end
     end
 end)
+--#endregion
 
 AddSimPostInit(function(player)
     player:DoTaskInTime(0, function()
         TaxuePatch.dyc = DYCLegendary or DYCInfoPanel
     end)
 end)
+
+--修改全部长动作为短动作
+-- AddSimPostInit(function(player)
+--     local state = player.sg.sg.states.dolongaction
+--     if state then
+--         state.tags = nil
+--         state.onenter = function(inst)
+--             inst.sg:GoToState("doshortaction")
+--         end
+--     end
+-- end)
 
 -- local function test()
 -- end

@@ -350,6 +350,11 @@ function CreateEntity() end
 --#endregion
 
 ---@class Taxue:entityPrefab
+---@field EXP_PER number
+---@field EXP_ONE number
+---@field level number
+---@field bank_value number
+---@field badluck_num number
 ---@field exp number
 ---@field combat_capacity number
 ---@field charm_value number

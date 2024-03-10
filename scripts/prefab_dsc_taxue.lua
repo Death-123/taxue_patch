@@ -27,6 +27,7 @@ local function GetEquipmentName(position)
             return color[k]
         end
     end
+    return "无效位置"
 end
 
 --buff名表
@@ -52,7 +53,7 @@ end
 function string.split(input, delimiter)
     input = tostring(input)
     delimiter = tostring(delimiter)
-    if (delimiter == "") then return false end
+    if (delimiter == "") then return {} end
     local pos, arr = 0, {}
     for st, sp in function() return string.find(input, delimiter, pos, true) end do
         table.insert(arr, string.sub(input, pos, st - 1))
@@ -136,6 +137,91 @@ local function formatTime(time, short)
         return ("%02d:%02d:%02d(%.f天)"):format(hour, min, sec, days)
     end
 end
+
+---计算当前等级经验和当前等级升级经验
+---@param player Taxue
+---@return number currentLevelExp
+---@return number currentNeed
+local function GetTaxueExp(player)
+    local d, one, exp, level = player.EXP_PER, player.EXP_ONE, player.exp, player.level
+    local currentNeed = one + level * d
+    local currentLevelExp = exp - (one + (one + d * (level - 1))) * level / 2
+    return currentLevelExp, currentNeed
+end
+
+---获取美味称号
+---@param player Taxue
+---@return string
+local function GetDeliciousStr(player)
+    local deliciousStr = "无美味称号"
+    if player:HasTag("nausea") then
+        deliciousStr = "恶心至极"
+    elseif player:HasTag("delicious_small") then
+        deliciousStr = "美味初成"
+    elseif player:HasTag("delicious_nomal") then
+        deliciousStr = "美味专家"
+    elseif player:HasTag("delicious_big") then
+        deliciousStr = "美味大师"
+    elseif player:HasTag("delicious_huge") then
+        deliciousStr = "美味巅峰"
+    end
+    return deliciousStr
+end
+
+---获取银行称号
+---@param player Taxue
+---@return string
+local function GetBankStr(player)
+    local bankStr = "身无分文"
+    local bankStrMap = {
+        ["顶级富豪"] = 1000000000,
+        ["亿万富翁"] = 100000000,
+        ["千万富翁"] = 10000000,
+        ["百万富翁"] = 1000000,
+        ["特富阶级"] = 500000,
+        ["富人阶级"] = 100000,
+        ["中产阶级"] = 50000,
+        ["小产阶级"] = 20000,
+        ["万元户"] = 10000,
+        ["小康水平"] = 3000,
+        ["温饱户"] = 1000,
+        ["困难户"] = 500,
+        ["贫困户"] = 300,
+        ["赤贫户"] = 100,
+        ["特困户"] = 0,
+    }
+    for str, value in pairs(bankStrMap) do
+        if player.bank_value > value then
+            bankStr = str
+            break
+        end
+    end
+    return bankStr
+end
+
+---获取幸运描述
+---@param player Taxue
+---@return string
+local function GetFortuneStr(player)
+    local fortune_list = {
+        ["巅峰运势"] = 1.8,
+        ["极品欧皇"] = 1.5,
+        ["普通欧皇"] = 1.2,
+        ["超级好运"] = 1.1,
+        ["运气不错"] = 1.05,
+        ["普普通通"] = 0.95,
+        ["有点小霉"] = 0.85,
+        ["倒了大霉"] = 0.7,
+        ["霉上加霉"] = 0.4,
+        ["梅老板附体"] = 0.2,
+    }
+    for str, value in pairs(fortune_list) do
+        if player.badluck_num >= value then
+            return str
+        end
+    end
+    return "比煤老板还煤"
+end
 --#endregion
 
 --#region Info
@@ -202,97 +288,33 @@ local function getItemInfo(target)
 
     local hoverOnStatus = player.HUD.controls.status.focus
     if hoverOnStatus then
-        local last = math.sqrt((player.EXP_PER * player.EXP_PER) / 4 - player.EXP_ONE * player.EXP_PER + player.EXP_ONE * player.EXP_ONE + 2 * player.EXP_PER * player.exp) - (player.EXP_PER / 2) --末项
-        local num = math.floor((last - player.EXP_ONE) / player.EXP_PER + 1)                                                                                                                       --当前项数=等级
-        local need_exp = player.EXP_ONE + player.EXP_PER * (num - 1) +
-            player.EXP_PER                                                                                                                                                                         --当前等级所需经验
-        local surplus_exp = need_exp -
-            (player.exp - (player.EXP_ONE + (player.EXP_ONE + player.EXP_PER * (num - 1))) * num / 2)                                                                                              --还差多少经验升级
-        local already_exp = need_exp -
-            surplus_exp                                                                                                                                                                            --当前等级经验值
+        local needExp, levelExp = GetTaxueExp(player)
         local difficulty = GetPlayer().difficulty and GetPlayer().difficulty or "人物你都没选"
-        local delicious_value = "无美味称号"
-        if player:HasTag("nausea") then
-            delicious_value = "恶心至极"
-        end
-        if player:HasTag("delicious_small") then
-            delicious_value = "美味初成"
-        end
-        if player:HasTag("delicious_nomal") then
-            delicious_value = "美味专家"
-        end
-        if player:HasTag("delicious_big") then
-            delicious_value = "美味大师"
-        end
-        if player:HasTag("delicious_huge") then
-            delicious_value = "美味巅峰"
-        end
-        local title = "身无分文"
-        local title_list = {
-            { 1000000000, "顶级富豪" },
-            { 100000000, "亿万富翁" },
-            { 10000000, "千万富翁" },
-            { 1000000, "百万富翁" },
-            { 500000, "特富阶级" },
-            { 100000, "富人阶级" },
-            { 50000, "中产阶级" },
-            { 20000, "小产阶级" },
-            { 10000, "万元户" },
-            { 3000, "小康水平" },
-            { 1000, "温饱户" },
-            { 500, "困难户" },
-            { 300, "贫困户" },
-            { 100, "赤贫户" },
-            { 0, "特困户" },
-        }
-        for __, v in ipairs(title_list) do
-            if player.bank_value > v[1] then
-                title = v[2]
-                break
-            end
-        end
+
         local modifier = GetPlayer().components.combat.attack_damage_modifiers["taxue"] --攻击系数
 
-        Info:Add("难度:" .. difficulty)
+        Info:Add("难度:" .. GetDifficulty(difficulty))
         Info:Add("人物生存天数:" .. player.taxue_day_num)
         Info:Add("人物等级:" .. player.level)
-        Info:Add("经验值:" .. formatNumber(already_exp) .. "/" .. formatNumber(need_exp))
+        Info:Add("经验值:" .. formatNumber(levelExp) .. "/" .. formatNumber(needExp))
         Info:Add("魅力值:" .. formatNumber(player.charm_value) .. "-" .. (player.charm_switch and "开启" or "关闭"))
         Info:Add("战斗力:" .. formatNumber(player.combat_capacity) .. ",攻击系数:" .. string.format("%.2f", 1 + modifier))
-        Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. delicious_value)
-        Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. title)
+        Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. GetDeliciousStr(player))
+        Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. GetBankStr(player))
         Info:Add("已收获利息:" .. formatCoins(player.interest_num * 100))
-        if cfg("fortunePatch.usePatch") then
-            local str = ""
+        if cfg("fortunePatch.usePatch", true) then
+            local str = cfg("fortunePatch.usePatch") and "梅运券已装载: " .. (player.fortune_day or 0) or ""
             if player.fortune_day and player.fortune_day > 0 then
-                local fortune_list = {
-                    { 1.8, "巅峰运势" },
-                    { 1.5, "极品欧皇" },
-                    { 1.2, "普通欧皇" },
-                    { 1.1, "超级好运" },
-                    { 1.05, "运气不错" },
-                    { 0.95, "普普通通" },
-                    { 0.85, "有点小霉" },
-                    { 0.7, "倒了大霉" },
-                    { 0.4, "霉上加霉" },
-                    { 0.2, "梅老板附体" },
-                }
-                for __, v in ipairs(fortune_list) do
-                    if player.badluck_num >= v[1] then
-                        str = ", 今日运势: " .. v[2]
-                        break
-                    end
-                end
+                str = str .. ", 今日运势: " .. GetFortuneStr(player)
                 if cfg("fortunePatch.showNum", true) then
                     str = str .. ("(%.2f)"):format(player.badluck_num)
                 end
             end
-            Info:Add("梅运券已装载: " .. (player.fortune_day or 0) .. str)
+            Info:Add(str)
         end
 
         return Info.data
     end
-
     --人物Buff
     if target.components and target.components.taxuebuff then
         local taxuebuff = target.components.taxuebuff
@@ -305,27 +327,6 @@ local function getItemInfo(target)
             end
         end
     end
-    --孵蛋器
-    if target.prefab == "hatch_machine" then
-        local timetonextspawn = target.components.childspawner.timetonextspawn
-        if target.egg_name ~= "empty" and timetonextspawn ~= 0 then
-            Info:Add("正在孵化: " .. TaxueToChs(target.egg_name))
-            Info:Add("剩余时间: " .. formatTime(timetonextspawn))
-        end
-    end
-    --银行
-    if target.prefab == "taxue_bank" or target.prefab == "taxue_bank_card" then
-        local taxue_coin_silver = player.bank_value * player.bank_interest                                           --每日收入银梅币
-        local max = player.initial_interest + (player.level > player.MAX_LEVEL and player.MAX_LEVEL or player.level) --最大利息
-        taxue_coin_silver = taxue_coin_silver > max and max or taxue_coin_silver
-        local interest = player.bank_interest * 100                                                                  --今日利率百分比
-        if player.bank_value > 0 then                                                                                --有钱
-            Info:Add("银行存款: " .. formatNumber(player.bank_value, "%.2f") .. "梅币")
-            Info:Add("最大利息: " .. formatNumber(max * 100) .. "银梅币")
-            Info:Add("明日预计收入: " .. formatNumber(taxue_coin_silver * 100, "%.2f") .. "银梅币")
-        end
-        Info:Add("今日利率: " .. string.format("%6.2f", interest) .. "%")
-    end
     --食物
     if target.components and target.components.perishable then
         local time = target.components.perishable.perishremainingtime                           --剩余时间（喵）
@@ -333,34 +334,21 @@ local function getItemInfo(target)
         if owner then
             --冰箱
             if owner:HasTag("fridge") then
-                if target:HasTag("frozen") and not owner:HasTag("nocool") then
-                    time = "∞天"
-                else
-                    time = time * 2
-                end
-            end
-            --腐烂箱
-            if owner:HasTag("taxue_fridge_500") then
+                time = time * 2
+                --4倍
+            elseif owner:HasTag("taxue_fridge_4x") then
+                time = time * 4
+                --6倍
+            elseif owner:HasTag("taxue_fridge_6x") then
+                time = time * 6
+                --腐烂箱
+            elseif owner:HasTag("taxue_fridge_500") then
                 time = time / 500
+                --永久
+            elseif owner:HasTag("taxue_fridge_always") then
+                time = "∞天"
             end
-            --4倍
-            if owner:HasTag("taxue_fridge_4x") then
-                if target:HasTag("frozen") and not owner:HasTag("nocool") then
-                    time = "∞天"
-                else
-                    time = time * 4
-                end
-            end
-            --6倍
-            if owner:HasTag("taxue_fridge_6x") then
-                if target:HasTag("frozen") and not owner:HasTag("nocool") then
-                    time = "∞天"
-                else
-                    time = time * 6
-                end
-            end
-            --永久
-            if owner:HasTag("taxue_fridge_always") then
+            if target:HasTag("frozen") and not owner:HasTag("nocool") and not owner:HasTag("taxue_fridge_500") then
                 time = "∞天"
             end
         end
@@ -372,21 +360,17 @@ local function getItemInfo(target)
     --冰箱
     if target:HasTag("fridge") then
         Info:Add("保鲜时间 * 2")
-    end
-    --腐烂箱
-    if target:HasTag("taxue_fridge_500") then
-        Info:Add("保鲜时间 * 1/500")
-    end
-    --4倍保鲜
-    if target:HasTag("taxue_fridge_4x") then
+        --4倍保鲜
+    elseif target:HasTag("taxue_fridge_4x") then
         Info:Add("保鲜时间 * 4")
-    end
-    --6倍保鲜
-    if target:HasTag("taxue_fridge_6x") then
+        --6倍保鲜
+    elseif target:HasTag("taxue_fridge_6x") then
         Info:Add("保鲜时间 * 6")
-    end
-    --永久保鲜
-    if target:HasTag("taxue_fridge_always") then
+        --腐烂箱
+    elseif target:HasTag("taxue_fridge_500") then
+        Info:Add("保鲜时间 * 1/500")
+        --永久保鲜
+    elseif target:HasTag("taxue_fridge_always") then
         Info:Add("永久保鲜")
     end
     --生物
@@ -408,10 +392,6 @@ local function getItemInfo(target)
             Info:Add("锻造等级：" .. target.forge_level)
         end
     end
-    --法杖
-    if target.prefab == "armor_penetration_staff" then
-        Info:Add("护甲削减:" .. math.floor(target.armor_penetration * 100) .. "%")
-    end
     --护甲
     if target.components.armor then
         Info:Add("护甲吸收:" .. (target.components.armor.absorb_percent * 100) .. "%")
@@ -420,31 +400,47 @@ local function getItemInfo(target)
             Info:Add("等级:" .. target.level)
         end
     end
-    --黄金猫
-    if target.prefab == "golden_statue" then
+    --孵蛋器
+    if target.prefab == "hatch_machine" then
+        local timetonextspawn = target.components.childspawner.timetonextspawn
+        if target.egg_name ~= "empty" and timetonextspawn ~= 0 then
+            Info:Add("正在孵化: " .. TaxueToChs(target.egg_name))
+            Info:Add("剩余时间: " .. formatTime(timetonextspawn))
+        end
+        --银行
+    elseif target.prefab == "taxue_bank" or target.prefab == "taxue_bank_card" then
+        local taxue_coin_silver = player.bank_value * player.bank_interest                                           --每日收入银梅币
+        local max = player.initial_interest + (player.level > player.MAX_LEVEL and player.MAX_LEVEL or player.level) --最大利息
+        taxue_coin_silver = taxue_coin_silver > max and max or taxue_coin_silver
+        local interest = player.bank_interest * 100                                                                  --今日利率百分比
+        if player.bank_value > 0 then                                                                                --有钱
+            Info:Add("银行存款: " .. formatNumber(player.bank_value, "%.2f") .. "梅币")
+            Info:Add("最大利息: " .. formatNumber(max * 100) .. "银梅币")
+            Info:Add("明日预计收入: " .. formatNumber(taxue_coin_silver * 100, "%.2f") .. "银梅币")
+        end
+        Info:Add("今日利率: " .. string.format("%6.2f", interest) .. "%")
+        --破甲法杖
+    elseif target.prefab == "armor_penetration_staff" then
+        Info:Add("护甲削减:" .. math.floor(target.armor_penetration * 100) .. "%")
+        --黄金猫
+    elseif target.prefab == "golden_statue" then
         Info:Add("已收获金肉: " .. GetPlayer().golden_statue_lv .. " 枚")
-    end
-    if target.prefab == "golden_statue_colorful" then
+    elseif target.prefab == "golden_statue_colorful" then
         Info:Add("已收获金肉: " .. GetPlayer().golden_statue_colorful_lv .. " 枚")
-    end
-    --黄金boss雕像
-    if target.prefab == "taxue_golden_boss_altar" then
+        --黄金boss雕像
+    elseif target.prefab == "taxue_golden_boss_altar" then
         Info:Add("变异概率: " .. string.format("%6.1f", (GetPlayer().boss_altar_value * 100)) .. " %")
-    end
-    --利息券
-    if target.prefab == "interest_ticket" then
+        --利息券
+    elseif target.prefab == "interest_ticket" then
         Info:Add("利息上限:" .. (target.interest * 100) .. "银梅币")
-    end
-    --刷券券
-    if target.prefab == "refreshticket_ticket" then
+        --刷券券
+    elseif target.prefab == "refreshticket_ticket" then
         Info:Add("可刷新数量：" .. target.refresh_num .. " 个")
-    end
-    --粉红月牙矿
-    if target.prefab == "taxue_crescent_rock" then
+        --粉红月牙矿
+    elseif target.prefab == "taxue_crescent_rock" then
         Info:Add("已收获粉宝石: " .. target.level .. " 枚")
-    end
-    --永动机
-    if target.prefab == "taxue_perpetual_machine" then
+        --永动机
+    elseif target.prefab == "taxue_perpetual_machine" then
         if target.lv then
             Info:Add("当前等级: " .. target.lv .. " / 7 级")
         end
@@ -454,15 +450,14 @@ local function getItemInfo(target)
         if player.perpetual_machine_num then
             Info:Add("已建造数量: " .. player.perpetual_machine_num .. " / " .. target.MAX_NUM)
         end
-    end
-    --七彩永动机
-    if target.prefab == "taxue_perpetual_machine_colorful" then
+
+        --七彩永动机
+    elseif target.prefab == "taxue_perpetual_machine_colorful" then
         if target.day then
             Info:Add("当前天数: " .. target.day % 3 + 1 .. " / 3")
         end
-    end
-    --踏雪商店
-    if target.prefab and target.prefab:startWith("taxue_shop") then
+        --踏雪商店
+    elseif target.prefab and target.prefab:startWith("taxue_shop") then
         local id = target.interiorID
         local interior = GetWorld().components.interiorspawner.interiors[id]
         if interior and cfg("displaySetting.showShop", true) then
@@ -521,15 +516,13 @@ local function getItemInfo(target)
         if target.prefab == "taxue_shop" then
             Info:Add("已建造数量: " .. player.taxue_shop_num .. " / " .. TUNING.TAXUE_SHOP_MAX_NUM)
         end
-    end
-    --开锁书
-    if target.prefab == "book_unlocking" then
+        --开锁书
+    elseif target.prefab == "book_unlocking" then
         Info:Add("(软木钥匙,木箱钥匙,骨箱钥匙)：" .. (target.corkchest_key) .. " 枚," .. (target.treasurechest_key) .. " 枚," .. (target.skullchest_key) .. " 枚")
         Info:Add("(精致钥匙,豪华钥匙,恐怖钥匙)：" .. (target.pandoraschest_key) .. " 枚," .. (target.minotaurchest_key) .. " 枚," .. (target.terrarium_key) .. " 枚")
         Info:Add("(剧毒钥匙)：" .. (target.poison_key) .. " 枚")
-    end
-    --批量召唤书
-    if target.prefab == "book_batch_summon" then
+        --批量召唤书
+    elseif target.prefab == "book_batch_summon" then
         if #target.monster_list > 0 then
             if not (target.monsterNum and target.monsterNum == #target.monster_list) then
                 target.monsterNum = #target.monster_list
@@ -549,30 +542,22 @@ local function getItemInfo(target)
             end
         end
         Info:Add("召唤物总计：" .. (#target.monster_list) .. " 只")
-    end
-    --超级书time类
-    if target.time then
-        Info:Add("耐久：" .. target.time .. " 次")
-    end
-    --战利品券
-    if target.prefab == "loot_ticket" then
+        --战利品券
+    elseif target.prefab == "loot_ticket" then
         Info:Add("额外掉落：" .. target.loot_multiple .. " 倍")
-    end
-    --填充式战利品券
-    if target.prefab == "loot_ticket_fill" then
+        --填充式战利品券
+    elseif target.prefab == "loot_ticket_fill" then
         Info:Add("额外掉落：" .. target.loot_multiple .. " /" .. target.MAX_MULTIPLE .. "倍")
-    end
-    --鱼缸
-    if target.prefab == "taxue_fish_tank" and target.components.breeder.seeded then
+        --鱼缸
+    elseif target.prefab == "taxue_fish_tank" and target.components.breeder.seeded then
         local breeder = target.components.breeder
         Info:Add(("%s: %d/%d条"):format(TaxueToChs(breeder.product), breeder.volume, breeder.max_volume))
         if breeder.volume < breeder.max_volume and breeder.breedTask then
             local timeLeft = GetTaskRemaining(breeder.breedTask)
             Info:Add("下次生产时间: " .. formatTime(timeLeft))
         end
-    end
-    --超级包裹
-    if target.prefab == "super_package" then
+        --超级包裹
+    elseif target.prefab == "super_package" then
         if target.isPatched then
             local totalAmount = target.amount
             local maxLineNum = cfg("package.desMaxLines")
@@ -684,45 +669,32 @@ local function getItemInfo(target)
             Info:Add("可堆叠物品种类:" .. num2 .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
             Info:Add("其他物品数量:" .. formatNumber(num3) .. "/∞个")
         end
-    end
-    --点树成精
-    if target.prefab == "book_touch_leif" then
+        --点树成精
+    elseif target.prefab == "book_touch_leif" then
         Info:Add("树精数量: " .. target.leif_num .. "只")
-    end
-    --点蛛成精
-    if target.prefab == "book_touch_spiderqueen" then
+        --点蛛成精
+    elseif target.prefab == "book_touch_spiderqueen" then
         Info:Add("蜘蛛女王数量: " .. target.spiderqueen_num .. "只")
-    end
-    --点怪成金
-    if target.prefab == "book_touch_golden" then
+        --点怪成金
+    elseif target.prefab == "book_touch_golden" then
         Info:Add("点金数量: " .. target.golden_num .. "只")
-    end
-    --宝藏去质
-    if target.prefab == "book_treasure_deprotonation" then
+        --宝藏去质
+    elseif target.prefab == "book_treasure_deprotonation" then
         Info:Add("去质宝藏数量:" .. target.treasure_num .. "个")
-    end
-    --灌铅包裹
-    if target.loaded_item_list then
-        Info:Add("物品数量: " .. #target.loaded_item_list .. "个")
-    end
-    --赌狗劵
-    if target.prefab == "gamble_ticket" then
+        --赌狗劵
+    elseif target.prefab == "gamble_ticket" then
         Info:Add("可能额外掉落:" .. target.gamble_multiple .. "倍")
-    end
-    --掉包券
-    if target.prefab == "substitute_ticket" then
+        --掉包券
+    elseif target.prefab == "substitute_ticket" then
         Info:Add("掉包物品: " .. TaxueToChs(target.substitute_item))
-    end
-    --定向商店刷新券
-    if target.prefab == "shop_refresh_ticket_directed" then
+        --定向商店刷新券
+    elseif target.prefab == "shop_refresh_ticket_directed" then
         Info:Add("刷新物品: " .. TaxueToChs(target.refresh_item))
-    end
-    --重铸器
-    if target.prefab == "taxue_recasting_machine" then
+        --重铸器
+    elseif target.prefab == "taxue_recasting_machine" then
         Info:Add("重铸成功率: " .. string.format("%6.2f", GetPlayer().recasting_num * 100) .. "%")
-    end
-    --超级打包机
-    if target.prefab == "super_package_machine" then
+        --超级打包机
+    elseif target.prefab == "super_package_machine" then
         if target.isPatched then
             local slots = target.components.container.slots
             local package = nil
@@ -749,6 +721,14 @@ local function getItemInfo(target)
             Info:Add("可堆叠物品种类:" .. kind .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
             Info:Add("其他物品数量:" .. formatNumber(container_num) .. "/∞个")
         end
+    end
+    --超级书time类
+    if target.time then
+        Info:Add("耐久：" .. target.time .. " 次")
+    end
+    --灌铅包裹
+    if target.loaded_item_list then
+        Info:Add("物品数量: " .. #target.loaded_item_list .. "个")
     end
     --炼药台/炼煤炉
     if target.components and target.components.melter and target.components.melter.cooking == true then

@@ -20,6 +20,22 @@ function command.SetTaxueValue(value)
     end
 end
 
+function command.setFast(enable)
+    local dolongaction = GetPlayer().sg.sg.states.dolongaction
+    if not dolongaction then return end
+    if enable then
+        TaxuePatch.oldDolongaction = { tags = dolongaction.tags, onenter = dolongaction.onenter }
+        dolongaction.tags = nil
+        dolongaction.onenter = function(inst)
+            inst.sg:GoToState("doshortaction")
+        end
+    else
+        dolongaction.tags = TaxuePatch.oldDolongaction.tags
+        dolongaction.onenter = TaxuePatch.oldDolongaction.onenter
+        TaxuePatch.oldDolongaction = nil
+    end
+end
+
 function command.Do(fn)
     GetPlayer():DoTaskInTime(0, fn)
 end

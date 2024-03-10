@@ -85,8 +85,13 @@ function SomniumWindow:SetTitle(title, font, size, color)
             end
         end
         self.currentLineX = self.currentLineY + offsetY
+        self.title:SetOffset(0, -self.paddingY, 0)
+    else
+        self.title:SetText(title)
+        self.title:SetFont(font)
+        self.title:SetFontSize(size)
+        self.title:SetColour(color)
     end
-    self.title:SetOffset(0, -self.paddingY, 0)
 end
 
 ---添加内容
