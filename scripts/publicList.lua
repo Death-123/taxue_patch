@@ -333,7 +333,7 @@ ItemDataMap = {
     gamble_ticket = "gamble_multiple",             --赌狗劵
     substitute_ticket = "substitute_item",         --掉包券
     shop_refresh_ticket_directed = "refresh_item", --定向商店刷新券
-    interest_ticket = "interest"                   --利息券
+    -- interest_ticket = "interest"                   --利息券
 }
 TaxuePatch.ItemDataMap = ItemDataMap
 
@@ -346,6 +346,6 @@ DataStrMap = {
     gamble_ticket = "额外掉落: %s倍", --赌狗劵
     substitute_ticket = "掉包物品: %s", --掉包券
     shop_refresh_ticket_directed = "刷新物品: %s", --定向商店刷新券
-    interest_ticket = "利息上限: %s梅币" --利息券
+    -- interest_ticket = "利息上限: %s梅币" --利息券
 }
 TaxuePatch.DataStrMap = DataStrMap

@@ -174,25 +174,25 @@ end
 local function GetBankStr(player)
     local bankStr = "身无分文"
     local bankStrMap = {
-        ["顶级富豪"] = 1000000000,
-        ["亿万富翁"] = 100000000,
-        ["千万富翁"] = 10000000,
-        ["百万富翁"] = 1000000,
-        ["特富阶级"] = 500000,
-        ["富人阶级"] = 100000,
-        ["中产阶级"] = 50000,
-        ["小产阶级"] = 20000,
-        ["万元户"] = 10000,
-        ["小康水平"] = 3000,
-        ["温饱户"] = 1000,
-        ["困难户"] = 500,
-        ["贫困户"] = 300,
-        ["赤贫户"] = 100,
-        ["特困户"] = 0,
+        {str = "顶级富豪", value = 1000000000},
+        {str = "亿万富翁", value = 100000000},
+        {str = "千万富翁", value = 10000000},
+        {str = "百万富翁", value = 1000000},
+        {str = "特富阶级", value = 500000},
+        {str = "富人阶级", value = 100000},
+        {str = "中产阶级", value = 50000},
+        {str = "小产阶级", value = 20000},
+        {str = "万元户", value = 10000},
+        {str = "小康水平", value = 3000},
+        {str = "温饱户", value = 1000},
+        {str = "困难户", value = 500},
+        {str = "贫困户", value = 300},
+        {str = "赤贫户", value = 100},
+        {str = "特困户", value = 0},
     }
-    for str, value in pairs(bankStrMap) do
-        if player.bank_value > value then
-            bankStr = str
+    for _, entry in pairs(bankStrMap) do
+        if player.bank_value > entry.value then
+            bankStr = entry.str
             break
         end
     end
@@ -204,20 +204,20 @@ end
 ---@return string
 local function GetFortuneStr(player)
     local fortune_list = {
-        ["巅峰运势"] = 1.8,
-        ["极品欧皇"] = 1.5,
-        ["普通欧皇"] = 1.2,
-        ["超级好运"] = 1.1,
-        ["运气不错"] = 1.05,
-        ["普普通通"] = 0.95,
-        ["有点小霉"] = 0.85,
-        ["倒了大霉"] = 0.7,
-        ["霉上加霉"] = 0.4,
-        ["梅老板附体"] = 0.2,
+        {str = "巅峰运势", value = 1.8},
+        {str = "极品欧皇", value = 1.5},
+        {str = "普通欧皇", value = 1.2},
+        {str = "超级好运", value = 1.1},
+        {str = "运气不错", value = 1.05},
+        {str = "普普通通", value = 0.95},
+        {str = "有点小霉", value = 0.85},
+        {str = "倒了大霉", value = 0.7},
+        {str = "霉上加霉", value = 0.4},
+        {str = "梅老板附体", value = 0.2},
     }
-    for str, value in pairs(fortune_list) do
-        if player.badluck_num >= value then
-            return str
+    for _, entry in pairs(fortune_list) do
+        if player.badluck_num >= entry.value then
+            return entry.str
         end
     end
     return "比煤老板还煤"
@@ -288,7 +288,7 @@ local function getItemInfo(target)
 
     local hoverOnStatus = player.HUD.controls.status.focus
     if hoverOnStatus then
-        local needExp, levelExp = GetTaxueExp(player)
+        local levelExp, needExp = GetTaxueExp(player)
         local difficulty = GetPlayer().difficulty and GetPlayer().difficulty or "人物你都没选"
 
         local modifier = GetPlayer().components.combat.attack_damage_modifiers["taxue"] --攻击系数
@@ -640,7 +640,7 @@ local function getItemInfo(target)
             if showLines ~= false and showLines ~= "nodata" then
                 str = ("%d%s物品,物品总数量: %s"):format(table.count(list), singleType and "种" or "类", formatNumber(totalAmount))
             elseif showLines == "nodata" then
-                str = ("%s: %s"):format(TaxueToChs(singleItem), formatNumber(totalAmount))
+                str = ("%s - 数量: %s"):format(TaxueToChs(singleItem), formatNumber(totalAmount))
             else
                 if singleData then Info:Add(getNameStr(singleData)) end
                 str = ("物品数量: %s"):format(formatNumber(totalAmount))

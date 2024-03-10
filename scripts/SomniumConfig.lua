@@ -122,6 +122,13 @@ local cfg = {
         }
     },
     {
+        id = "configKeybind",
+        name = "配置界面按键",
+        description = "打开踏雪补丁配置界面按键",
+        type = "keybind",
+        default = 256
+    },
+    {
         id = "ingameGC",
         name = "内存清理",
         description = "定时清理内存,设置清理检查间隔",
@@ -513,6 +520,9 @@ local cfg = {
                     { des = "64",  value = 64 },
                     { des = "80",  value = 80 },
                     { des = "100", value = 100 },
+                    { des = "300", value = 300 },
+                    { des = "500", value = 500 },
+                    { des = "1000", value = 1000 },
                 },
                 default = 16,
             },
@@ -631,7 +641,7 @@ local cfg = {
                 name = "自动喝血按键",
                 description = "终极自动护符开关自动喝血按键",
                 type = "keybind",
-                default = 256
+                default = 257
             }
         }
     }
@@ -673,6 +683,13 @@ function Config:Init()
                 local function set(configEntry)
                     if configEntry.id == option.name then
                         if option.saved == option.default then
+                            for _, value in pairs(KnownModIndex:GetModInfo(self.modname).configuration_options) do
+                                if value.name == option.name then
+                                    value.saved = nil
+                                    break
+                                end
+                            end
+                            option.saved = nil
                             configEntry.value = nil
                         else
                             configEntry.value = option.saved
@@ -689,12 +706,12 @@ function Config:Init()
     function KnownModIndex.LoadModConfigurationOptions(_self, modname, ...)
         local configuration_options = oldLoadModConfigurationOptions(_self, modname, ...)
         if modname == self.modname and configuration_options then
-            overWriteConfig(configuration_options)
             for _, option in pairs(configuration_options) do
                 if type(option.saved) == "table" then
                     AddTableDeepEq(option.saved)
                 end
             end
+            overWriteConfig(configuration_options)
         end
         return configuration_options
     end

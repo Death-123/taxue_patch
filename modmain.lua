@@ -1,4 +1,5 @@
 GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
+local ModConfigurationScreen = require("screens/modconfigurationscreen")
 
 GLOBAL.TaxuePatch = {
     id = "TaxuePatch",
@@ -139,6 +140,13 @@ TaxuePatch.config = config
 TaxuePatch.cfg = function(key)
     return TaxuePatch.config:GetValue(key)
 end
+
+TheInput:AddKeyDownHandler(TaxuePatch.cfg("configKeybind"), function()
+    if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
+
+    KnownModIndex:LoadModConfigurationOptions(modname)
+    TheFrontEnd:PushScreen(ModConfigurationScreen(modname))
+end)
 
 -- for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
 --     TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
@@ -682,13 +690,11 @@ addPatchs("scripts/prefabs/taxue_treasure.lua", "taxueFix.treasureEggFix", {
     { index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]] },
 })
 --按键排序
-addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", 
-    {
-        index = 223,
-        endIndex = 328,
-        content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
-    }
-)
+addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
+    index = 223,
+    endIndex = 328,
+    content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
+})
 --入箱丢包修复,空掉落物崩溃修复
 addPatchs("scripts/public_method_taxue.lua", "taxueFix.intoChestFix", {
     { index = 151, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
