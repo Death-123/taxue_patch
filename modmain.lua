@@ -248,13 +248,13 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "1590aee1b4b5e95754af8ebaab714ea3", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "9189efac6eed73ec9e5d51c8e2c39159", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     --修复宝藏不出普通蛋
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "7882f3ec82d87c3cae69780c22846bf3", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "ade5dc0c6421c5817ac22e3f6b5e5159", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "04bdc340e7140c2f6e9b0a54379225ee", lines = {} },
     --入箱丢包修复
     ["scripts/public_method_taxue.lua"] = { md5 = "7da475bd29c46debf8fb691a965ef26d", lines = {} },
     --种子机修复
@@ -266,7 +266,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "97f56a1eef47029c52ee983c8f1e4cbf", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "b78f92f87df06b13d9327109ed49971f", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
@@ -679,7 +679,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3087, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3092, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -692,7 +692,7 @@ addPatchs("scripts/prefabs/taxue_treasure.lua", "taxueFix.treasureEggFix", {
 --按键排序
 addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
     index = 223,
-    endIndex = 328,
+    endIndex = 329,
     content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
 })
 --入箱丢包修复,空掉落物崩溃修复

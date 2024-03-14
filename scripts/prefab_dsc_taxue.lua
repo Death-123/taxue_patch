@@ -12,7 +12,14 @@ local function cfg(key, notUsePatch)
     end
 end
 
-local textColor = cfg() and TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.desColor")) or { 127, 255, 212, 1 }
+local function getColor()
+    if cfg() then
+        return TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.desColor")):Get()
+    else
+        local textColor = { 127, 255, 212, 1 }
+        return textColor[1] / 255, textColor[2] / 255, textColor[3] / 255, textColor[4]
+    end
+end
 
 --#region tool functions
 
@@ -174,21 +181,21 @@ end
 local function GetBankStr(player)
     local bankStr = "身无分文"
     local bankStrMap = {
-        {str = "顶级富豪", value = 1000000000},
-        {str = "亿万富翁", value = 100000000},
-        {str = "千万富翁", value = 10000000},
-        {str = "百万富翁", value = 1000000},
-        {str = "特富阶级", value = 500000},
-        {str = "富人阶级", value = 100000},
-        {str = "中产阶级", value = 50000},
-        {str = "小产阶级", value = 20000},
-        {str = "万元户", value = 10000},
-        {str = "小康水平", value = 3000},
-        {str = "温饱户", value = 1000},
-        {str = "困难户", value = 500},
-        {str = "贫困户", value = 300},
-        {str = "赤贫户", value = 100},
-        {str = "特困户", value = 0},
+        { str = "顶级富豪", value = 1000000000 },
+        { str = "亿万富翁", value = 100000000 },
+        { str = "千万富翁", value = 10000000 },
+        { str = "百万富翁", value = 1000000 },
+        { str = "特富阶级", value = 500000 },
+        { str = "富人阶级", value = 100000 },
+        { str = "中产阶级", value = 50000 },
+        { str = "小产阶级", value = 20000 },
+        { str = "万元户", value = 10000 },
+        { str = "小康水平", value = 3000 },
+        { str = "温饱户", value = 1000 },
+        { str = "困难户", value = 500 },
+        { str = "贫困户", value = 300 },
+        { str = "赤贫户", value = 100 },
+        { str = "特困户", value = 0 },
     }
     for _, entry in pairs(bankStrMap) do
         if player.bank_value > entry.value then
@@ -204,16 +211,16 @@ end
 ---@return string
 local function GetFortuneStr(player)
     local fortune_list = {
-        {str = "巅峰运势", value = 1.8},
-        {str = "极品欧皇", value = 1.5},
-        {str = "普通欧皇", value = 1.2},
-        {str = "超级好运", value = 1.1},
-        {str = "运气不错", value = 1.05},
-        {str = "普普通通", value = 0.95},
-        {str = "有点小霉", value = 0.85},
-        {str = "倒了大霉", value = 0.7},
-        {str = "霉上加霉", value = 0.4},
-        {str = "梅老板附体", value = 0.2},
+        { str = "巅峰运势", value = 1.8 },
+        { str = "极品欧皇", value = 1.5 },
+        { str = "普通欧皇", value = 1.2 },
+        { str = "超级好运", value = 1.1 },
+        { str = "运气不错", value = 1.05 },
+        { str = "普普通通", value = 0.95 },
+        { str = "有点小霉", value = 0.85 },
+        { str = "倒了大霉", value = 0.7 },
+        { str = "霉上加霉", value = 0.4 },
+        { str = "梅老板附体", value = 0.2 },
     }
     for _, entry in pairs(fortune_list) do
         if player.badluck_num >= entry.value then
@@ -859,18 +866,10 @@ function Text:GetStringAdd()
     end
 end
 
-local r, g, b, a
-if cfg() then
-    r, g, b, a = textColor:Get()
-else
-    r, g, b, a = textColor[1] / 255, textColor[2] / 255, textColor[3] / 255, textColor[4]
-end
-
 --修改鼠标覆盖显示内容
 AddClassPostConstruct("widgets/hoverer", function(self)
     local old_SetString = self.text.SetString
-
-    self.text:SetColour(r, g, b, a)
+    self.text:SetColour(getColor())
     self.text.SetString = function(text, str)
         if Info.type == "text" then
             local target = TheInput:GetWorldEntityUnderMouse() --获取鼠标所指的实体
@@ -889,7 +888,7 @@ AddPlayerPostInit(function(inst)
             dyc.objectDetailWindow.SetObjectDetail = function(self, page)
                 for _, item in ipairs(page.lines) do
                     if item.component == 'custom' then
-                        item.color = dyc.RGBAColor(r, g, b, a)
+                        item.color = dyc.RGBAColor(getColor())
                     end
                 end
                 oldSetObjectDetail(self, page)
