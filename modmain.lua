@@ -266,7 +266,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "b78f92f87df06b13d9327109ed49971f", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "70f675851db875d84b11acb5e41935e7", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
@@ -276,7 +276,7 @@ local PATCHS = {
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "c7a2da0d655d6de503212fea3e0c3f83", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "64fa1ba87dfddf98e9aa520cef53438b", lines = {} },
     --恐怖游戏修复
     ["scripts/prefabs/taxue.lua"] = { md5 = "b65c4a40e3cba570314a41e477587151", lines = {} },
     --售货亭修改
@@ -1273,11 +1273,11 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
 --宝藏去质黑名单
 addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", {
     {
-        index = 1009,
+        index = 1038,
         content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
     },
     {
-        index = 1017,
+        index = 1046,
         content = [[
                                 local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
                                 if not table.contains(blackList, str) then
