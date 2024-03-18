@@ -235,6 +235,43 @@ local cfg = {
                 },
                 default = false
             },
+            {
+                id = "moneyIsPower",
+                name = "金钱就是力量",
+                description = "使用银行存款抵消战斗力降低",
+                subConfigs = {
+                    {
+                        id = "minMoney",
+                        name = "最小存款",
+                        description = "触发所需的最小银行存款",
+                        type = "number",
+                        options = {
+                            { des = "十万", value = 100000 },
+                            { des = "五十万", value = 500000 },
+                            { des = "百万", value = 1000000 },
+                        },
+                        default = 1000000
+                    },
+                    {
+                        id = "combatFactor",
+                        name = "战斗力因子",
+                        description = "抵消每1战斗力所需的梅币数量",
+                        type = "number",
+                        options = {
+                            { des = "0.1", value = 0.1 },
+                            { des = "0.5", value = 0.5 },
+                            { des = "1", value = 1 },
+                            { des = "5", value = 5 },
+                            { des = "10", value = 10 },
+                            { des = "15", value = 15 },
+                            { des = "30", value = 30 },
+                            { des = "50", value = 50 },
+                            { des = "100", value = 100 },
+                        },
+                        default = 10
+                    },
+                }
+            }
         },
     },
     {

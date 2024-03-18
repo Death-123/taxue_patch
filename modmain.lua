@@ -791,6 +791,26 @@ addPatchFn("taxueFix.fixPugalisk", function()
         end
     end)
 end)
+--每天减战斗力可以用钱抵消
+addPatch("scripts/prefabs/taxue.lua", "taxueFix.moneyIsPower", {
+    index = 228,
+    type = "add",
+    content = [[
+        local min = TaxuePatch.cfg("taxueFix.moneyIsPower.minMoney")
+		if inst.bank_value > min then
+			local factor = TaxuePatch.cfg("taxueFix.moneyIsPower.combatFactor")
+			local cost = math.min(inst.bank_value - min, num * factor)
+			inst.bank_value = inst.bank_value - cost
+			num = num - cost / factor
+			local showBanner = TaxuePatch.cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
+			local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
+			local bannerColor = showBanner and TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
+			if showBanner then
+				TaxuePatch.dyc.bannerSystem:ShowMessage(("有钱能使磨推鬼! 使用%s抵消%s战斗力降低!"):format(TaxuePatch.FormatCoins(cost * 100), TaxuePatch.FormatNumber(cost / factor)), 5, bannerColor)
+			end
+		end
+    ]]
+})
 --#endregion
 
 --#region 猫猫定位
@@ -808,18 +828,25 @@ addPatchFn("teleportCat.mapTeleport", function()
     AddClassPostConstruct("screens/mapscreen", function(MapScreen)
         local _oldOnControl = MapScreen.OnControl
         function MapScreen:OnControl(control, down)
-            if not down and control == CONTROL_ACCEPT then
-                if not (GetWorld().components.interiorspawner and GetWorld().components.interiorspawner:IsInInterior()) then
-                    local x, y, z = self.minimap:GetWorldMousePosition():Get()
-                    local notags = { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
-                    local ents = TheSim:FindEntities(x, y, z, 5, nil, notags)
-                    for _, entity in pairs(ents) do
-                        if entity.prefab == "taxue_cat_floorlamp" then
-                            entity:PushEvent("onLookAt", { doer = GetPlayer(), force = true })
-                            TheFrontEnd:PopScreen()
-                            return true
+            if control == CONTROL_ACCEPT then
+                if down then
+                    self.startPos = TheInput:GetScreenPosition()
+                else
+                    if TheInput:GetScreenPosition():DistSq(self.startPos) < 1 then
+                        if not (GetWorld().components.interiorspawner and GetWorld().components.interiorspawner:IsInInterior()) then
+                            local x, y, z = self.minimap:GetWorldMousePosition():Get()
+                            local notags = { "INLIMBO", "NOCLICK", "catchable", "fire", "player" }
+                            local ents = TheSim:FindEntities(x, y, z, 5, nil, notags)
+                            for _, entity in pairs(ents) do
+                                if entity.prefab == "taxue_cat_floorlamp" then
+                                    entity:PushEvent("onLookAt", { doer = GetPlayer(), force = true })
+                                    TheFrontEnd:PopScreen()
+                                    return true
+                                end
+                            end
                         end
                     end
+                    self.startPos = nil
                 end
             end
             return _oldOnControl(self, control, down)

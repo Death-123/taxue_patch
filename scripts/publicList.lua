@@ -349,3 +349,18 @@ DataStrMap = {
     -- interest_ticket = "利息上限: %s梅币" --利息券
 }
 TaxuePatch.DataStrMap = DataStrMap
+
+SortValueMap = {
+    loot_ticket = "loot_multiple",
+    loot_ticket_fill = "loot_multiple",
+    gamble_ticket = "gamble_multiple",
+    refreshticket_ticket = "refresh_num",
+    book_touch_golden = "golden_num",
+    book_touch_spiderqueen = "spiderqueen_num",
+    substitute_ticket = "substitute_item",
+    shop_refresh_ticket_directed = "refresh_item",
+    book_touch_leif = "leif_num",
+    book_treasure_deprotonation = "treasure_num",
+    armor_penetration_staff = "armor_penetration",
+}
+TaxuePatch.SortValueMap = SortValueMap

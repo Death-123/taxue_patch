@@ -280,9 +280,11 @@ function patchLib.SellPavilionSellItems(inst)
     if itemCount == 1 and lastItem.prefab == "gold_brick" then return end
     print("总硬币价值：", coins)
     local tempCoins = 0
+    local coinNum = {}
     for slot, coin in pairs(coinList) do
         local amount = coin.components.stackable and coin.components.stackable.stacksize or 1
         if COINS[coin.prefab] then
+            patchLib.ListAdd(coinNum, coin.prefab, amount)
             tempCoins = tempCoins + amount * COINS[coin.prefab]
         elseif coin.prefab == "gold_brick" then
             tempCoins = tempCoins + coin.taxue_coin_value
@@ -304,6 +306,14 @@ function patchLib.SellPavilionSellItems(inst)
         playSound = true
         --否则,生成梅币
     else
+        for _, coin in pairs({"taxue_coin_silver", "taxue_coin_copper"}) do
+            if coinNum[coin] and coinNum[coin] > 100 then
+                local amount = math.floor(coinNum[coin] / 100) * 100
+                container:ConsumeByName(coin, amount)
+                coins = coins + amount * COINS[coin]
+            end
+        end
+
         local gold = math.floor(coins / 100)
         coins = coins - gold * 100
         local silver = math.floor(coins)
@@ -1113,6 +1123,50 @@ function patchLib.TaxueOnKilled(player, target)
     end
 end
 
+---格式化数字
+---@param number number
+---@param formatStr? string
+---@return string
+function patchLib.FormatNumber(number, formatStr)
+    local number = tonumber(number)
+    local a = math.floor(number)
+    local b = number - a + 0.00000001
+    local numberStr = string.reverse(tostring(a))
+    local str = {}
+    local length = string.len(tostring(a))
+    for i = 1, length do
+        table.insert(str, string.sub(numberStr, i, i))
+        if i % 3 == 0 and i < length then
+            table.insert(str, ",")
+        end
+    end
+    if not formatStr then
+        formatStr = "%.f"
+        if b >= 0.01 then
+            local c = math.floor(b * 10) / 10
+            if b - c < 0.01 then
+                formatStr = "%.1f"
+            else
+                formatStr = "%.2f"
+            end
+        end
+    end
+    return string.reverse(table.concat(str)) .. string.sub(string.format(formatStr, b), 2)
+end
+
+---格式化梅币
+---@param amount number
+---@param force? boolean
+---@return string
+function patchLib.FormatCoins(amount, force)
+    local amount100 = math.floor(amount / 100)
+    if force or amount <= amount100 * 100 or amount100 >= 10 then
+        return patchLib.FormatNumber(amount / 100) .. "梅币"
+    else
+        return patchLib.FormatNumber(amount) .. "银梅币"
+    end
+end
+
 ---计算踏雪等级
 ---@param player Taxue
 ---@return integer level
@@ -1228,19 +1282,7 @@ end
 ---@return boolean
 function patchLib.TaxueSortItem(item1, item2)
     assert(item1 and item2 and item1.prefab == item2.prefab)
-    local valueMap = {
-        loot_ticket = "loot_multiple",
-        gamble_ticket = "gamble_multiple",
-        refreshticket_ticket = "refresh_num",
-        book_touch_golden = "golden_num",
-        book_touch_spiderqueen = "spiderqueen_num",
-        substitute_ticket = "substitute_item",
-        shop_refresh_ticket_directed = "refresh_item",
-        book_touch_leif = "leif_num",
-        book_treasure_deprotonation = "treasure_num",
-        armor_penetration_staff = "armor_penetration",
-    }
-    local key = valueMap[item1.prefab]
+    local key = TaxuePatch.SortValueMap[item1.prefab]
     if key then
         return item1[key] > item2[key]
     end
