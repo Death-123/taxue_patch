@@ -1,7 +1,7 @@
 local DataSave = require "dataSave"
 
 ---@class option
----@field des string
+---@field des? string
 ---@field value any
 
 ---@class ConfigEntry
@@ -258,15 +258,15 @@ local cfg = {
                         description = "抵消每1战斗力所需的梅币数量",
                         type = "number",
                         options = {
-                            { des = "0.1", value = 0.1 },
-                            { des = "0.5", value = 0.5 },
-                            { des = "1", value = 1 },
-                            { des = "5", value = 5 },
-                            { des = "10", value = 10 },
-                            { des = "15", value = 15 },
-                            { des = "30", value = 30 },
-                            { des = "50", value = 50 },
-                            { des = "100", value = 100 },
+                            { value = 0.1 },
+                            { value = 0.5 },
+                            { value = 1 },
+                            { value = 5 },
+                            { value = 10 },
+                            { value = 15 },
+                            { value = 30 },
+                            { value = 50 },
+                            { value = 100 },
                         },
                         default = 10
                     },
@@ -283,6 +283,55 @@ local cfg = {
                 id = "mapTeleport",
                 name = "地图传送",
                 description = "在地图上点击猫猫可以折跃到猫猫的位置,消耗饥饿值和精神值",
+            },
+            {
+                id = "costFactor",
+                name = "传送消耗",
+                description = "每多少距离消耗1点饱食度",
+                type = "number",
+                options = {
+                    { value = 4 },
+                    { value = 6 },
+                    { value = 8 },
+                    { value = 10 },
+                    { value = 12 },
+                    { value = 16 },
+                    { value = 32 },
+                    { value = 64 },
+                    { des = "无消耗", value = false },
+                },
+                default = 6
+            },
+            {
+                id = "maxCost",
+                name = "最大传送消耗",
+                type = "number",
+                options = {
+                    { value = 10 },
+                    { value = 20 },
+                    { value = 30 },
+                    { value = 40 },
+                    { value = 50 },
+                    { value = 75 },
+                    { value = 100 },
+                    { value = 150 },
+                    { value = 200 },
+                },
+                default = 100
+            },
+            {
+                id = "sanityFactor",
+                name = "san值消耗系数",
+                description = "san值消耗为系数乘饥饿值消耗",
+                type = "number",
+                options = {
+                    { value = 0.1 },
+                    { value = 0.2 },
+                    { value = 0.33 },
+                    { value = 0.5 },
+                    { value = 1 },
+                },
+                default = 0.33
             },
         }
     },
@@ -625,6 +674,12 @@ local cfg = {
                 name = "拆除宝藏雕像",
                 description = "打包书和打包机开宝藏时,会将雕像一并拆除,并将物品包进包裹",
             },
+            {
+                id = "alwaysOpenMonster",
+                name = "始终打开怪物宝藏",
+                description = "当禁用时,只有持有宝藏去质书才会开怪物宝藏",
+                default = false
+            },
         }
     },
     {
@@ -896,6 +951,9 @@ function Config.getOptions(configEntry)
         options = enableOptions
     end
     for _, option in pairs(options) do
+        if not option.des then
+            option.des = tostring(option.value)
+        end
         if type(option.value) == "table" and not getmetatable(option.value) then
             AddTableDeepEq(option.value)
         end

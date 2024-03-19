@@ -654,30 +654,58 @@ local function getItemInfo(target)
             end
             Info:Add(str)
         else
-            local num = 0
-            for __, v in pairs(target.item_list) do
-                if type(v) == "table" then
+            local highPercent = cfg("package.highEquipmentPercent") or 0.75
+            local numMap = { stackable = 0, stackableKind = 0 }
+            local numStrs = {
+                specialBook = "贵重书籍",
+                book = "普通书籍",
+                weapon = "武器护甲",
+                highEquipment = "高属性五彩装备",
+                lowEquipment = "低属性五彩装备",
+                other = "其他不可堆叠物品",
+            }
+            local order = { "specialBook", "book", "weapon", "highEquipment", "lowEquipment", "other" }
+            local totalNum = 0
+            for name, amount in pairs(target.item_list) do
+                if type(amount) == "table" then
                     Info:Add("包裹数据异常")
                     return Info.data
                 end
-                num = num + v
+                numMap.stackable = numMap.stackable + amount
+                numMap.stackableKind = numMap.stackableKind + 1
+                totalNum = totalNum + amount
             end
-            local k2, v2
-            local num2 = 0
-            while true do
-                k2, v2 = next(target.item_list, k2)
-                if not v2 then
-                    break
-                else
-                    num2 = num2 + 1
+            for _, item in pairs(target.components.container.slots) do
+                if item then
+                    if item:HasTag("book") or item:HasTag("taxue_book") then
+                        if item.taxue_coin_value and item.taxue_coin_value >= 300 then
+                            numMap.specialBook = numMap.specialBook and numMap.specialBook + 1 or 1
+                        else
+                            numMap.book = numMap.book and numMap.book + 1 or 1
+                        end
+                    elseif item:HasTag("taxue_weapon") or item:HasTag("taxue_armor") then
+                        numMap.weapon = numMap.weapon and numMap.weapon + 1 or 1
+                    elseif item:HasTag("taxue_equipment") then
+                        if item.equip_value < highPercent * item.MAX_EQUIP_VALUE then
+                            numMap.highEquipment = numMap.highEquipment and numMap.highEquipment + 1 or 1
+                        else
+                            numMap.lowEquipment = numMap.lowEquipment and numMap.lowEquipment + 1 or 1
+                        end
+                    else
+                        numMap.other = numMap.other and numMap.other + 1 or 1
+                    end
+                    totalNum = totalNum + 1
                 end
             end
-            local num3 = target.components.container:NumItems()
-            Info:Add("可堆叠物品种类:" .. num2 .. "/∞，物品数量：" .. formatNumber(num) .. "/∞个")
-            Info:Add("其他物品数量:" .. formatNumber(num3) .. "/∞个")
+            for _, name in pairs(order) do
+                if numMap[name] then
+                    Info:Add(("%s数量: %s"):format(numStrs[name], formatNumber(numMap[name])))
+                end
+            end
+            Info:Add("可堆叠物品种类:" .. numMap.stackableKind .. "，物品数量：" .. formatNumber(numMap.stackable))
+            Info:Add("物品总数量: " .. formatNumber(totalNum))
         end
-        --点树成精
-    elseif target.prefab == "book_touch_leif" then
+    elseif target.prefab == "book_touch_leif" then --点树成精
         Info:Add("树精数量: " .. target.leif_num .. "只")
         --点蛛成精
     elseif target.prefab == "book_touch_spiderqueen" then

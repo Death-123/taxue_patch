@@ -306,7 +306,7 @@ function patchLib.SellPavilionSellItems(inst)
         playSound = true
         --否则,生成梅币
     else
-        for _, coin in pairs({"taxue_coin_silver", "taxue_coin_copper"}) do
+        for _, coin in pairs({ "taxue_coin_silver", "taxue_coin_copper" }) do
             if coinNum[coin] and coinNum[coin] > 100 then
                 local amount = math.floor(coinNum[coin] / 100) * 100
                 container:ConsumeByName(coin, amount)
@@ -334,6 +334,7 @@ end
 ---@param lootDropper table
 ---@param dorpList table<string, integer>
 ---@param times? integer
+---@return table<string, integer> dorpList
 function patchLib.AddLootsToList(lootDropper, dorpList, times)
     times = times or 1
     for _ = 1, times do
@@ -430,6 +431,7 @@ function patchLib.AddLootsToList(lootDropper, dorpList, times)
             end
         end
     end
+    return dorpList
 end
 
 ---堆叠掉落物
@@ -684,14 +686,13 @@ function patchLib.MultHarvest(crop, itemList, isBook)
     end
 end
 
-local TRAVEL_COST = 32
-local max_hunger_cost = 100
-local sanity_cost_ratio = 25 / 75
-
 ---有消耗传送
 ---@param inst entityPrefab|Vector3
 ---@param must? boolean
 function patchLib.CostTeleport(inst, must)
+    local costFactor = TaxuePatch.cfg("teleportCat.costFactor")
+    local maxCost = TaxuePatch.cfg("teleportCat.maxCost")
+    local sanityFactor = TaxuePatch.cfg("teleportCat.sanityFactor")
     local x, y, z
     local player = GetPlayer()
     if inst.prefab then
@@ -700,10 +701,10 @@ function patchLib.CostTeleport(inst, must)
     else
         x, y, z = inst.x, inst.y, inst.z
     end
-    if player.components.hunger and player.components.sanity then
-        local dist = Vector3(x, y, z):DistSq(Vector3(player.Transform:GetWorldPosition()))
-        local costHunger = math.floor(math.min(dist / TRAVEL_COST, max_hunger_cost))
-        local costSanity = math.floor(costHunger * sanity_cost_ratio)
+    if costFactor and player.components.hunger and player.components.sanity then
+        local dist = Vector3(x, y, z):Dist(Vector3(player.Transform:GetWorldPosition()))
+        local costHunger = math.floor(math.min(dist / costFactor, maxCost))
+        local costSanity = math.floor(costHunger * sanityFactor)
         if must then
             if player.components.hunger.current < costHunger or player.components.sanity.current < costSanity then
                 TaXueSay("你无法负担折跃消耗")
@@ -1213,21 +1214,21 @@ end
 function patchLib.GetBankStr(player)
     local bankStr = "身无分文"
     local bankStrMap = {
-        {str = "顶级富豪", value = 1000000000},
-        {str = "亿万富翁", value = 100000000},
-        {str = "千万富翁", value = 10000000},
-        {str = "百万富翁", value = 1000000},
-        {str = "特富阶级", value = 500000},
-        {str = "富人阶级", value = 100000},
-        {str = "中产阶级", value = 50000},
-        {str = "小产阶级", value = 20000},
-        {str = "万元户", value = 10000},
-        {str = "小康水平", value = 3000},
-        {str = "温饱户", value = 1000},
-        {str = "困难户", value = 500},
-        {str = "贫困户", value = 300},
-        {str = "赤贫户", value = 100},
-        {str = "特困户", value = 0},
+        { str = "顶级富豪", value = 1000000000 },
+        { str = "亿万富翁", value = 100000000 },
+        { str = "千万富翁", value = 10000000 },
+        { str = "百万富翁", value = 1000000 },
+        { str = "特富阶级", value = 500000 },
+        { str = "富人阶级", value = 100000 },
+        { str = "中产阶级", value = 50000 },
+        { str = "小产阶级", value = 20000 },
+        { str = "万元户", value = 10000 },
+        { str = "小康水平", value = 3000 },
+        { str = "温饱户", value = 1000 },
+        { str = "困难户", value = 500 },
+        { str = "贫困户", value = 300 },
+        { str = "赤贫户", value = 100 },
+        { str = "特困户", value = 0 },
     }
     for _, entry in pairs(bankStrMap) do
         if player.bank_value > entry.value then
@@ -1243,16 +1244,16 @@ end
 ---@return string
 function patchLib.GetFortuneStr(player)
     local fortune_list = {
-        {str = "巅峰运势", value = 1.8},
-        {str = "极品欧皇", value = 1.5},
-        {str = "普通欧皇", value = 1.2},
-        {str = "超级好运", value = 1.1},
-        {str = "运气不错", value = 1.05},
-        {str = "普普通通", value = 0.95},
-        {str = "有点小霉", value = 0.85},
-        {str = "倒了大霉", value = 0.7},
-        {str = "霉上加霉", value = 0.4},
-        {str = "梅老板附体", value = 0.2},
+        { str = "巅峰运势", value = 1.8 },
+        { str = "极品欧皇", value = 1.5 },
+        { str = "普通欧皇", value = 1.2 },
+        { str = "超级好运", value = 1.1 },
+        { str = "运气不错", value = 1.05 },
+        { str = "普普通通", value = 0.95 },
+        { str = "有点小霉", value = 0.85 },
+        { str = "倒了大霉", value = 0.7 },
+        { str = "霉上加霉", value = 0.4 },
+        { str = "梅老板附体", value = 0.2 },
     }
     for _, entry in pairs(fortune_list) do
         if player.badluck_num >= entry.value then

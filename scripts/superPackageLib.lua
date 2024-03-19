@@ -477,40 +477,37 @@ function superPackageLib.OpenTreasures(treasures)
 
     local numbers = { {}, {} }
 
-    local loots = { boneshard = 2 * #treasures }
+    local loots = { boneshard = 0, obsidian = 0 }
 
-    loots["obsidian"] = 0
+    local books = { "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone", "book_gardening",
+        "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone" }                                --原版书籍
+    local statues = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
+
+    local inventory = GetPlayer().components.inventory
+    local deprotonationBook, _ = next(inventory:GetItemByName("book_treasure_deprotonation", 1))
+    local monstersToKill = {}
 
     for _, treasure in pairs(treasures) do
-        for i = 1, treasure.components.workable.workleft do
-            if math.random() <= 0.2 then
-                loots["obsidian"] = loots["obsidian"] + 1
-            end
-        end
-
-        for _, entry in ipairs(LootTables[treasure.prefab]) do
-            local prefab = entry[1]
-            local chance = entry[2]
-            if math.random() <= chance then
-                loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
-            end
-        end
-
-        local books = { "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone", "book_gardening",
-            "book_tentacles", "book_birds", "book_meteor", "book_sleep", "book_brimstone" }                                --原版书籍
-        local statues = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
-        if math.random() <= 0.1 then
-            local book = books[math.random(#books)]
-            loots[book] = loots[book] and loots[book] + 1 or 1
-        end
-
+        local opened
         if treasure.prefab == "taxue_buriedtreasure_monster" then --怪物宝藏
-            local str = treasure.advance_list[1] or "spider"
-            local monster = SpawnPrefab(str)
-            if monster then
+            local name = treasure.advance_list[1]
+            if not Prefabs[name] then name = "spider" end
+            local inBlackList = table.contains(TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation"), name)
+            if deprotonationBook and not inBlackList then
+                opened = true
+                deprotonationBook.treasure_num = deprotonationBook.treasure_num - 1
+                if deprotonationBook.treasure_num <= 0 then
+                    inventory:RemoveItem(deprotonationBook):Remove()
+                    deprotonationBook = next(inventory:GetItemByName("book_treasure_deprotonation", 1))
+                end
+                TaxuePatch.ListAdd(monstersToKill, name)
+            elseif (deprotonationBook and inBlackList) or TaxuePatch.cfg("package.alwaysOpenMonster") then
+                opened = true
+                local monster = SpawnPrefab(name)
                 monster.Transform:SetPosition(treasure.Transform:GetWorldPosition())
             end
         else
+            opened = true
             local chanceChest = 0
             local chanceStatue = 0
             local chest
@@ -555,8 +552,36 @@ function superPackageLib.OpenTreasures(treasures)
                 end
             end
         end
-        numbers[1][treasure.prefab] = numbers[1][treasure.prefab] and numbers[1][treasure.prefab] + 1 or 1
-        treasure:Remove()
+        if opened then
+            loots["boneshard"] = loots["boneshard"] + 2
+
+            for i = 1, treasure.components.workable.workleft do
+                if math.random() <= 0.2 then
+                    loots["obsidian"] = loots["obsidian"] + 1
+                end
+            end
+
+            for _, entry in ipairs(LootTables[treasure.prefab]) do
+                local prefab = entry[1]
+                local chance = entry[2]
+                if math.random() <= chance then
+                    loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
+                end
+            end
+
+            if math.random() <= 0.1 then
+                local book = books[math.random(#books)]
+                loots[book] = loots[book] and loots[book] + 1 or 1
+            end
+
+            numbers[1][treasure.prefab] = numbers[1][treasure.prefab] and numbers[1][treasure.prefab] + 1 or 1
+            treasure:Remove()
+        end
+    end
+    for name, num in pairs(monstersToKill) do
+        local monster = SpawnPrefab(name)
+        TaxuePatch.AddLootsToList(monster.components.lootdropper, loots, num)
+        monster:Remove()
     end
     return loots, numbers
 end
@@ -578,19 +603,21 @@ function superPackageLib.AddTreasuresToPackage(package, treasures)
             end
         end
     end
-    local str = "这波打包了:\n"
-    for _, line in pairs(numbers) do
-        for name, number in pairs(line) do
-            local name = name == "statue" and "雕像" or TaxueToChs(name)
-            str = str .. name .. number .. "个 "
+    if next(numbers[1]) then
+        local str = "这波打包了:\n"
+        for _, line in pairs(numbers) do
+            for name, number in pairs(line) do
+                local name = name == "statue" and "雕像" or TaxueToChs(name)
+                str = str .. name .. number .. "个 "
+            end
+            str = str .. "\n"
         end
-        str = str .. "\n"
+        if not package.components.talker then package:AddComponent("talker") end
+        package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
+        package.components.talker.offset = Vector3(0, 100, 0)
+        package.components.talker:Say(str, 10)
+        package:ListenForEvent("onremove", function() package.components.talker:ShutUp() end)
     end
-    if not package.components.talker then package:AddComponent("talker") end
-    package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
-    package.components.talker.offset = Vector3(0, 100, 0)
-    package.components.talker:Say(str, 10)
-    package:ListenForEvent("onremove", function() package.components.talker:ShutUp() end)
 end
 
 return superPackageLib
