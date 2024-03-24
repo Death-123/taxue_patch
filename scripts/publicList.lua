@@ -37,6 +37,7 @@ ItemTypeMap = {
         "book_golden_rocky",           --黄金石虾
         "book_touch_golden",           --点怪成金书
         "book_seeder_golden",          --黄金播种书
+        "book_seeder_big",             --巨型播种书
         "book_treasure_deprotonation", --宝藏去质
     },
     golden_food = {

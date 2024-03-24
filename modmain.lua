@@ -248,13 +248,12 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "9189efac6eed73ec9e5d51c8e2c39159", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "a34f6c316afc1215c143526042efee34", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
-    --修复宝藏不出普通蛋
-    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "7882f3ec82d87c3cae69780c22846bf3", lines = {} },
+    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "04bdc340e7140c2f6e9b0a54379225ee", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "d8452c5826b19a74e5f29734bd8a18a2", lines = {} },
     --入箱丢包修复
     ["scripts/public_method_taxue.lua"] = { md5 = "7da475bd29c46debf8fb691a965ef26d", lines = {} },
     --种子机修复
@@ -266,11 +265,11 @@ local PATCHS = {
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "70f675851db875d84b11acb5e41935e7", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "d7079d4756a6d3ac9955bc8cb737e445", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
-    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "59ee9457c09e523d48bdfc87d5be9fa0", lines = {} },
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d2ca8c65a4a64a311e7b1e3e31104f59", lines = {} },
     --打包机防破坏,法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "f08909ea02e011f75e1540e40e2a050f", lines = {} },
     --花盆碰撞
@@ -679,20 +678,14 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3092, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3095, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
---修复宝藏普通蛋不生成
-addPatchs("scripts/prefabs/taxue_treasure.lua", "taxueFix.treasureEggFix", {
-    { index = 24, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]] },
-    { index = 59, content = [[    {"taxue_egg_nomal",0.05},   --普通蛋]] },
-    { index = 82, content = [[    {"taxue_egg_nomal",0.03},   --普通蛋]] },
-})
 --按键排序
 addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
-    index = 223,
-    endIndex = 329,
+    index = 224,
+    endIndex = 330,
     content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
 })
 --入箱丢包修复,空掉落物崩溃修复
@@ -992,8 +985,8 @@ addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", "oneClickUse.agentiaCo
 })
 --点怪成金可以点召唤书
 addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
-    index = 725,
-    endIndex = 748,
+    index = 757,
+    endIndex = 780,
     content = [[
             local goldenMap = {
                 bunnyman = "golden_bunnyman",
@@ -1214,11 +1207,7 @@ addPatchFn("buffThings.lightPearlBuff", function()
 end)
 --禁止宝石自动保存
 addPatchs("scripts/prefabs/taxue_equipment.lua", "buffThings.disableGemSave", {
-    { index = 294, type = "override" },
-    { index = 306, type = "override" },
-    { index = 332, type = "override" },
-    { index = 350, type = "override" },
-    { index = 428, type = "override" },
+    { index = 346, type = "override" },
 })
 --售货亭修改
 addPatchFn("buffThings.sellPavilion", function()
@@ -1300,11 +1289,11 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
 --宝藏去质黑名单
 addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", {
     {
-        index = 1038,
+        index = 1128,
         content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
     },
     {
-        index = 1046,
+        index = 1136,
         content = [[
                                 local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
                                 if not table.contains(blackList, str) then
