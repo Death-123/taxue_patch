@@ -185,11 +185,6 @@ local cfg = {
                 description = "修复难度未初始化导致的崩溃",
             },
             {
-                id = "treasureEggFix",
-                name = "宝藏普通蛋修复",
-                description = "修复宝藏中普通蛋的拼写错误",
-            },
-            {
                 id = "itemSort",
                 name = "增强物品排序",
                 description = "使物品排序可以排序掉包券,定向刷新券等",
@@ -249,6 +244,10 @@ local cfg = {
                             { des = "十万", value = 100000 },
                             { des = "五十万", value = 500000 },
                             { des = "百万", value = 1000000 },
+                            { des = "两百万", value = 2000000 },
+                            { des = "三百万", value = 3000000 },
+                            { des = "五百万", value = 5000000 },
+                            { des = "千万", value = 10000000 },
                         },
                         default = 1000000
                     },

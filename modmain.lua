@@ -156,18 +156,18 @@ local cfg = TaxuePatch.cfg
 local md5lib
 local fileCheck = cfg("fileCheck")
 if cfg("fileCheck.md5Bytes") == "C" and PLATFORM:startWith("WIN32") then
-    local removeFiles = {
-        "lua51.DLL",
-        "lua51DS.DLL",
-        "WINMM.DLL",
-    }
-    for _, name in pairs(removeFiles) do
-        local path = "..\\bin\\" .. name
-        if kleifileexists(path) then
-            local file = io.popen("del " .. path)
-            if file then file:close() end
-        end
-    end
+    -- local removeFiles = {
+    --     "lua51.DLL",
+    --     "lua51DS.DLL",
+    --     "WINMM.DLL",
+    -- }
+    -- for _, name in pairs(removeFiles) do
+    --     local path = "..\\bin\\" .. name
+    --     if kleifileexists(path) then
+    --        local file = io.popen("del " .. path)
+    --        if file then file:close() end
+    --     end
+    -- end
     local luaBin = io.open("../bin/lua5.1.dll")
     if not luaBin then
         print(luaBin)
@@ -265,13 +265,13 @@ local PATCHS = {
     ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "d7079d4756a6d3ac9955bc8cb737e445", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "5aae5d8dd92fb4832cee161f0a578ed9", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
     ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d2ca8c65a4a64a311e7b1e3e31104f59", lines = {} },
     --打包机防破坏,法杖增强
-    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "f08909ea02e011f75e1540e40e2a050f", lines = {} },
+    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "3313af6c66f1a1e595cfff662fc1ec01", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
@@ -895,7 +895,7 @@ addPatchs("scripts/prefabs/taxue_other_items.lua", "oneClickUse.ticket", {
 --一键湛青升级
 addPatchs("scripts/prefabs/taxue_staff.lua", "oneClickUse.blueStaff", {
     {
-        index = 322,
+        index = 336,
         type = "add",
         content = [[
             local ents = TaxuePatch.GetNearByEntities(inst, 10, "blue_staff")
@@ -926,7 +926,7 @@ addPatchs("scripts/prefabs/taxue_staff.lua", "oneClickUse.blueStaff", {
             ]]
     },
     {
-        index = 356,
+        index = 370,
         type = "add",
         content = [[        end]]
     },
