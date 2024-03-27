@@ -248,36 +248,36 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "a34f6c316afc1215c143526042efee34", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "faa39c2c27b8938846ddd1535956310c", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
     --按键排序
     ["scripts/press_key_taxue.lua"] = { md5 = "d8452c5826b19a74e5f29734bd8a18a2", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = { md5 = "7da475bd29c46debf8fb691a965ef26d", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "5a4a9df4b7ed51b769b6f35f835b1af5", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
     ["scripts/prefabs/taxue_fish_tank.lua"] = { md5 = "4512a2847f757c7a2355f3f620a286a8", lines = {} },
     --定位猫猫
     ["scripts/prefabs/taxue_cat_floorlamp.lua"] = { md5 = "2344dc25f5ce1fbba5efa5ad726859c7", lines = {} },
-    ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
+    -- ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "5aae5d8dd92fb4832cee161f0a578ed9", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "c5bd4455afb28c77730d21c320dea32f", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
-    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d2ca8c65a4a64a311e7b1e3e31104f59", lines = {} },
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "3a394fb10c220976569454d48379205e", lines = {} },
     --打包机防破坏,法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "3313af6c66f1a1e595cfff662fc1ec01", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "64fa1ba87dfddf98e9aa520cef53438b", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "762a670bdf01220d22fae2375ed7052f", lines = {} },
     --恐怖游戏修复
-    ["scripts/prefabs/taxue.lua"] = { md5 = "b65c4a40e3cba570314a41e477587151", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "411a066dd1919e50bc2fe693c15252a0", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -653,7 +653,6 @@ addPatchFn("taxueFix.betterDrop", function()
     AddGamePostInit(function()
         GLOBAL.TaxueOnKilled = TaxuePatch.TaxueOnKilled
     end)
-    -- addPatch("scripts/public_method_taxue.lua", require("patchData/public_method_taxue")[452])
 
     AddComponentPostInit("lootdropper", function(inst)
         local oldDropLoot = inst.DropLoot
@@ -678,7 +677,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3095, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3096, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -786,7 +785,7 @@ addPatchFn("taxueFix.fixPugalisk", function()
 end)
 --每天减战斗力可以用钱抵消
 addPatch("scripts/prefabs/taxue.lua", "taxueFix.moneyIsPower", {
-    index = 228,
+    index = 229,
     type = "add",
     content = [[
         local min = TaxuePatch.cfg("taxueFix.moneyIsPower.minMoney")

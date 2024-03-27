@@ -761,6 +761,10 @@ local function getItemInfo(target)
     if target.time then
         Info:Add("耐久：" .. target.time .. " 次")
     end
+    --装备重置书
+	if target.filter_percent then
+		Info:Add("筛选数值百分比：高于"..(target.filter_percent * 100).." %")
+	end
     --灌铅包裹
     if target.loaded_item_list then
         Info:Add("物品数量: " .. #target.loaded_item_list .. "个")
