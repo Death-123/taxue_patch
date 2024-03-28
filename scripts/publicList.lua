@@ -57,23 +57,29 @@ ItemTypeMap = {
         "silver_ingot",         --银元宝
     },
     gem = {
-        "redgem",        --红
-        "bluegem",       --蓝
-        "purplegem",     --紫
-        "greengem",      --绿
-        "orangegem",     --橙
-        "yellowgem",     --黄
-        "pink_gem",      --粉宝石
-        "cyan_gem",      --青宝石
-        "white_gem",     --白宝石
-        "black_gem",     --黑宝石
-        "taxue_diamond", --钻石
+        "redgem",              --红
+        "bluegem",             --蓝
+        "purplegem",           --紫
+        "greengem",            --绿
+        "orangegem",           --橙
+        "yellowgem",           --黄
+        "pink_gem",            --粉宝石
+        "cyan_gem",            --青宝石
+        "white_gem",           --白宝石
+        "black_gem",           --黑宝石
+        "taxue_diamond",       --钻石
 
-        "random_gem",    --随机宝石
-        "promote_gem",   --提升宝石
-        "reset_gem",     --重置宝石
-        "colorful_gem",  --五彩宝石
-        "copy_gem",      --复制宝石
+        "random_gem",          --随机宝石
+        "promote_gem",         --提升宝石
+        "reset_gem",           --重置宝石
+        "colorful_gem",        --五彩宝石
+        "copy_gem",            --复制宝石
+
+        "positioning_gem_red", --定位红
+        "positioning_gem_yellow", --黄
+        "positioning_gem_green", --
+        "positioning_gem_blue", --
+        "positioning_gem_purple", --
     },
     equipment = {
         "equipment_unforgettable",      --刻骨铭心
@@ -157,6 +163,8 @@ ItemTypeMap = {
         "taxue_egg_rose",
         "taxue_egg_ampullaria_gigas",
         "taxue_egg_free",
+        "taxue_egg_compress",
+        "taxue_egg_rouge",
     },
     treasure_map = {
         "treasure_map_nomal",

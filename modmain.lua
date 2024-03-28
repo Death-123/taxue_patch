@@ -248,14 +248,14 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "faa39c2c27b8938846ddd1535956310c", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "ece2de512357f09cb08824f53f941c3b", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
     --按键排序
     ["scripts/press_key_taxue.lua"] = { md5 = "d8452c5826b19a74e5f29734bd8a18a2", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = { md5 = "5a4a9df4b7ed51b769b6f35f835b1af5", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "d51050f4ba04406d33e310369322340c", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
@@ -276,8 +276,8 @@ local PATCHS = {
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "762a670bdf01220d22fae2375ed7052f", lines = {} },
-    --恐怖游戏修复
-    ["scripts/prefabs/taxue.lua"] = { md5 = "411a066dd1919e50bc2fe693c15252a0", lines = {} },
+    --金钱就是力量
+    ["scripts/prefabs/taxue.lua"] = { md5 = "e036316fc9fb9ef915a59a8ab0c7a993", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -677,7 +677,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3096, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3098, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
