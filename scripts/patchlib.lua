@@ -16,11 +16,25 @@ end
 
 table.count = patchLib.TableCount
 
+---table add
+---@param ... table<any,any>
+---@return table<any,any>
+function patchLib.TableAdd(...)
+    local t = {}
+    for _, t_ in pairs({ ... }) do
+        for key, value in pairs(t_) do
+            t[key] = value
+        end
+    end
+    return t
+end
+
 ---给列表key对应的值加value
 ---@param List table
 ---@param key any
 ---@param value any
 function patchLib.ListAdd(List, key, value)
+    if value == 0 then return end
     value = value or 1
     List[key] = List[key] and List[key] + value or value
 end
@@ -145,8 +159,8 @@ function patchLib.RemoveItem(item)
 end
 
 ---给予物品
----@param inst entityPrefab
----@param item entityPrefab
+---@param inst entityPrefab 目标容器/玩家
+---@param item entityPrefab 物品
 function patchLib.GiveItem(inst, item)
     if not item or not item.components or not inst or not inst.components then return end
     local container
@@ -170,18 +184,20 @@ function patchLib.GiveItem(inst, item)
 end
 
 ---给予物品
----@param inst entityPrefab
----@param itemList table<string, integer>
+---@param inst entityPrefab 目标容器/玩家
+---@param itemList table<string, integer> 物品名和数量表
 function patchLib.GiveItems(inst, itemList)
     for name, amount in pairs(itemList) do
-        local item = SpawnPrefab(name)
-        if item.components and item.components.stackable then
-            item.components.stackable.stacksize = amount
-            patchLib.GiveItem(inst, item)
-        else
-            item:Remove()
-            for _ = 1, amount do
-                patchLib.GiveItem(inst, SpawnPrefab(name))
+        if amount > 0 then
+            local item = SpawnPrefab(name)
+            if item.components and item.components.stackable then
+                item.components.stackable.stacksize = amount
+                patchLib.GiveItem(inst, item)
+            else
+                item:Remove()
+                for _ = 1, amount do
+                    patchLib.GiveItem(inst, SpawnPrefab(name))
+                end
             end
         end
     end
@@ -328,6 +344,234 @@ function patchLib.SellPavilionSellItems(inst)
         end
     end
     if playSound then inst.SoundEmitter:PlaySound("money/sfx/money") end
+end
+
+---黄金宝箱按钮
+---@param inst entityPrefab
+function patchLib.GoldenChestButton(inst)
+    local player = GetPlayer()
+    --搜寻金猫以及boss献祭雕像
+    local statues = {
+        golden_statue = true,
+        golden_statue_colorful = true,
+        taxue_golden_boss_altar = true,
+    }
+    local function testFn(ent)
+        return statues[ent.prefab]
+    end
+    local ents = patchLib.GetNearByEntities(inst, 3, testFn)
+    if #ents > 1 then
+        player.components.talker:Say("附近雕像太多了~我要罢工！")
+        return
+    elseif #ents == 0 then
+        player.components.talker:Say("附近没有发现任何黄金雕像！")
+        return
+    end
+    local statue = ents[1]
+    local has = false
+    local slots = inst.components.container.slots --获取物品栏
+    if statue.prefab == "taxue_golden_boss_altar" then
+        local num = 0
+        for slot, item in pairs(slots) do
+            if item:HasTag("boss_altar") then
+                has = true
+                local amount = item.components.stackable and item.components.stackable.stacksize or 1
+                num = num + amount * item.boss_altar
+                inst.components.container:RemoveItemBySlot(slot):Remove()
+            end
+        end
+        if has then
+            player.boss_altar_value = player.boss_altar_value + num
+            player.components.talker:Say("献祭率+" .. (num * 100) .. "%")
+        end
+    elseif statue.prefab == "golden_statue" or statue.prefab == "golden_statue_colorful" then
+        local datas = {
+            golden_statue = {
+                goldVlaueLevel = 500,
+                changeLevel = 1000,
+                chances = {
+                    defalut = {
+                        bluegem = 0.04,
+                        redgem = 0.04,
+                    },
+                    less = {
+                        pink_gem = 0.007,
+                        cyan_gem = 0.004,
+                    },
+                    greater = {
+                        pink_gem = 0.01,
+                        cyan_gem = 0.006,
+                        black_gem = 0.003,
+                    },
+                },
+                specialLevel = {
+                    [3124] = {
+                        pink_gem = 10,
+                        cyan_gem = 10,
+                        black_gem = 10,
+                        greengem = 10,
+                        orangegem = 10,
+                        yellowgem = 10,
+                    },
+                    [31240] = {
+                        golden_statue_colorful_blueprint = 1
+                    }
+                }
+            },
+            golden_statue_colorful = {
+                goldVlaueLevel = 5000,
+                changeLevel = 10000,
+                chances = {
+                    defalut = {
+                        fortune_ticket = 0.003
+                    },
+                    less = {
+                        white_gem = 0.000001,
+                        colorful_gem = 0.00001,
+                        reset_gem = 0.0004,
+                        random_gem = 0.0001,
+                        fortune_change_ticket = 0.0004,
+                    },
+                    greater = {
+                        copy_gem = 0.000002,
+                        white_gem = 0.000002,
+                        colorful_gem = 0.00002,
+                        reset_gem = 0.0006,
+                        random_gem = 0.0003,
+                        fortune_change_ticket = 0.0006,
+                    }
+                },
+                specialLevel = {
+                    [3124] = {
+                        white_gem = 10,
+                        colorful_gem = 10,
+                        reset_gem = 10,
+                        random_gem = 10,
+                        copy_gem = function(itemList)
+                            for _ = 1, 10 do
+                                if math.random() < 0.3 then
+                                    patchLib.ListAdd(itemList, "copy_gem")
+                                end
+                            end
+                        end
+                    }
+                }
+            }
+        }
+        local relics = {
+            relic_1 = true,
+            relic_2 = true,
+            relic_3 = true,
+        }
+        local function getLevel()
+            return statue.prefab == "golden_statue" and player.golden_statue_lv or player.golden_statue_colorful_lv
+        end
+        local function setLevel(level)
+            if statue.prefab == "golden_statue" then
+                player.golden_statue_lv = level
+            else
+                player.golden_statue_colorful_lv = level
+            end
+        end
+        local data = datas[statue.prefab]
+        local results, gold = {}, 0
+        local continue = true
+        while continue do
+            local oldLevel, newLevel, valueNum, goldNum, relicNum = getLevel(), 0, 0, 0, 0
+            local lvGreater = oldLevel > data.changeLevel
+            local lvGreaterChange
+            for slot, item in pairs(slots) do
+                if item then
+                    local remove
+                    local amount = item.components.stackable and item.components.stackable.stacksize or 1
+                    if item:HasTag("golden_food") then
+                        for _ = 1, amount do
+                            setLevel(getLevel() + 1)
+                            valueNum = valueNum + math.floor(item.components.tradable.goldvalue * math.min(2, getLevel() / data.goldVlaueLevel + 1))
+                            if not lvGreater and getLevel() == data.changeLevel then lvGreaterChange = true end
+                        end
+                        remove = true
+                    elseif statue.prefab == "golden_statue" then
+                        if item.components.tradable and item.components.tradable.goldvalue > 0 then
+                            goldNum = goldNum + item.components.tradable.goldvalue * amount
+                            remove = true
+                        elseif relics[item.prefab] then
+                            relicNum = relicNum + amount
+                            remove = true
+                        end
+                    end
+                    if remove then
+                        inst.components.container:RemoveItemBySlot(slot):Remove()
+                    end
+                    if lvGreaterChange then
+                        break
+                    end
+                end
+            end
+            newLevel = getLevel()
+            continue = lvGreaterChange
+            gold = gold + valueNum + goldNum
+            local chanceMap = patchLib.TableAdd(data.chances.defalut, lvGreater and data.chances.greater or data.chances.less)
+            if valueNum > 0 then
+                for name, chance in pairs(chanceMap) do
+                    for _ = 1, valueNum do
+                        if math.random() < chance then
+                            patchLib.ListAdd(results, name)
+                        end
+                    end
+                end
+            end
+            for level, prefabs in pairs(data.specialLevel) do
+                if level > oldLevel and level <= newLevel then
+                    for name, amount in pairs(prefabs) do
+                        if type(amount) == "function" then
+                            amount(results)
+                        else
+                            patchLib.ListAdd(results, name, amount)
+                        end
+                    end
+                end
+            end
+            if relicNum > 0 then
+                for _ = 1, relicNum do
+                    if math.random() < 0.3 then
+                        patchLib.ListAdd(results, "redgem")
+                    end
+                    if math.random() < 0.3 then
+                        patchLib.ListAdd(results, "bluegem")
+                    end
+                    if math.random() < 0.1 then --出随机一颗稀有
+                        local num = math.random()
+                        if num < 0.33 then
+                            patchLib.ListAdd(results, "greengem")
+                        elseif num < 0.66 then
+                            patchLib.ListAdd(results, "orangegem")
+                        else
+                            patchLib.ListAdd(results, "yellowgem")
+                        end
+                    end
+                end
+                patchLib.ListAdd(results, "oinc100", math.floor(relicNum / 10))
+                patchLib.ListAdd(results, "oinc10", relicNum % 10)
+            end
+        end
+        has = gold > 0 or next(results)
+        if has then
+            if gold < 500 then
+                patchLib.ListAdd(results, "goldnugget", gold)
+            else
+                local goldBrick = SpawnPrefab("gold_brick")
+                goldBrick.taxue_coin_value = gold * 3
+                patchLib.GiveItem(inst, goldBrick)
+            end
+            patchLib.GiveItems(inst, results)
+        end
+    end
+    if has then
+        inst.SoundEmitter:PlaySound("money/sfx/money")
+    else
+        player.components.talker:Say("你在点个寂寞呢？")
+    end
 end
 
 ---将掉落物添加到列表中
@@ -751,6 +995,7 @@ end
 ---@param player Taxue
 ---@param target entityPrefab
 function patchLib.TaxueOnKilled(player, target)
+    local has_save = false --是否保存
     local showBanner = TaxuePatch.cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
     local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
     local bannerColor = showBanner and TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
@@ -841,6 +1086,21 @@ function patchLib.TaxueOnKilled(player, target)
     end
     --#endregion
 
+    --处理惊喜之刃掉落
+    if target:HasTag("candrop_surprised_sword") and player.has_surprised_sword == false and math.random() < 0.0005 then --高级惊喜掉落
+        if showBanner then
+            TaxuePatch.dyc.bannerSystem:ShowMessage("原来这就是惊喜！", 5, bannerColor)
+        else
+            TaXueSay("原来这就是惊喜！")
+        end
+        local item = SpawnPrefab("surprised_sword")
+        item.damage = item.damage + 20
+        item.components.weapon:SetDamage(item.damage)
+        TaxuePrefabDrop(target, item)
+        player.has_surprised_sword = true
+        has_save = true
+    end
+
     --变异撬锁蜘蛛
     if target:HasTag("spider") then
         if math.random() <= 0.01 then
@@ -851,7 +1111,6 @@ function patchLib.TaxueOnKilled(player, target)
 
     --处理多倍战利品和装备掉落	
     if target.components.lootdropper and not IsSpecial then
-        local has_save = false --是否保存
         local dorpList = {}
         local lootdropper = target.components.lootdropper
         local package

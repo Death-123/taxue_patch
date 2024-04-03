@@ -16,7 +16,8 @@
 --     GetPlayer().Transform:SetPosition(x + 5, y, z)
 -- end)
 
-local ent = Sel()
-for _, chanceloot in pairs(ent.components.lootdropper.chanceloot) do
-    mprint(chanceloot.prefab, chanceloot.chance)
-end
+-- local ent = Sel()
+-- for _, chanceloot in pairs(ent.components.lootdropper.chanceloot) do
+--     mprint(chanceloot.prefab, chanceloot.chance)
+-- end
+

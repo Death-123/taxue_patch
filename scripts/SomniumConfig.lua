@@ -200,6 +200,11 @@ local cfg = {
                 description = "修复种子机崩溃",
             },
             {
+                id = "goldenChest",
+                name = "黄金宝箱优化",
+                description = "修复黄金宝箱红蓝宝石概率,并优化性能",
+            },
+            {
                 id = "fishTankFix",
                 name = "鱼缸卡顿优化",
             },

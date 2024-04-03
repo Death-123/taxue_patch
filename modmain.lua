@@ -248,14 +248,14 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "ece2de512357f09cb08824f53f941c3b", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "4313d7e72606c52bdb5860b8c1482a71", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
     --按键排序
     ["scripts/press_key_taxue.lua"] = { md5 = "d8452c5826b19a74e5f29734bd8a18a2", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = { md5 = "d51050f4ba04406d33e310369322340c", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "2d49921fda5d4b4ad77ec104da490347", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
@@ -263,9 +263,9 @@ local PATCHS = {
     --定位猫猫
     ["scripts/prefabs/taxue_cat_floorlamp.lua"] = { md5 = "2344dc25f5ce1fbba5efa5ad726859c7", lines = {} },
     -- ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
-    ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
+    -- ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "c5bd4455afb28c77730d21c320dea32f", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "39d083e4ad6377b9aa5bf6691e49811c", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
@@ -677,7 +677,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3098, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3102, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -731,6 +731,12 @@ addPatchFn("taxueFix.seedsMachineFix", function()
         inst.components.container.widgetbuttoninfo.fn = pressButton
     end)
 end)
+--黄金宝箱优化
+addPatchFn("taxueFix.goldenChest", function ()
+    AddPrefabPostInit("taxue_goldenchest", function(inst)
+        inst.components.container.widgetbuttoninfo.fn = TaxuePatch.GoldenChestButton
+    end)
+end)
 --鱼缸卡顿优化
 addPatchs("scripts/prefabs/taxue_fish_tank.lua", "taxueFix.fishTankFix", {
     {
@@ -758,7 +764,7 @@ addPatchs("scripts/prefabs/taxue_fish_tank.lua", "taxueFix.fishTankFix", {
 addPatchs("scripts/prefabs/taxue_book.lua", "taxueFix.harvestBookPatch", {
     { index = 21, type = "add",                                                                                       content = [[                local itemList = {}]] },
     { index = 36, content = [[                            TaxuePatch.MultHarvest(v.components.crop, itemList, true)]] },
-    { index = 46, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
+    { index = 49, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
 })
 --自动保存CD
 addPatchFn("taxueFix.autoSavePatch", function()
@@ -789,7 +795,7 @@ addPatch("scripts/prefabs/taxue.lua", "taxueFix.moneyIsPower", {
     type = "add",
     content = [[
         local min = TaxuePatch.cfg("taxueFix.moneyIsPower.minMoney")
-		if inst.bank_value > min then
+		if min and inst.bank_value > min then
 			local factor = TaxuePatch.cfg("taxueFix.moneyIsPower.combatFactor")
 			local cost = math.min(inst.bank_value - min, num * factor)
 			inst.bank_value = inst.bank_value - cost
@@ -984,8 +990,8 @@ addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", "oneClickUse.agentiaCo
 })
 --点怪成金可以点召唤书
 addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
-    index = 757,
-    endIndex = 780,
+    index = 774,
+    endIndex = 797,
     content = [[
             local goldenMap = {
                 bunnyman = "golden_bunnyman",
@@ -1288,11 +1294,11 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
 --宝藏去质黑名单
 addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", {
     {
-        index = 1128,
+        index = 1145,
         content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
     },
     {
-        index = 1136,
+        index = 1153,
         content = [[
                                 local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
                                 if not table.contains(blackList, str) then
