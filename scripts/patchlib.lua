@@ -1087,7 +1087,7 @@ function patchLib.TaxueOnKilled(player, target)
     --#endregion
 
     --处理惊喜之刃掉落
-    if target:HasTag("candrop_surprised_sword") and player.has_surprised_sword == false and math.random() < 0.0005 then --高级惊喜掉落
+    if player.has_surprised_sword == false and target:HasTag("candrop_surprised_sword") and math.random() < 0.0005 then  --高级惊喜掉落
         if showBanner then
             TaxuePatch.dyc.bannerSystem:ShowMessage("原来这就是惊喜！", 5, bannerColor)
         else

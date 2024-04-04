@@ -627,6 +627,21 @@ local cfg = {
                 default = 16,
             },
             {
+                id = "itemMaxStackSize",
+                name = "最大堆叠数量",
+                description = "设定拆出的可堆叠物品最大堆叠上限",
+                type = "integer",
+                options = {
+                    {des = "默认", value = false},
+                    {des = "1000", value = 1000},
+                    {des = "9999", value = 9999},
+                    {des = "99999", value = 99999},
+                    {des = "999999", value = 999999},
+                    {des = "数值上限", value = 1.79769e+308},
+                },
+                default = false
+            },
+            {
                 id = "highEquipmentPercent",
                 name = "高属性五彩比值",
                 description = "设定打包时判断高属性五彩装备的 (属性/能掉落的最大属性) 比值",

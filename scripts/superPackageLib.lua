@@ -402,13 +402,19 @@ function superPackageLib.UnpackSuperPackage(package)
         else
             local list = package.item_list[package.type]
             local maxAmount = TaxuePatch.cfg("package.maxAmount")
+            local itemMaxStackSize = TaxuePatch.cfg("package.itemMaxStackSize")
             local isSingle = TaxuePatch.TableCount(list) == 1
             for itemName, items in pairs(list) do
                 local itemList = {}
                 if type(items) == "number" then
-                    local tempItem = SpawnPrefab(itemName)
-                    local maxsize = tempItem.components.stackable.maxsize
-                    tempItem:Remove()
+                    local maxsize
+                    if itemMaxStackSize then
+                        maxsize = itemMaxStackSize
+                    else
+                        local tempItem = SpawnPrefab(itemName)
+                        maxsize = tempItem.components.stackable.maxsize
+                        tempItem:Remove()
+                    end
                     itemList = TaxuePatch.GetStackedItem(itemName, items, maxsize)
                 else
                     local isSingleData = TaxuePatch.TableCount(items) == 1
