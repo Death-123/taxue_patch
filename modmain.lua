@@ -248,14 +248,14 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "4313d7e72606c52bdb5860b8c1482a71", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "a62b7e40a4bf93ce11260f2bf26dbc98", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "d8452c5826b19a74e5f29734bd8a18a2", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "dc86fc2532fad19f753db0951bf2c915", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = { md5 = "2d49921fda5d4b4ad77ec104da490347", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "74d91d2c7e5be71e54f4e15ac3438dcd", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
@@ -271,7 +271,7 @@ local PATCHS = {
     --宝石保存,夜明珠地上发光
     ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "3a394fb10c220976569454d48379205e", lines = {} },
     --打包机防破坏,法杖增强
-    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "3313af6c66f1a1e595cfff662fc1ec01", lines = {} },
+    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "b451070dd0a90b2c6750afbb5364930d", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
@@ -283,7 +283,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
     --超级建造护符
     ["scripts/prefabs/taxue_greenamulet.lua"] = { md5 = "9cd5d16770da66120739a4b260f23b4d", lines = {} },
-    ["scripts/prefabs/taxue_agentia_compressor.lua"] = { md5 = "a4d92b944eb75c53a8280966ee18ef79", lines = {} },
+    -- ["scripts/prefabs/taxue_agentia_compressor.lua"] = { md5 = "a4d92b944eb75c53a8280966ee18ef79", lines = {} },
 }
 local PATCH_FN = {}
 local playerSavedDataItems = {}
@@ -677,7 +677,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3102, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3103, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -937,57 +937,57 @@ addPatchs("scripts/prefabs/taxue_staff.lua", "oneClickUse.blueStaff", {
     },
 })
 --药水压缩机压宝箱药水
-addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", "oneClickUse.agentiaCompressor", {
-    {
-        index = 33,
-        type = "add",
-        content = [[    local chest_agentia_num = inst.components.container:Count("chest_agentia")]]
-    },
-    {
-        index = 66,
-        type = "add",
-        content = [[
-    if chest_agentia_num > 0 then
-        local list = {
-            { "locked_corkchest",            "corkchest_key" },
-            { "locked_treasurechest",        "treasurechest_key" },
-            { "locked_skullchest",           "skullchest_key" },
-            { "locked_pandoraschest",        "pandoraschest_key" },
-            { "locked_minotaurchest",        "minotaurchest_key" },
-            { "locked_taxue_terrariumchest", "terrarium_key" },
-            { "locked_taxue_poisonchest",    "poison_key" },
+-- addPatchs("scripts/prefabs/taxue_agentia_compressor.lua", "oneClickUse.agentiaCompressor", {
+--     {
+--         index = 33,
+--         type = "add",
+--         content = [[    local chest_agentia_num = inst.components.container:Count("chest_agentia")]]
+--     },
+--     {
+--         index = 66,
+--         type = "add",
+--         content = [[
+--     if chest_agentia_num > 0 then
+--         local list = {
+--             { "locked_corkchest",            "corkchest_key" },
+--             { "locked_treasurechest",        "treasurechest_key" },
+--             { "locked_skullchest",           "skullchest_key" },
+--             { "locked_pandoraschest",        "pandoraschest_key" },
+--             { "locked_minotaurchest",        "minotaurchest_key" },
+--             { "locked_taxue_terrariumchest", "terrarium_key" },
+--             { "locked_taxue_poisonchest",    "poison_key" },
 
-            { "mini_pandoraschest",          "crystal_ball_taxue" }, --箱中箱
-        }
-        local keys = {}
-        for _ = 1, chest_agentia_num do
-            local chest_list = list[math.random(#list)]
-            TaxuePatch.ListAdd(keys, chest_list[2])
-            local chest
-            if chest_list[1] == "mini_pandoraschest" then --箱中箱特殊处理，这里需要手动添加物品
-                chest = SpawnPrefab(chest_list[1])
-                for _, v in ipairs(chest.advance_list) do
-                    local item = SpawnPrefab(v)                   --预制表内的物品
-                    if item ~= nil then
-                        chest.components.container:GiveItem(item) --刷物品进箱子
-                    end
-                end
-            else
-                chest = SpawnPrefab(chest_list[1])
-            end
-            if chest then
-                local angle = math.random() * 2 * PI
-                chest.Transform:SetPosition((Vector3(inst.Transform:GetWorldPosition()) + Vector3(math.cos(angle), 0, math.sin(angle)) * 5):Get())
-                TaxueFx(chest, "statue_transition_2") --犀牛刷宝箱扒拉特效
-                TaxueFx(chest, "statue_transition") --犀牛嗖~霹雳特效
-            end
-        end
-        TaxuePatch.StackDrops(inst, keys)
-        inst.SoundEmitter:PlaySound("dontstarve/common/ghost_spawn")
-        GetPlayer().components.autosaver:DoSave()
-    end]]
-    }
-})
+--             { "mini_pandoraschest",          "crystal_ball_taxue" }, --箱中箱
+--         }
+--         local keys = {}
+--         for _ = 1, chest_agentia_num do
+--             local chest_list = list[math.random(#list)]
+--             TaxuePatch.ListAdd(keys, chest_list[2])
+--             local chest
+--             if chest_list[1] == "mini_pandoraschest" then --箱中箱特殊处理，这里需要手动添加物品
+--                 chest = SpawnPrefab(chest_list[1])
+--                 for _, v in ipairs(chest.advance_list) do
+--                     local item = SpawnPrefab(v)                   --预制表内的物品
+--                     if item ~= nil then
+--                         chest.components.container:GiveItem(item) --刷物品进箱子
+--                     end
+--                 end
+--             else
+--                 chest = SpawnPrefab(chest_list[1])
+--             end
+--             if chest then
+--                 local angle = math.random() * 2 * PI
+--                 chest.Transform:SetPosition((Vector3(inst.Transform:GetWorldPosition()) + Vector3(math.cos(angle), 0, math.sin(angle)) * 5):Get())
+--                 TaxueFx(chest, "statue_transition_2") --犀牛刷宝箱扒拉特效
+--                 TaxueFx(chest, "statue_transition") --犀牛嗖~霹雳特效
+--             end
+--         end
+--         TaxuePatch.StackDrops(inst, keys)
+--         inst.SoundEmitter:PlaySound("dontstarve/common/ghost_spawn")
+--         GetPlayer().components.autosaver:DoSave()
+--     end]]
+--     }
+-- })
 --点怪成金可以点召唤书
 addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
     index = 774,
@@ -1153,48 +1153,48 @@ addPatchFn("buffThings.chestCanHammer", function()
     end
 end)
 --打包机防破坏
-addPatchFn("buffThings.packageMachineCantHammer", function()
-    local items = {
-        super_package_machine = true
-    }
-    AddPrefabPostInit("golden_staff", function(inst)
-        local oldspelltest = inst.components.spellcaster.spelltest
-        inst.components.spellcaster.spelltest = function(inst, caster, target)
-            if target and items[target.prefab] then
-                return true
-            else
-                return oldspelltest(inst, caster, target)
-            end
-        end
-        local oldsspell = inst.components.spellcaster.spell
-        inst.components.spellcaster.spell = function(inst, target)
-            if items[target.prefab] then
-                if target.components.container then
-                    target.components.container:Close()
-                    target.components.container:DropEverything()
-                end
-                target.components.lootdropper:DropLoot()
-                SpawnPrefab("collapse_small").Transform:SetPosition(target.Transform:GetWorldPosition())
-                target.SoundEmitter:PlaySound("dontstarve/common/destroy_metal")
-                target:Remove()
+-- addPatchFn("buffThings.packageMachineCantHammer", function()
+--     local items = {
+--         super_package_machine = true
+--     }
+--     AddPrefabPostInit("golden_staff", function(inst)
+--         local oldspelltest = inst.components.spellcaster.spelltest
+--         inst.components.spellcaster.spelltest = function(inst, caster, target)
+--             if target and items[target.prefab] then
+--                 return true
+--             else
+--                 return oldspelltest(inst, caster, target)
+--             end
+--         end
+--         local oldsspell = inst.components.spellcaster.spell
+--         inst.components.spellcaster.spell = function(inst, target)
+--             if items[target.prefab] then
+--                 if target.components.container then
+--                     target.components.container:Close()
+--                     target.components.container:DropEverything()
+--                 end
+--                 target.components.lootdropper:DropLoot()
+--                 SpawnPrefab("collapse_small").Transform:SetPosition(target.Transform:GetWorldPosition())
+--                 target.SoundEmitter:PlaySound("dontstarve/common/destroy_metal")
+--                 target:Remove()
 
-                inst.SoundEmitter:PlaySound("dontstarve/common/gem_shatter")
-                if inst.components.stackable then
-                    inst.components.stackable:Get(1):Remove()
-                else
-                    inst:Remove()
-                end
-            else
-                oldsspell(inst, target)
-            end
-        end
-    end)
-    for name, _ in pairs(items) do
-        AddPrefabPostInit(name, function(inst)
-            inst:RemoveComponent("workable")
-        end)
-    end
-end)
+--                 inst.SoundEmitter:PlaySound("dontstarve/common/gem_shatter")
+--                 if inst.components.stackable then
+--                     inst.components.stackable:Get(1):Remove()
+--                 else
+--                     inst:Remove()
+--                 end
+--             else
+--                 oldsspell(inst, target)
+--             end
+--         end
+--     end)
+--     for name, _ in pairs(items) do
+--         AddPrefabPostInit(name, function(inst)
+--             inst:RemoveComponent("workable")
+--         end)
+--     end
+-- end)
 --夜明珠扔地上发光
 addPatchFn("buffThings.lightPearlBuff", function()
     local lightPearls = {
