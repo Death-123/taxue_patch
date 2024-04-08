@@ -387,7 +387,7 @@ function patchLib.GoldenChestButton(inst)
     elseif statue.prefab == "golden_statue" or statue.prefab == "golden_statue_colorful" then
         local datas = {
             golden_statue = {
-                goldVlaueLevel = 500,
+                goldValueLevel = 500,
                 changeLevel = 1000,
                 chances = {
                     defalut = {
@@ -419,7 +419,7 @@ function patchLib.GoldenChestButton(inst)
                 }
             },
             golden_statue_colorful = {
-                goldVlaueLevel = 5000,
+                goldValueLevel = 5000,
                 changeLevel = 10000,
                 chances = {
                     defalut = {
@@ -487,11 +487,15 @@ function patchLib.GoldenChestButton(inst)
                     if item:HasTag("golden_food") then
                         for _ = 1, amount do
                             setLevel(getLevel() + 1)
-                            valueNum = valueNum + math.floor(item.components.tradable.goldvalue * math.min(2, getLevel() / data.goldVlaueLevel + 1))
-                            if not lvGreater and getLevel() == data.changeLevel then lvGreaterChange = true end
+                            valueNum = valueNum + math.floor(item.components.tradable.goldvalue * math.min(2, getLevel() / data.goldValueLevel + 1))
+                            if not lvGreater and getLevel() > data.changeLevel then
+                                lvGreaterChange = true
+                                item.components.stackable:SetStackSize(amount - getLevel() + oldLevel)
+                                break
+                            end
                         end
-                        remove = true
-                    elseif statue.prefab == "golden_statue" then
+                        remove = not lvGreaterChange
+                    elseif statue.prefab == "golden_statue" then --如果是金猫雕像,计算原版换黄金和遗物
                         if item.components.tradable and item.components.tradable.goldvalue > 0 then
                             goldNum = goldNum + item.components.tradable.goldvalue * amount
                             remove = true
@@ -520,7 +524,14 @@ function patchLib.GoldenChestButton(inst)
                         end
                     end
                 end
+                local showBanner = TaxuePatch.cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
+                if showBanner then
+                    local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
+                    local bannerColor = TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
+                    TaxuePatch.dyc.bannerSystem:ShowMessage("本次金肉价值为: " .. patchLib.FormatNumber(valueNum), 10, bannerColor)
+                end
             end
+            --处理特殊等级彩蛋
             for level, prefabs in pairs(data.specialLevel) do
                 if level > oldLevel and level <= newLevel then
                     for name, amount in pairs(prefabs) do
@@ -532,6 +543,7 @@ function patchLib.GoldenChestButton(inst)
                     end
                 end
             end
+            --处理遗物
             if relicNum > 0 then
                 for _ = 1, relicNum do
                     if math.random() < 0.3 then
@@ -683,6 +695,10 @@ end
 ---@param dorpList table<string, integer>
 ---@param package? package
 function patchLib.StackDrops(target, dorpList, package)
+    local blackList = { "houndfire" }
+    for _, name in pairs(blackList) do
+        dorpList[name] = nil
+    end
     if package then
         local blackList = { "chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone" }
         local function testFn(ent)
@@ -1087,7 +1103,7 @@ function patchLib.TaxueOnKilled(player, target)
     --#endregion
 
     --处理惊喜之刃掉落
-    if player.has_surprised_sword == false and target:HasTag("candrop_surprised_sword") and math.random() < 0.0005 then  --高级惊喜掉落
+    if player.has_surprised_sword == false and target:HasTag("candrop_surprised_sword") and math.random() < 0.0005 then --高级惊喜掉落
         if showBanner then
             TaxuePatch.dyc.bannerSystem:ShowMessage("原来这就是惊喜！", 5, bannerColor)
         else

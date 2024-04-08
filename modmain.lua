@@ -732,7 +732,7 @@ addPatchFn("taxueFix.seedsMachineFix", function()
     end)
 end)
 --黄金宝箱优化
-addPatchFn("taxueFix.goldenChest", function ()
+addPatchFn("taxueFix.goldenChest", function()
     AddPrefabPostInit("taxue_goldenchest", function(inst)
         inst.components.container.widgetbuttoninfo.fn = TaxuePatch.GoldenChestButton
     end)
@@ -1307,6 +1307,48 @@ addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", 
         ]]
     }
 })
+--五彩宝石加速合成
+addPatchFn("buffThings.colorfulGemCraft", function()
+    local function finish(comp)
+        return function(self, doer, target)
+            local task = target.components[comp].task
+            if task then
+                self.inst.components.stackable:Get():Remove()
+                if task.onfinish then
+                    if task.fn then
+                        if task.arg then
+                            task.fn(unpack(task.arg))
+                        else
+                            task.fn()
+                        end
+                    end
+                    if task.arg then
+                        task.onfinish(task, true, unpack(task.arg))
+                    else
+                        task.onfinish(task, true)
+                    end
+                end
+                task:Cleanup()
+            end
+        end
+    end
+    local entMap = {
+        taxue_cookpot_portable = finish("stewer"),
+        taxue_cookpot = finish("stewer"),
+        taxue_agentia_station = finish("melter"),
+        taxue_coal_furnace = finish("melter"),
+    }
+
+    AddPrefabPostInit("colorful_gem", function(inst)
+        inst:AddComponent("itemGiver")
+        inst.components.itemGiver.test = function(self, doer, target)
+            return entMap[target.prefab]
+        end
+        inst.components.itemGiver.fn = function(self, doer, target)
+            entMap[target.prefab](self, doer, target)
+        end
+    end)
+end)
 --#endregion
 
 --#region 打包系统
@@ -1823,6 +1865,16 @@ AddComponentPostInit("useableitem", function(comp)
     end
 end)
 --#endregion
+
+STRINGS.ACTIONS.ITEMGIVER = "给予"
+ACTIONS.ITEMGIVER = Action({ mount_enabled = true }, 3)
+ACTIONS.ITEMGIVER.str = ACTIONS.GIVE.str
+ACTIONS.ITEMGIVER.id = "ITEMGIVER"
+ACTIONS.ITEMGIVER.fn = function(act)
+    act.invobject.components.itemGiver:fn(act.doer, act.target)
+    return true
+end
+AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.ITEMGIVER, "give"))
 
 AddSimPostInit(function(player)
     player:DoTaskInTime(0, function()

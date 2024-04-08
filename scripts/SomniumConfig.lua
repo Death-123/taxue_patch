@@ -496,6 +496,11 @@ local cfg = {
                 name = "移除花盆碰撞",
             },
             {
+                id = "colorfulGemCraft",
+                name = "五彩宝石加速合成",
+                description = "可以将五彩宝石给予烹饪锅,炼药台,炼煤炉等,使合成瞬间完成"
+            },
+            {
                 id = "buffStaff",
                 name = "法杖增强",
                 subConfigs = {
