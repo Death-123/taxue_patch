@@ -248,14 +248,14 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "a62b7e40a4bf93ce11260f2bf26dbc98", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "5fd41ace868048ec6c39efae1da0d9d3", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
     --按键排序
     ["scripts/press_key_taxue.lua"] = { md5 = "dc86fc2532fad19f753db0951bf2c915", lines = {} },
     --入箱丢包修复
-    ["scripts/public_method_taxue.lua"] = { md5 = "74d91d2c7e5be71e54f4e15ac3438dcd", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "30d3061803c163536ebee5f413592d7e", lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
@@ -265,7 +265,7 @@ local PATCHS = {
     -- ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
     -- ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "39d083e4ad6377b9aa5bf6691e49811c", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "db1e73589fede75573552df8fdb15bfc", lines = {} },
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
@@ -677,7 +677,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3103, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3105, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -689,7 +689,9 @@ addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
 })
 --入箱丢包修复,空掉落物崩溃修复
 addPatchs("scripts/public_method_taxue.lua", "taxueFix.intoChestFix", {
+    { index = 113, content = [[                if v2 == v.prefab and not v:HasTag("taxue_hats_advanced") and not v:HasTag("taxue_armor_advanced") and not v:HasTag("taxue_ultimate_weapon") then]] },
     { index = 151, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
+    { index = 169, content = [[                if v2 == v.prefab and not v:HasTag("taxue_hats_advanced") and not v:HasTag("taxue_armor_advanced") and not v:HasTag("taxue_ultimate_weapon") then]] },
     { index = 209, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
 })
 --种子机修复
@@ -1294,18 +1296,31 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
 --宝藏去质黑名单
 addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", {
     {
-        index = 1145,
+        index = 1146,
         content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
     },
     {
-        index = 1153,
+        index = 1154,
         content = [[
                                 local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
                                 if not table.contains(blackList, str) then
                                     monster.components.health:Kill()
                                 end
         ]]
-    }
+    },
+    {
+        index = 1193,
+        content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
+    },
+    {
+        index = 1201,
+        content = [[
+                                local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
+                                if not table.contains(blackList, str) then
+                                    monster.components.health:Kill()
+                                end
+        ]]
+    },
 })
 --五彩宝石加速合成
 addPatchFn("buffThings.colorfulGemCraft", function()
