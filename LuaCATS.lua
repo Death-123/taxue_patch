@@ -106,6 +106,13 @@ function Widget:AddChild(child) end
 
 --#endregion
 
+--#region components
+
+---@class container
+---@field GiveItem fun(self, item:Item, slot:integer, src_pos, drop_on_fail, skipsound)
+
+--#endregion
+
 --#region entity
 
 ---创建实体
@@ -349,6 +356,10 @@ function CreateEntity() end
 ---@field noneexchangeable boolean
 --#endregion
 
+---@class Item:entityPrefab
+---@field prevcontainer? container
+---@field prevslot? integer
+
 ---@class Taxue:entityPrefab
 ---@field EXP_PER number
 ---@field EXP_ONE number
@@ -374,7 +385,7 @@ function CreateEntity() end
 ---@field loaded_dice_chance number
 ---@field has_surprised_sword boolean
 
----@return entityPrefab
+---@return Taxue
 function GetPlayer() end
 
 --#region Vector3

@@ -687,13 +687,13 @@ addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
     endIndex = 330,
     content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
 })
---入箱丢包修复,空掉落物崩溃修复
-addPatchs("scripts/public_method_taxue.lua", "taxueFix.intoChestFix", {
-    { index = 113, content = [[                if v2 == v.prefab and not v:HasTag("taxue_hats_advanced") and not v:HasTag("taxue_armor_advanced") and not v:HasTag("taxue_ultimate_weapon") then]] },
-    { index = 151, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
-    { index = 169, content = [[                if v2 == v.prefab and not v:HasTag("taxue_hats_advanced") and not v:HasTag("taxue_armor_advanced") and not v:HasTag("taxue_ultimate_weapon") then]] },
-    { index = 209, content = [[                    if not inst.components.container:IsFull() and inst.components.container:CanTakeItemInSlot(v) then]] },
+--增强一键入箱
+addPatchs("scripts/press_key_taxue.lua", "taxueFix.intoChest", {
+    { index = 149, endIndex = 170, content = [[TaxuePatch.TaxueIntoChestKey()]] },
 })
+addPatchFn("taxueFix.intoChest", function()
+    GLOBAL.TaxueIntoChest = TaxuePatch.IntoChest
+end)
 --种子机修复
 addPatchFn("taxueFix.seedsMachineFix", function()
     local function pressButton(inst)

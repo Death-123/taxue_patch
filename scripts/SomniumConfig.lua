@@ -190,9 +190,26 @@ local cfg = {
                 description = "使物品排序可以排序掉包券,定向刷新券等",
             },
             {
-                id = "intoChestFix",
-                name = "修复入箱丢失物品",
-                description = "使一键入箱转移无法进入的物品时不会丢失物品",
+                id = "intoChest",
+                name = "增强一键入箱",
+                description = "使一键入箱可以将周围地上的物品入箱",
+                subConfigs = {
+                    {
+                        id = "allowOtherChest",
+                        name = "允许所有容器",
+                        description = "使一键入箱可以兼容所有容器",
+                    },
+                    {
+                        id = "disableVanillaChest",
+                        name = "禁止原版木箱",
+                        description = "当允许所有容器开启时,使一键入箱禁止入箱原版木箱",
+                    },
+                    {
+                        id = "allowPortablecellar",
+                        name = "允许便携地窖",
+                        description = "当允许所有容器关闭时,使一键入箱可以入箱便携地窖",
+                    },
+                }
             },
             {
                 id = "seedsMachineFix",
@@ -637,12 +654,12 @@ local cfg = {
                 description = "设定拆出的可堆叠物品最大堆叠上限",
                 type = "integer",
                 options = {
-                    {des = "默认", value = false},
-                    {des = "1000", value = 1000},
-                    {des = "9999", value = 9999},
-                    {des = "99999", value = 99999},
-                    {des = "999999", value = 999999},
-                    {des = "数值上限", value = 1.79769e+308},
+                    { des = "默认", value = false },
+                    { des = "1000", value = 1000 },
+                    { des = "9999", value = 9999 },
+                    { des = "99999", value = 99999 },
+                    { des = "999999", value = 999999 },
+                    { des = "数值上限", value = 1.79769e+308 },
                 },
                 default = false
             },

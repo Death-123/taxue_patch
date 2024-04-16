@@ -101,6 +101,24 @@ function patchLib.TraversalAllInventory(owner, fn, opencontainer)
     return false
 end
 
+---获取物品栏和背包栏所有物品
+---@return Item[] items
+function patchLib.GetAllInventoryItems()
+    local player = GetPlayer()
+    local inventory = player.components.inventory
+    local back = inventory.equipslots[EQUIPSLOTS.BACK]
+    local items = {}
+    for _, item in pairs(inventory.itemslots) do
+        table.insert(items, item)
+    end
+    if back and back.components.container then
+        for _, item in pairs(back.components.container.slots) do
+            table.insert(items, item)
+        end
+    end
+    return items
+end
+
 ---查找周围实体
 ---@param inst entityPrefab
 ---@param radius number
@@ -117,10 +135,12 @@ function patchLib.GetNearByEntities(inst, radius, testFn, tags, notags)
     for _, entity in pairs(ents) do
         if entity ~= inst and entity:IsValid() then
             local testResult = true
-            if type(testFn) == "string" then
-                testResult = entity.prefab == testFn
-            elseif type(testFn) == "function" then
-                testResult = testFn(entity)
+            if testFn then
+                if type(testFn) == "string" then
+                    testResult = entity.prefab == testFn
+                elseif type(testFn) == "function" then
+                    testResult = testFn(entity)
+                end
             end
             if testResult then
                 table.insert(list, entity)
@@ -1631,6 +1651,144 @@ function patchLib.TaxueSortContainer(inst, backpack)
         TaXueSay("整理成功！")
     else
         TaXueSay("你在乱按什么？")
+    end
+end
+
+---一键入箱方法
+---@param inst entityPrefab 箱子
+---@param items Item[] 物品
+---@return boolean has
+function patchLib.IntoChest(inst, items)
+    local container = inst.components.container
+    if not container then return end
+    local itemList = {}
+    for index, item in pairs(container.slots) do
+        itemList[item.prefab] = item
+    end
+    if not items then items = patchLib.GetAllInventoryItems() end
+    local function get(item)
+        local owner = item.components.inventoryitem.owner
+        if owner then
+            if owner == GetPlayer() then
+                return owner.components.inventory:RemoveItem(item, true)
+            else
+                return owner.components.container:RemoveItem(item, true)
+            end
+        end
+        return item
+    end
+    local function testFn(item)
+        local blackList = {
+        }
+        local blackTags = {
+            taxue_hats_advanced = true,
+            taxue_armor_advanced = true,
+            taxue_ultimate_weapon = true,
+        }
+        local result = not blackList[item.prefab]
+        for tag, _ in pairs(blackTags) do
+            if item:HasTag(tag) then return false end
+        end
+        return result
+    end
+    local has
+    for i, item in pairs(items) do
+        if itemList[item.prefab] and testFn(item) and container:CanTakeItemInSlot(item) then
+            local itemPos = Vector3(TheSim:GetScreenPos(item.Transform:GetWorldPosition()))
+            if not container:IsFull() then
+                container:GiveItem(get(item), nil, itemPos)
+                items[i] = nil
+                has = true
+            elseif container.acceptsstacks and item.components.stackable then
+                for slot, itemInChest in pairs(container.slots) do
+                    if itemInChest and itemInChest.prefab == item.prefab and not itemInChest.components.stackable:IsFull() then
+                        has = true
+                        if not itemInChest.components.stackable:Put(get(item), itemPos) then break end
+                    end
+                end
+                if item and item:IsValid() and item.prevcontainer then
+                    item.prevcontainer:GiveItem(item, item.prevslot)
+                else
+                    items[i] = nil
+                end
+            end
+        end
+    end
+    if has then TaxueFx(inst, "statue_transition_2", nil, { 218, 112, 214 }) end
+    return has
+end
+
+---一键入箱按键方法
+function patchLib.TaxueIntoChestKey()
+    local player = GetPlayer()
+    local items, chests = {}, {}
+    local function testChest(inst)
+        if not inst.components.container.canbeopened then return false end
+        local blackList = {
+            gorgeous_pickup_bag = true,
+        }
+        local blackTags = {
+            taxue_locked_chest = true,
+        }
+        local whiteList, whiteTags
+        local result = true
+        for name, _ in pairs(TaxuePatch.IntoChestBlackList) do
+            blackList[name] = true
+        end
+        if TaxuePatch.cfg("taxueFix.intoChest.disableVanillaChest") then blackList["treasurechest"] = true end
+        if not TaxuePatch.cfg("taxueFix.intoChest.allowOtherChest") then
+            whiteList = {
+                taxue_icebox = true,
+                taxue_sell_pavilion = true,
+                taxue_portable_sell_pavilion = true,
+                taxue_seeds_machine = true,
+                taxue_batchdismantle_machine = true,
+                taxue_panda_food_machine = true,
+            }
+            whiteTags = {
+                taxue_chest = true,
+                taxue_bag = true,
+            }
+            for name, _ in pairs(TaxuePatch.IntoChestWhiteList) do
+                whiteList[name] = true
+            end
+            if TaxuePatch.cfg("taxueFix.intoChest.allowPortablecellar") then whiteList["portablecellar"] = true end
+            result = whiteList[inst.prefab]
+            for tag, _ in pairs(whiteTags) do
+                if inst:HasTag(tag) then result = true end
+            end
+        end
+        result = result and not blackList[inst.prefab]
+        for tag, _ in pairs(blackTags) do
+            if inst:HasTag(tag) then return false end
+        end
+        if inst.prefab == "gorgeous_bag" then --处理华丽便携箱含有定位三角就不入箱
+            for _, item in pairs(inst.components.container.slots) do
+                if item and item.prefab == "location_triangle" then
+                    return false
+                end
+            end
+        end
+        return result
+    end
+    for _, item in pairs(patchLib.GetAllInventoryItems()) do
+        if item.components.container and testChest(item) then
+            table.insert(chests, item)
+        else
+            table.insert(items, item)
+        end
+    end
+    for _, ent in pairs(patchLib.GetNearByEntities(player, 20)) do
+        if ent.components then
+            if ent.components.inventoryitem then
+                table.insert(items, ent)
+            elseif ent.components.container and testChest(ent) then
+                table.insert(chests, ent)
+            end
+        end
+    end
+    for _, chest in pairs(chests) do
+        patchLib.IntoChest(chest, items)
     end
 end
 

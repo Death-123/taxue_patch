@@ -373,3 +373,13 @@ SortValueMap = {
     armor_penetration_staff = "armor_penetration",
 }
 TaxuePatch.SortValueMap = SortValueMap
+
+IntoChestWhiteList = {
+    --
+}
+TaxuePatch.IntoChestWhiteList = IntoChestWhiteList
+
+IntoChestBlackList = {
+
+}
+TaxuePatch.IntoChestBlackList = IntoChestBlackList
