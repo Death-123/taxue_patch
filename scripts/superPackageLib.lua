@@ -490,7 +490,32 @@ function superPackageLib.OpenTreasures(treasures)
     local statues = { "ruins_statue_head", "ruins_statue_head_nogem", "ruins_statue_mage", "ruins_statue_mage_nogem" } --远古雕像
 
     local inventory = GetPlayer().components.inventory
-    local deprotonationBook, _ = next(inventory:GetItemByName("book_treasure_deprotonation", 1))
+    local function getBook()
+        local book
+        TaxuePatch.TraversalAllInventory(GetPlayer(), function(container, item, slot)
+            if item.prefab == "book_treasure_deprotonation" or
+                (item.prefab == "book_treasure_deprotonation_super" and item.time > 0) then
+                book = item
+                return true
+            end
+        end)
+        return book
+    end
+    local function getBookNum(book)
+        if book.prefab == "book_treasure_deprotonation" then
+            return book.treasure_num
+        else
+            return book.time
+        end
+    end
+    local function bookNumMinus(book)
+        if book.prefab == "book_treasure_deprotonation" then
+            book.treasure_num = book.treasure_num - 1
+        else
+            book.time = book.time - 1
+        end
+    end
+    local deprotonationBook = getBook()
     local monstersToKill = {}
 
     for _, treasure in pairs(treasures) do
@@ -501,10 +526,12 @@ function superPackageLib.OpenTreasures(treasures)
             local inBlackList = table.contains(TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation"), name)
             if deprotonationBook and not inBlackList then
                 opened = true
-                deprotonationBook.treasure_num = deprotonationBook.treasure_num - 1
-                if deprotonationBook.treasure_num <= 0 then
-                    inventory:RemoveItem(deprotonationBook):Remove()
-                    deprotonationBook = next(inventory:GetItemByName("book_treasure_deprotonation", 1))
+                bookNumMinus(deprotonationBook)
+                if getBookNum(deprotonationBook) <= 0 then
+                    if deprotonationBook.prefab ~= "book_treasure_deprotonation_super" then
+                        inventory:RemoveItem(deprotonationBook):Remove()
+                    end
+                    deprotonationBook = getBook()
                 end
                 TaxuePatch.ListAdd(monstersToKill, name)
             elseif (deprotonationBook and inBlackList) or TaxuePatch.cfg("package.alwaysOpenMonster") then

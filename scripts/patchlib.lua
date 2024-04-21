@@ -1670,9 +1670,13 @@ function patchLib.IntoChest(inst, items)
         local owner = item.components.inventoryitem.owner
         if owner then
             if owner == GetPlayer() then
-                return owner.components.inventory:RemoveItem(item, true)
+                container = owner.components.inventory
             else
-                return owner.components.container:RemoveItem(item, true)
+                container = owner.components.container
+            end
+            container:RemoveItem(item, true)
+            if not item.prevcontainer then
+                item.prevcontainer = container
             end
         end
         return item

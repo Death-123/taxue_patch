@@ -236,6 +236,12 @@ local cfg = {
                 description = "修复哈姆泉水被拿走但是大蛇没有死亡导致的崩溃",
             },
             {
+                id = "cobbleroad",
+                name = "提高石板路优先级",
+                description = "让石板路显示优先级最高",
+                default = false
+            },
+            {
                 id = "autoSavePatch",
                 name = "自动保存CD",
                 description = "强制为自动保存增加冷却时间,冷却中无法自动保存",

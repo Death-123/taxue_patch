@@ -256,6 +256,8 @@ local PATCHS = {
     ["scripts/press_key_taxue.lua"] = { md5 = "dc86fc2532fad19f753db0951bf2c915", lines = {} },
     --入箱丢包修复
     ["scripts/public_method_taxue.lua"] = { md5 = "30d3061803c163536ebee5f413592d7e", lines = {} },
+    --提高石板路优先级
+    ["modworldgenmain.lua"] = { md5 = nil, lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
     --鱼缸卡顿优化
@@ -692,7 +694,9 @@ addPatchs("scripts/press_key_taxue.lua", "taxueFix.intoChest", {
     { index = 149, endIndex = 170, content = [[TaxuePatch.TaxueIntoChestKey()]] },
 })
 addPatchFn("taxueFix.intoChest", function()
-    GLOBAL.TaxueIntoChest = TaxuePatch.IntoChest
+    AddGamePostInit(function()
+        GLOBAL.TaxueIntoChest = TaxuePatch.IntoChest
+    end)
 end)
 --种子机修复
 addPatchFn("taxueFix.seedsMachineFix", function()
@@ -809,6 +813,23 @@ addPatch("scripts/prefabs/taxue.lua", "taxueFix.moneyIsPower", {
 				TaxuePatch.dyc.bannerSystem:ShowMessage(("有钱能使磨推鬼! 使用%s抵消%s战斗力降低!"):format(TaxuePatch.FormatCoins(cost * 100), TaxuePatch.FormatNumber(cost / factor)), 5, bannerColor)
 			end
 		end
+    ]]
+})
+--提高石板路的优先级
+addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
+    index = 61,
+    type = "add",
+    content = [[
+        local grounds = require('worldtiledefs').ground
+        local cobbleroad
+        for i, tile in pairs(grounds) do
+            if cobbleroad then
+                grounds[i - 1] = grounds[i]
+            elseif tile[1] == GROUND.COBBLEROAD then
+                cobbleroad = tile
+            end
+        end
+        grounds[#grounds] = cobbleroad
     ]]
 })
 --#endregion
