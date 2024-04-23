@@ -1660,7 +1660,7 @@ end
 ---@return boolean has
 function patchLib.IntoChest(inst, items)
     local container = inst.components.container
-    if not container then return end
+    if not container then return false end
     local itemList = {}
     for index, item in pairs(container.slots) do
         itemList[item.prefab] = item
@@ -1669,6 +1669,7 @@ function patchLib.IntoChest(inst, items)
     local function get(item)
         local owner = item.components.inventoryitem.owner
         if owner then
+            local container
             if owner == GetPlayer() then
                 container = owner.components.inventory
             else
