@@ -1124,7 +1124,14 @@ addPatchFn("fortunePatch.usePatch", function()
         local function daycomplete(inst, data)
             if TUNING.FUCK_DAY == true then
                 local player = GetPlayer()
-                if player.fortune_day and player.fortune_day > 0 then player.fortune_day = player.fortune_day - 1 end
+                if player.fortune_day and player.fortune_day > 0 then
+                    player.fortune_day = player.fortune_day - 1
+                    local str = "今日运势: " .. TaxuePatch.GetFortuneStr(player)
+                    if cfg("fortunePatch.showNum") then
+                        str = str .. ("(%.2f)"):format(player.badluck_num)
+                    end
+                    TaxuePatch.showBanner(str)
+                end
             end
         end
         inst:ListenForEvent("daycomplete", daycomplete, GetWorld())
@@ -1915,6 +1922,15 @@ AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.ITEMGIVER, "give"))
 AddSimPostInit(function(player)
     player:DoTaskInTime(0, function()
         TaxuePatch.dyc = DYCLegendary or DYCInfoPanel
+        if TaxuePatch.dyc then
+            local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
+            TaxuePatch.bannerColor = TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
+            TaxuePatch.showBanner = function(msg, time)
+                if TaxuePatch.dyc then
+                    TaxuePatch.dyc.bannerSystem:ShowMessage(msg, time or 5, TaxuePatch.bannerColor)
+                end
+            end
+        end
     end)
 end)
 
