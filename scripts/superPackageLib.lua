@@ -328,7 +328,7 @@ function superPackageLib.PackAllEntities(package, entities, testFn, isBook)
         end
     end
     if next(treasures) then
-        superPackageLib.AddTreasuresToPackage(package, treasures)
+        superPackageLib.AddTreasuresToPackage(package, treasures, isBook)
     end
     if next(specialList) then
         for name, num in pairs(specialList) do
@@ -476,9 +476,10 @@ end
 
 ---开宝藏
 ---@param treasures entityPrefab[]
+---@param isBook boolean
 ---@return table loots
 ---@return table[] numbers
-function superPackageLib.OpenTreasures(treasures)
+function superPackageLib.OpenTreasures(treasures, isBook)
     treasures[1].SoundEmitter:PlaySound("dontstarve_DLC002/common/loot_reveal")
 
     local numbers = { {}, {} }
@@ -534,7 +535,7 @@ function superPackageLib.OpenTreasures(treasures)
                     deprotonationBook = getBook()
                 end
                 TaxuePatch.ListAdd(monstersToKill, name)
-            elseif (deprotonationBook and inBlackList) or TaxuePatch.cfg("package.alwaysOpenMonster") then
+            elseif (deprotonationBook and inBlackList) or TaxuePatch.cfg("package.alwaysOpenMonster") or not isBook then
                 opened = true
                 local monster = SpawnPrefab(name)
                 monster.Transform:SetPosition(treasure.Transform:GetWorldPosition())
@@ -616,14 +617,20 @@ function superPackageLib.OpenTreasures(treasures)
         TaxuePatch.AddLootsToList(monster.components.lootdropper, loots, num)
         monster:Remove()
     end
+    for _, name in pairs({ "boneshard", "obsidian" }) do
+        if loots[name] == 0 then
+            loots[name] = nil
+        end
+    end
     return loots, numbers
 end
 
 ---开启所有宝藏并将物品添加进包裹
 ---@param package package
 ---@param treasures entityPrefab[]
-function superPackageLib.AddTreasuresToPackage(package, treasures)
-    local loots, numbers = superPackageLib.OpenTreasures(treasures)
+---@param isBook boolean
+function superPackageLib.AddTreasuresToPackage(package, treasures, isBook)
+    local loots, numbers = superPackageLib.OpenTreasures(treasures, isBook)
     for name, amount in pairs(loots) do
         local prefab = SpawnPrefab(name)
         if prefab and prefab.components.stackable then

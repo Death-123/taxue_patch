@@ -1679,6 +1679,8 @@ function patchLib.IntoChest(inst, items)
             if not item.prevcontainer then
                 item.prevcontainer = container
             end
+        elseif item.prevcontainer then
+            item.prevcontainer = nil
         end
         return item
     end
@@ -1711,7 +1713,7 @@ function patchLib.IntoChest(inst, items)
                         if not itemInChest.components.stackable:Put(get(item), itemPos) then break end
                     end
                 end
-                if item and item:IsValid() and item.prevcontainer then
+                if item and item:IsValid() and item.prevcontainer and not item.components.inventoryitem.owner then
                     item.prevcontainer:GiveItem(item, item.prevslot)
                 else
                     items[i] = nil
