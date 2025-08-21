@@ -12,8 +12,26 @@ local function cfg(key, notUsePatch)
     end
 end
 
-local function getColor()
+local function getColor(color)
     if cfg() then
+        if color then
+            local colors = {
+                { 127, 255, 212, 1 },
+                { 255, 108, 180, 1 },
+                { 0,   255, 255, 1 },
+                { 0,   0,   255, 1 },
+                { 0,   255, 0,   1 },
+                { 255, 255, 0,   1 },
+                { 255, 215, 0,   1 },
+                { 255, 165, 0,   1 },
+                { 255, 20,  147, 1 },
+                { 144, 238, 144, 1 },
+                { 128, 128, 128, 1 },
+            }
+            if colors[color] then
+                return unpack(colors[color])
+            end
+        end
         return TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.desColor")):Get()
     else
         local textColor = { 127, 255, 212, 1 }
@@ -762,9 +780,9 @@ local function getItemInfo(target)
         Info:Add("耐久：" .. target.time .. " 次")
     end
     --装备重置书
-	if target.filter_percent then
-		Info:Add("筛选数值百分比：高于"..(target.filter_percent * 100).." %")
-	end
+    if target.filter_percent then
+        Info:Add("筛选数值百分比：高于" .. (target.filter_percent * 100) .. " %")
+    end
     --灌铅包裹
     if target.loaded_item_list then
         Info:Add("物品数量: " .. #target.loaded_item_list .. "个")
@@ -916,22 +934,33 @@ AddPlayerPostInit(function(inst)
     inst:DoTaskInTime(0.1, function()
         local dyc = DYCLegendary or DYCInfoPanel
         if dyc and dyc.objectDetailWindow then
+            --使用信息面板显示
+            --修改颜色
             local oldSetObjectDetail = dyc.objectDetailWindow.SetObjectDetail
             dyc.objectDetailWindow.SetObjectDetail = function(self, page)
-                for _, item in ipairs(page.lines) do
-                    if item.component == 'custom' then
-                        item.color = dyc.RGBAColor(getColor())
+                for _, line in ipairs(page.lines) do
+                    if line.component == 'custom' then
+                        if line.text:startWith("#") then
+                            line.color = dyc.RGBAColor(getColor(line.text:sub(2, 2)))
+                            line.text = line.text:sub(3)
+                        else
+                            line.color = line.color or dyc.RGBAColor(getColor())
+                        end
                     end
                 end
                 oldSetObjectDetail(self, page)
             end
+            --初始化Info类
             Info:init("table")
+            --添加信息显示
             local oldGetPanelDescriptions = EntityScript.GetPanelDescriptions
             EntityScript.GetPanelDescriptions = function(self)
                 Info:setTarget(self)
+                --清空上次添加的信息
                 for _, index in ipairs(Info.indexs) do
                     self:SetPanelDescription(index, nil)
                 end
+                --防止崩溃
                 local success, err = pcall(getItemInfo, self)
                 if not success then
                     Info:Add(err)
@@ -939,6 +968,7 @@ AddPlayerPostInit(function(inst)
                 return oldGetPanelDescriptions(self)
             end
         else
+            --使用原版显示
             Info:init("text")
             Inv.UpdateCursorText = NewUpdateCursorText
             ItemTile.GetDescriptionString = NewGetDescriptionString

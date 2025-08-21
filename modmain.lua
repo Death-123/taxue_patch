@@ -248,12 +248,12 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "f33a9a13c0eb039adde5f3d973d2f057", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "da84bd27688c9d3095cbbc4fcfb73e74", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
-    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "2c41f1eff969d9df967ed72e76c05e6d", lines = {} },
+    -- ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "91b746a2f2a561202eb33f876bbad500", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "3cbdbc0c42a7f4dfad3891013101269f", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "ea910e1994305fc56f839916e996a538", lines = {} },
     -- ["scripts/public_method_taxue.lua"] = { md5 = "2e04ba4757b6c79a8a5f25c8ac9cc03a", lines = {} },s
     --提高石板路优先级
     ["modworldgenmain.lua"] = { md5 = nil, lines = {} },
@@ -276,9 +276,9 @@ local PATCHS = {
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "65c365c704beed1839b0b143c8af8e80", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "ca063b92dfc1fbc30fdd12e44da6552a", lines = {} },
     --金钱就是力量
-    ["scripts/prefabs/taxue.lua"] = { md5 = "e036316fc9fb9ef915a59a8ab0c7a993", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "4c2370eef294a30ba965f82c81f02324", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -678,19 +678,19 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3107, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3110, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
 --按键排序
 addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
-    index = 225,
-    endIndex = 331,
+    index = 243,
+    endIndex = 349,
     content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
 })
 --增强一键入箱
 addPatchs("scripts/press_key_taxue.lua", "taxueFix.intoChest", {
-    { index = 150, endIndex = 171, content = [[TaxuePatch.TaxueIntoChestKey()]] },
+    { index = 168, endIndex = 189, content = [[TaxuePatch.TaxueIntoChestKey()]] },
 })
 addPatchFn("taxueFix.intoChest", function()
     AddGamePostInit(function()
@@ -796,7 +796,7 @@ addPatchFn("taxueFix.fixPugalisk", function()
 end)
 --每天减战斗力可以用钱抵消
 addPatch("scripts/prefabs/taxue.lua", "taxueFix.moneyIsPower", {
-    index = 229,
+    index = 227,
     type = "add",
     content = [[
         local min = TaxuePatch.cfg("taxueFix.moneyIsPower.minMoney")
