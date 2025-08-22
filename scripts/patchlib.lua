@@ -47,9 +47,9 @@ function patchLib.TestItem(item, test)
     if not item then return false end
     local testFn
     if type(test) == "table" then
-        testFn = function(prefab) return table.contains(test, prefab.prefab) end
+        testFn = function (prefab) return table.contains(test, prefab.prefab) end
     elseif type(test) == "string" then
-        testFn = function(prefab) return prefab.prefab == test end
+        testFn = function (prefab) return prefab.prefab == test end
     elseif type(test) == "function" then
         testFn = test
     else
@@ -467,7 +467,7 @@ function patchLib.GoldenChestButton(inst)
                         colorful_gem = 10,
                         reset_gem = 10,
                         random_gem = 10,
-                        copy_gem = function(itemList)
+                        copy_gem = function (itemList)
                             for _ = 1, 10 do
                                 if math.random() < 0.3 then
                                     patchLib.ListAdd(itemList, "copy_gem")
@@ -790,7 +790,7 @@ function patchLib.GetNearestPackageMachine(target)
         end
     elseif not player.lastScanPackage or GetTime() - player.lastScanPackage > 1 then
         player.lastScanPackage = GetTime()
-        local testFn = function(ent)
+        local testFn = function (ent)
             return ent.prefab == "super_package_machine" and ent.switch == "on"
         end
         local packageMachines = patchLib.GetNearByEntities(target, 50, testFn)
@@ -822,7 +822,7 @@ function patchLib.PlayItemMove(item, src, target, time)
     end
 
     im = Image(itemImageCache[item][1], itemImageCache[item][2])
-    im:MoveTo(src, target, time or 0.3, function() im:Kill() end)
+    im:MoveTo(src, target, time or 0.3, function () im:Kill() end)
 end
 
 ---批量收获
@@ -868,6 +868,15 @@ function patchLib.MultHarvest(crop, itemList, isBook)
     elseif crop.inst.prefab == "plant_reeds" or crop.inst.prefab == "plant_grass" or crop.inst.prefab == "plant_sapling"
         or crop.inst.prefab == "plant_bulb" then
         amount = 3
+    elseif crop.inst.prefab == "plant_berry" then
+        if math.random() < 0.1 then
+            local perd = SpawnPrefab("perd") --火鸡
+            local spawnpos = Vector3(crop.inst.Transform:GetWorldPosition())
+            spawnpos = spawnpos + TheCamera:GetDownVec()
+            perd.Transform:SetPosition(spawnpos:Get())
+            perd.sg:GoToState("appear")
+            --perd.components.homeseeker:SetHome(inst)
+        end
     end
 
     if crop.grower then
@@ -1008,7 +1017,7 @@ function patchLib.CostTeleport(inst, must)
         end
     end
 
-    patchLib.TraversalAllInventory(player, function(container, item, slot)
+    patchLib.TraversalAllInventory(player, function (container, item, slot)
         if item.components.leader and item.components.leader.followers then
             for follower, _ in pairs(item.components.leader.followers) do
                 table.insert(followers, follower)
@@ -1088,13 +1097,13 @@ function patchLib.TaxueOnKilled(player, target)
         --击杀非小生物
     elseif NotSmall then
         exp = math.random() * 0.5 + 0.5 + player.exp_extra       --经验值0.5~1
-        combat = math.random() * 0.5 + 1                         --战斗力1~1.5
+        combat = math.random() * 0.8 + 0.2                       --战斗力0.2~1
         charm = math.random() * 1 + 1 + player.charm_value_extra --魅力值1~2
     end
     if IsBoss or NotSmall then
-        player.exp = player.exp and player.exp + exp                                        --经验值
-        player.combat_capacity = player.combat_capacity and player.combat_capacity + combat --战斗力
-        player.charm_value = player.charm_value and player.charm_value + charm              --魅力值
+        player.exp = player.exp and player.exp + exp                                                       --经验值
+        player.combat_capacity = player.combat_capacity and math.min(player.combat_capacity + combat, 400) --战斗力
+        player.charm_value = player.charm_value and player.charm_value + charm                             --魅力值
         if showBanner then
             local bannerExp
             local dyc = TaxuePatch.dyc
@@ -1266,11 +1275,11 @@ function patchLib.TaxueOnKilled(player, target)
                 "minotaurchest_key", --豪华钥匙
             }
             if player.lockpick_chance > 0 and math.random() <= player.lockpick_chance then
-                local key = key_1[math.random(#key_1)]
+                local key = TaxueList.key1[math.random(#TaxueList.key1)]
                 dorpList[key] = dorpList[key] and dorpList[key] + 1 or 1
             end
             if player.lockpick_chance > 0 and math.random() <= player.lockpick_chance / 10 then
-                local key = key_2[math.random(#key_2)]
+                local key = TaxueList.key2[math.random(#TaxueList.key2)]
                 dorpList[key] = dorpList[key] and dorpList[key] + 1 or 1
             end
             --#endregion

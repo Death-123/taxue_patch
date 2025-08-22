@@ -293,6 +293,7 @@ TaxuePatch.PATCH_FN = PATCH_FN
 TaxuePatch.playerSavedDataItems = playerSavedDataItems
 
 --#region patch
+
 ---@class cfgLine
 ---@field index integer
 ---@field endIndex? integer
@@ -678,7 +679,7 @@ addPatchFn("taxueFix.betterDrop", function()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3110, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3111, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -978,7 +979,6 @@ addPatchs("scripts/prefabs/taxue_staff.lua", "oneClickUse.blueStaff", {
 --             { "locked_minotaurchest",        "minotaurchest_key" },
 --             { "locked_taxue_terrariumchest", "terrarium_key" },
 --             { "locked_taxue_poisonchest",    "poison_key" },
-
 --             { "mini_pandoraschest",          "crystal_ball_taxue" }, --箱中箱
 --         }
 --         local keys = {}
@@ -1010,6 +1010,7 @@ addPatchs("scripts/prefabs/taxue_staff.lua", "oneClickUse.blueStaff", {
 --     end]]
 --     }
 -- })
+
 --点怪成金可以点召唤书
 addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
     index = 780,
@@ -1182,48 +1183,48 @@ addPatchFn("buffThings.chestCanHammer", function()
     end
 end)
 --打包机防破坏
--- addPatchFn("buffThings.packageMachineCantHammer", function()
---     local items = {
---         super_package_machine = true
---     }
---     AddPrefabPostInit("golden_staff", function(inst)
---         local oldspelltest = inst.components.spellcaster.spelltest
---         inst.components.spellcaster.spelltest = function(inst, caster, target)
---             if target and items[target.prefab] then
---                 return true
---             else
---                 return oldspelltest(inst, caster, target)
---             end
---         end
---         local oldsspell = inst.components.spellcaster.spell
---         inst.components.spellcaster.spell = function(inst, target)
---             if items[target.prefab] then
---                 if target.components.container then
---                     target.components.container:Close()
---                     target.components.container:DropEverything()
---                 end
---                 target.components.lootdropper:DropLoot()
---                 SpawnPrefab("collapse_small").Transform:SetPosition(target.Transform:GetWorldPosition())
---                 target.SoundEmitter:PlaySound("dontstarve/common/destroy_metal")
---                 target:Remove()
+--[[ addPatchFn("buffThings.packageMachineCantHammer", function()
+    local items = {
+        super_package_machine = true
+    }
+    AddPrefabPostInit("golden_staff", function(inst)
+        local oldspelltest = inst.components.spellcaster.spelltest
+        inst.components.spellcaster.spelltest = function(inst, caster, target)
+            if target and items[target.prefab] then
+                return true
+            else
+                return oldspelltest(inst, caster, target)
+            end
+        end
+        local oldsspell = inst.components.spellcaster.spell
+        inst.components.spellcaster.spell = function(inst, target)
+            if items[target.prefab] then
+                if target.components.container then
+                    target.components.container:Close()
+                    target.components.container:DropEverything()
+                end
+                target.components.lootdropper:DropLoot()
+                SpawnPrefab("collapse_small").Transform:SetPosition(target.Transform:GetWorldPosition())
+                target.SoundEmitter:PlaySound("dontstarve/common/destroy_metal")
+                target:Remove()
 
---                 inst.SoundEmitter:PlaySound("dontstarve/common/gem_shatter")
---                 if inst.components.stackable then
---                     inst.components.stackable:Get(1):Remove()
---                 else
---                     inst:Remove()
---                 end
---             else
---                 oldsspell(inst, target)
---             end
---         end
---     end)
---     for name, _ in pairs(items) do
---         AddPrefabPostInit(name, function(inst)
---             inst:RemoveComponent("workable")
---         end)
---     end
--- end)
+                inst.SoundEmitter:PlaySound("dontstarve/common/gem_shatter")
+                if inst.components.stackable then
+                    inst.components.stackable:Get(1):Remove()
+                else
+                    inst:Remove()
+                end
+            else
+                oldsspell(inst, target)
+            end
+        end
+    end)
+    for name, _ in pairs(items) do
+        AddPrefabPostInit(name, function(inst)
+            inst:RemoveComponent("workable")
+        end)
+    end
+end) ]]
 --夜明珠扔地上发光
 addPatchFn("buffThings.lightPearlBuff", function()
     local lightPearls = {
