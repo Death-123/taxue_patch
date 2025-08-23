@@ -1,4 +1,4 @@
-GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })
+GLOBAL.setmetatable(env, { __index = function (t, k) return GLOBAL.rawget(GLOBAL, k) end })
 local ModConfigurationScreen = require("screens/modconfigurationscreen")
 
 GLOBAL.TaxuePatch = {
@@ -13,7 +13,7 @@ function string.split(input, delimiter)
     delimiter = tostring(delimiter)
     if (delimiter == "") then return false end
     local pos, arr = 0, {}
-    for st, sp in function() return string.find(input, delimiter, pos, true) end do
+    for st, sp in function () return string.find(input, delimiter, pos, true) end do
         table.insert(arr, string.sub(input, pos, st - 1))
         pos = sp + 1
     end
@@ -108,7 +108,7 @@ TaxuePatch.TableDeepEq = TableDeepEq
 ---@param after? boolean
 function OverrideSLData(inst, dataItems, after)
     local onsave = inst.OnSave
-    inst.OnSave = function(self, data)
+    inst.OnSave = function (self, data)
         if after then onsave(self, data) end
         for dataItem, save in pairs(dataItems) do
             if save then
@@ -119,7 +119,7 @@ function OverrideSLData(inst, dataItems, after)
     end
 
     local onload = inst.OnLoad
-    inst.OnLoad = function(self, data)
+    inst.OnLoad = function (self, data)
         if after then onload(self, data) end
         for dataItem, save in pairs(dataItems) do
             if save then
@@ -137,11 +137,11 @@ local TaxuePatch = GLOBAL.TaxuePatch
 TaxuePatch.dataSaver = require("dataSave")(modname)
 local config = require("SomniumConfig")(modname)
 TaxuePatch.config = config
-TaxuePatch.cfg = function(key)
+TaxuePatch.cfg = function (key)
     return TaxuePatch.config:GetValue(key)
 end
 
-TheInput:AddKeyDownHandler(TaxuePatch.cfg("configKeybind"), function()
+TheInput:AddKeyDownHandler(TaxuePatch.cfg("configKeybind"), function ()
     if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
 
     KnownModIndex:LoadModConfigurationOptions(modname)
@@ -253,7 +253,7 @@ local PATCHS = {
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     -- ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "91b746a2f2a561202eb33f876bbad500", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "ea910e1994305fc56f839916e996a538", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "442b02903c961932575570d5b8e0737c", lines = {} },
     -- ["scripts/public_method_taxue.lua"] = { md5 = "2e04ba4757b6c79a8a5f25c8ac9cc03a", lines = {} },s
     --提高石板路优先级
     ["modworldgenmain.lua"] = { md5 = nil, lines = {} },
@@ -270,15 +270,15 @@ local PATCHS = {
     --箱子可以被锤
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
     --宝石保存,夜明珠地上发光
-    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "3a394fb10c220976569454d48379205e", lines = {} },
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "cbd69d61f4b532fae2e72ee71fc96fe0", lines = {} },
     --打包机防破坏,法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "b451070dd0a90b2c6750afbb5364930d", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "ca063b92dfc1fbc30fdd12e44da6552a", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "45ac922b3c15654d286c7f39a89abb9e", lines = {} },
     --金钱就是力量
-    ["scripts/prefabs/taxue.lua"] = { md5 = "4c2370eef294a30ba965f82c81f02324", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "fc9980daf31f1f8f9564f196d66b054c", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -388,7 +388,7 @@ local function patchFile(filePath, data)
             patchFile:close()
         else
             local patchLines = data.lines
-            table.sort(patchLines, function(a, b) return a.index < b.index end)
+            table.sort(patchLines, function (a, b) return a.index < b.index end)
             local i = 1
             local index, type, endIndex, content
             local inPatch = false
@@ -596,7 +596,7 @@ end
 --#endregion
 
 local oldLookAtFn = ACTIONS.LOOKAT.fn
-ACTIONS.LOOKAT.fn = function(act)
+ACTIONS.LOOKAT.fn = function (act)
     oldLookAtFn(act)
     local targ = act.target or act.invobject
     local force = TheInput:IsControlPressed(CONTROL_FORCE_INSPECT)
@@ -604,9 +604,9 @@ ACTIONS.LOOKAT.fn = function(act)
 end
 
 --#region 内存清理
-addPatchFn("ingameGC", function()
-    AddPlayerPostInit(function(player)
-        player:DoPeriodicTask(cfg("ingameGC") * 60, function()
+addPatchFn("ingameGC", function ()
+    AddPlayerPostInit(function (player)
+        player:DoPeriodicTask(cfg("ingameGC") * 60, function ()
             if collectgarbage("count") > 200000 then
                 print("memory usage: " .. collectgarbage("count") .. ", starting garbage collect")
                 collectgarbage("collect")
@@ -619,7 +619,7 @@ end)
 --#region 踏雪优化
 
 --移除掉落物变灰烬
-addPatchFn("taxueFix.dropAsh", function()
+addPatchFn("taxueFix.dropAsh", function ()
     local special_cooked_prefabs = {
         ["trunk_summer"] = "trunk_cooked",
         ["trunk_winter"] = "trunk_cooked",
@@ -645,20 +645,20 @@ addPatchFn("taxueFix.dropAsh", function()
             end
         end
     end
-    AddComponentPostInit("lootdropper", function(inst)
+    AddComponentPostInit("lootdropper", function (inst)
         inst.AddSpecialCookedPrefab = AddSpecialCookedPrefab
         inst.CheckBurnable = CheckBurnable
     end)
 end)
 --掉落优化
-addPatchFn("taxueFix.betterDrop", function()
-    AddGamePostInit(function()
+addPatchFn("taxueFix.betterDrop", function ()
+    AddGamePostInit(function ()
         GLOBAL.TaxueOnKilled = TaxuePatch.TaxueOnKilled
     end)
 
-    AddComponentPostInit("lootdropper", function(inst)
+    AddComponentPostInit("lootdropper", function (inst)
         local oldDropLoot = inst.DropLoot
-        inst.DropLoot = function(self, pt, loots)
+        inst.DropLoot = function (self, pt, loots)
             if loots then
                 oldDropLoot(self, pt, loots)
             else
@@ -685,21 +685,21 @@ addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
 --按键排序
 addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
-    index = 243,
-    endIndex = 349,
+    index = 245,
+    endIndex = 351,
     content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
 })
 --增强一键入箱
 addPatchs("scripts/press_key_taxue.lua", "taxueFix.intoChest", {
-    { index = 168, endIndex = 189, content = [[TaxuePatch.TaxueIntoChestKey()]] },
+    { index = 170, endIndex = 191, content = [[TaxuePatch.TaxueIntoChestKey()]] },
 })
-addPatchFn("taxueFix.intoChest", function()
-    AddGamePostInit(function()
+addPatchFn("taxueFix.intoChest", function ()
+    AddGamePostInit(function ()
         GLOBAL.TaxueIntoChest = TaxuePatch.IntoChest
     end)
 end)
 --种子机修复
-addPatchFn("taxueFix.seedsMachineFix", function()
+addPatchFn("taxueFix.seedsMachineFix", function ()
     local function pressButton(inst)
         local slots = inst.components.container.slots
         local has = false
@@ -733,13 +733,13 @@ addPatchFn("taxueFix.seedsMachineFix", function()
             end
         end
     end
-    AddPrefabPostInit("taxue_seeds_machine", function(inst)
+    AddPrefabPostInit("taxue_seeds_machine", function (inst)
         inst.components.container.widgetbuttoninfo.fn = pressButton
     end)
 end)
 --黄金宝箱优化
-addPatchFn("taxueFix.goldenChest", function()
-    AddPrefabPostInit("taxue_goldenchest", function(inst)
+addPatchFn("taxueFix.goldenChest", function ()
+    AddPrefabPostInit("taxue_goldenchest", function (inst)
         inst.components.container.widgetbuttoninfo.fn = TaxuePatch.GoldenChestButton
     end)
 end)
@@ -773,10 +773,10 @@ addPatchs("scripts/prefabs/taxue_book.lua", "taxueFix.harvestBookPatch", {
     { index = 49, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
 })
 --自动保存CD
-addPatchFn("taxueFix.autoSavePatch", function()
-    AddComponentPostInit("autosaver", function(comp, inst)
+addPatchFn("taxueFix.autoSavePatch", function ()
+    AddComponentPostInit("autosaver", function (comp, inst)
         local doSave = comp.DoSave
-        comp.DoSave = function(self)
+        comp.DoSave = function (self)
             local cd = TaxuePatch.cfg("taxueFix.autoSavePatch")
             if cd and (not self.lastSaveTime or GetTime() - self.lastSaveTime > cd * 60) then
                 self.lastSaveTime = GetTime()
@@ -786,10 +786,10 @@ addPatchFn("taxueFix.autoSavePatch", function()
     end)
 end)
 --修复哈姆大蛇初始化崩溃
-addPatchFn("taxueFix.fixPugalisk", function()
-    AddPrefabPostInit("pugalisk", function(inst)
+addPatchFn("taxueFix.fixPugalisk", function ()
+    AddPrefabPostInit("pugalisk", function (inst)
         local oldOnLoadPostPass = inst.OnLoadPostPass
-        inst.OnLoadPostPass = function(inst, newents, data)
+        inst.OnLoadPostPass = function (inst, newents, data)
             if not (data and data.home and newents and newents[data.home]) then return end
             return oldOnLoadPostPass(inst, newents, data)
         end
@@ -835,9 +835,9 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
 --#endregion
 
 --#region 猫猫定位
-addPatchFn("teleportCat", function()
-    AddPrefabPostInit("taxue_cat_floorlamp", function(inst)
-        inst:ListenForEvent("onLookAt", function(inst, data)
+addPatchFn("teleportCat", function ()
+    AddPrefabPostInit("taxue_cat_floorlamp", function (inst)
+        inst:ListenForEvent("onLookAt", function (inst, data)
             if data.force then
                 TaxuePatch.CostTeleport(inst)
                 TaXueSay("折越成功!")
@@ -845,8 +845,8 @@ addPatchFn("teleportCat", function()
         end)
     end)
 end)
-addPatchFn("teleportCat.mapTeleport", function()
-    AddClassPostConstruct("screens/mapscreen", function(MapScreen)
+addPatchFn("teleportCat.mapTeleport", function ()
+    AddClassPostConstruct("screens/mapscreen", function (MapScreen)
         local _oldOnControl = MapScreen.OnControl
         function MapScreen:OnControl(control, down)
             if control == CONTROL_ACCEPT then
@@ -1058,13 +1058,13 @@ addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
             ]]
 })
 --一键水晶煤球
-addPatchFn("oneClickUse.crystalBall", function()
-    AddPrefabPostInit("crystal_ball_taxue", function(_inst)
+addPatchFn("oneClickUse.crystalBall", function ()
+    AddPrefabPostInit("crystal_ball_taxue", function (_inst)
         _inst:AddComponent("useableitem")
-        _inst.components.useableitem:SetCanInteractFn(function(inst) return GetPlayer().bank_value > 0.01 and inst.lv < 10 end)
-        _inst.components.useableitem:SetOnUseFn(function(inst)
+        _inst.components.useableitem:SetCanInteractFn(function (inst) return GetPlayer().bank_value > 0.01 and inst.lv < 10 end)
+        _inst.components.useableitem:SetOnUseFn(function (inst)
             if not inst.task then
-                inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function()
+                inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function ()
                     local player = GetPlayer()
                     if player.bank_value > 0.01 and inst.lv < 10 then
                         player.bank_value = player.bank_value - 0.01
@@ -1082,12 +1082,12 @@ addPatchFn("oneClickUse.crystalBall", function()
             end
         end)
     end)
-    AddPrefabPostInit("golden_statue", function(_inst)
-        _inst:ListenForEvent("trade", function(inst, data)
+    AddPrefabPostInit("golden_statue", function (_inst)
+        _inst:ListenForEvent("trade", function (inst, data)
             if data.item.prefab == "crystal_ball_taxue" then
                 if not inst.task then
                     local ball
-                    inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function()
+                    inst.task = inst:DoPeriodicTask(cfg("oneClickUse.crystalBall.timeGap"), function ()
                         if ball then
                             if not ball.task then
                                 inst.components.trader:AcceptGift(GetPlayer(), ball)
@@ -1119,25 +1119,23 @@ end)
 --#region 梅运券修改
 
 playerSavedDataItems.fortune_day = true
-addPatchFn("fortunePatch.usePatch", function()
-    AddPrefabPostInit("taxue", function(inst)
+addPatchFn("fortunePatch.usePatch", function ()
+    AddPrefabPostInit("taxue", function (inst)
         local function daycomplete(inst, data)
             if TUNING.FUCK_DAY == true then
                 local player = GetPlayer()
                 if player.fortune_day and player.fortune_day > 0 then
                     player.fortune_day = player.fortune_day - 1
-                    local str = "今日运势: " .. TaxuePatch.GetFortuneStr(player)
-                    if cfg("fortunePatch.showNum") then
-                        str = str .. ("(%.2f)"):format(player.badluck_num)
-                    end
-                    TaxuePatch.showBanner(str)
+                    local str = TaxuePatch.GetFortuneStr(player)
+                    TaxuePatch.showBanner(str[1])
+                    TaxuePatch.showBanner(str[2])
                 end
             end
         end
         inst:ListenForEvent("daycomplete", daycomplete, GetWorld())
     end)
-    AddPrefabPostInit("fortune_ticket", function(inst)
-        inst.components.book:SetOnReadFn(function(inst, reader)
+    AddPrefabPostInit("fortune_ticket", function (inst)
+        inst.components.book:SetOnReadFn(function (inst, reader)
             local amount = inst.components.stackable.stacksize
             reader.fortune_day = reader.fortune_day and reader.fortune_day + amount or amount
             TaXueSay("已装载梅运券: " .. amount)
@@ -1145,9 +1143,9 @@ addPatchFn("fortunePatch.usePatch", function()
             return true
         end)
     end)
-    AddPrefabPostInit("fortune_change_ticket", function(inst)
+    AddPrefabPostInit("fortune_change_ticket", function (inst)
         local onread = inst.components.book.onread
-        inst.components.book:SetOnReadFn(function(inst, reader)
+        inst.components.book:SetOnReadFn(function (inst, reader)
             if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end
             return onread(inst, reader)
         end)
@@ -1155,15 +1153,15 @@ addPatchFn("fortunePatch.usePatch", function()
 end)
 --梅运券显示
 addPatchs("scripts/prefabs/taxue_other_items.lua", "fortunePatch.showNum", {
-    { index = 226, content = [[		TaXueSay("今天真是"..str..("\n梅运值: %.2f"):format(reader.badluck_num))]] },
-    { index = 239, content = [[		TaXueSay(str..("\n梅运值: %.2f"):format(reader.badluck_num))]] }
+    { index = 226, content = [[		TaXueSay("明天估计是"..str..("\n梅运值: %.2f"):format(reader.badluck_num[2]))]] },
+    { index = 239, content = [[		TaXueSay(str..("\n梅运值: %.2f"):format(reader.badluck_num[2]))]] }
 })
 --#endregion
 
 --#region 物品增强
 
 --箱子可以被锤
-addPatchFn("buffThings.chestCanHammer", function()
+addPatchFn("buffThings.chestCanHammer", function ()
     local miniChests = {
         "mini_pandoraschest",
         "mini_pandoraschest_advanced",
@@ -1174,7 +1172,7 @@ addPatchFn("buffThings.chestCanHammer", function()
         inst.components.container.onclosefn(inst)
     end
     for _, name in pairs(miniChests) do
-        AddPrefabPostInit(name, function(inst)
+        AddPrefabPostInit(name, function (inst)
             inst:AddComponent("workable")
             inst.components.workable:SetWorkAction(ACTIONS.HAMMER)
             inst.components.workable:SetWorkLeft(2)
@@ -1226,15 +1224,15 @@ end)
     end
 end) ]]
 --夜明珠扔地上发光
-addPatchFn("buffThings.lightPearlBuff", function()
+addPatchFn("buffThings.lightPearlBuff", function ()
     local lightPearls = {
         "equipment_light_pearl",
         "equipment_light_pearl_re",
         "equipment_light_pearl_rea",
     }
     for _, name in pairs(lightPearls) do
-        AddPrefabPostInit(name, function(inst)
-            inst.components.inventoryitem:SetOnDroppedFn(function(self, dropper)
+        AddPrefabPostInit(name, function (inst)
+            inst.components.inventoryitem:SetOnDroppedFn(function (self, dropper)
                 if self.Light then self.Light:SetRadius(inst.equip_value) end
             end)
         end)
@@ -1245,20 +1243,20 @@ addPatchs("scripts/prefabs/taxue_equipment.lua", "buffThings.disableGemSave", {
     { index = 346, type = "override" },
 })
 --售货亭修改
-addPatchFn("buffThings.sellPavilion", function()
-    AddPrefabPostInit("taxue_sell_pavilion", function(inst)
+addPatchFn("buffThings.sellPavilion", function ()
+    AddPrefabPostInit("taxue_sell_pavilion", function (inst)
         inst.components.container.widgetbuttoninfo.fn = TaxuePatch.SellPavilionSellItems
     end)
-    AddPrefabPostInit("taxue_portable_sell_pavilion", function(inst)
+    AddPrefabPostInit("taxue_portable_sell_pavilion", function (inst)
         inst.components.container.widgetbuttoninfo.fn = TaxuePatch.SellPavilionSellItems
     end)
 end)
 --移除花盆碰撞
-addPatchFn("buffThings.flowerporPhysics", function()
+addPatchFn("buffThings.flowerporPhysics", function ()
     AddPrefabPostInit("taxue_flowerpot", RemovePhysicsColliders)
 end)
 --法杖增强
-addPatchFn("buffThings.buffStaff", function()
+addPatchFn("buffThings.buffStaff", function ()
     local function changeTool(inst, dig)
         if dig ~= nil then inst.dig = dig end
         local symbol = "swap_" .. inst.prefab .. (inst.dig and "_dig" or "")
@@ -1291,16 +1289,16 @@ addPatchFn("buffThings.buffStaff", function()
         colourful_staff = { speed = cfg("buffThings.buffStaff.colorfulStaffSpeed") },
     }
     for name, data in pairs(staffs) do
-        AddPrefabPostInit(name, function(inst)
+        AddPrefabPostInit(name, function (inst)
             if data.work_efficiency then
                 inst.work_efficiency = data.work_efficiency
-                inst.components.useableitem:SetOnUseFn(function(inst)
+                inst.components.useableitem:SetOnUseFn(function (inst)
                     if inst.components.tool then
                         changeTool(inst, not inst.dig)
                     end
                 end)
                 local onload = inst.OnLoad
-                inst.OnLoad = function(inst, data)
+                inst.OnLoad = function (inst, data)
                     onload(inst, data)
                     changeTool(inst)
                 end
@@ -1351,9 +1349,9 @@ addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", 
     },
 })
 --五彩宝石加速合成
-addPatchFn("buffThings.colorfulGemCraft", function()
+addPatchFn("buffThings.colorfulGemCraft", function ()
     local function finish(comp)
-        return function(self, doer, target)
+        return function (self, doer, target)
             local task = target.components[comp].task
             if task then
                 self.inst.components.stackable:Get():Remove()
@@ -1382,12 +1380,12 @@ addPatchFn("buffThings.colorfulGemCraft", function()
         taxue_coal_furnace = finish("melter"),
     }
 
-    AddPrefabPostInit("colorful_gem", function(inst)
+    AddPrefabPostInit("colorful_gem", function (inst)
         inst:AddComponent("itemGiver")
-        inst.components.itemGiver.test = function(self, doer, target)
+        inst.components.itemGiver.test = function (self, doer, target)
             return entMap[target.prefab]
         end
-        inst.components.itemGiver.fn = function(self, doer, target)
+        inst.components.itemGiver.fn = function (self, doer, target)
             entMap[target.prefab](self, doer, target)
         end
     end)
@@ -1395,8 +1393,8 @@ end)
 --#endregion
 
 --#region 打包系统
-addPatchFn("package", function()
-    AddPrefabPostInit("super_package", function(inst)
+addPatchFn("package", function ()
+    AddPrefabPostInit("super_package", function (inst)
         local dataItems = {
             isPatched = true,
             name = true,
@@ -1408,12 +1406,12 @@ addPatchFn("package", function()
             taxue_coin_value = true,
         }
         OverrideSLData(inst, dataItems)
-        inst.components.unwrappable:SetOnUnwrappedFn(function(inst, pos, doer)
+        inst.components.unwrappable:SetOnUnwrappedFn(function (inst, pos, doer)
             TaxuePatch.superPackageLib.UnpackSuperPackage(inst)
         end)
     end)
-    AddPrefabPostInit("book_package_super", function(inst)
-        inst.components.book.onread = function(inst, reader)
+    AddPrefabPostInit("book_package_super", function (inst)
+        inst.components.book.onread = function (inst, reader)
             if inst.time > 0 then
                 TaxuePatch.superPackageLib.DoPack(inst, true)
                 inst.time = inst.time - 1
@@ -1423,12 +1421,12 @@ addPatchFn("package", function()
             return true
         end
     end)
-    AddPrefabPostInit("super_package_machine", function(inst)
+    AddPrefabPostInit("super_package_machine", function (inst)
         local dataItems = {
             isPatched = true,
         }
         OverrideSLData(inst, dataItems)
-        inst.getPackage = function(self)
+        inst.getPackage = function (self)
             if self.switch == "off" then return nil end
             local slots = self.components.container.slots
             local package = nil
@@ -1445,7 +1443,7 @@ addPatchFn("package", function()
             return package
         end
 
-        inst.components.machine.turnonfn = function(self)
+        inst.components.machine.turnonfn = function (self)
             self.components.container:Close()
             self.components.container.canbeopened = false
 
@@ -1459,14 +1457,14 @@ addPatchFn("package", function()
             end
             if diamond_num < 1 and self.switch == "off" then
                 TaXueSay("请至少放入一颗钻石再启动！")
-                self:DoTaskInTime(0, function()
+                self:DoTaskInTime(0, function ()
                     self.components.machine:TurnOff()
                 end)
                 return
             end
             if self.components.container:IsFull() and package == nil then
                 TaXueSay("内部空间已满，请留出空余位置！")
-                self:DoTaskInTime(0, function()
+                self:DoTaskInTime(0, function ()
                     self.components.machine:TurnOff()
                 end)
                 return
@@ -1491,11 +1489,11 @@ addPatchFn("package", function()
             end
             self.isPatched = true
             self.switch = "on"
-            self.task = self:DoPeriodicTask(5, function()
+            self.task = self:DoPeriodicTask(5, function ()
                 TaxuePatch.superPackageLib.DoPack(inst, false)
             end)
         end
-        inst.components.machine.turnofffn = function(self)
+        inst.components.machine.turnofffn = function (self)
             --移除空包裹
             local container = self.components.container
             for slot, v in pairs(container.slots) do
@@ -1521,7 +1519,7 @@ end)
 --#region 自动护符
 if taxueEnabled and cfg("autoAmulet") then
     table.insert(PrefabFiles, "taxue_ultimate_armor_auto_amulet")
-    AddPlayerPostInit(function(player)
+    AddPlayerPostInit(function (player)
         if player.prefab == "taxue" then
             Recipe("taxue_ultimate_armor_auto_amulet",
                 {
@@ -1555,7 +1553,7 @@ if taxueLoaded then
             end
         end
     end
-    AddPrefabPostInit("taxue", function(inst)
+    AddPrefabPostInit("taxue", function (inst)
         OverrideSLData(inst, playerSavedDataItems)
     end)
     local oldSave = KnownModIndex.Save
@@ -1574,22 +1572,22 @@ for name, value in pairs(command) do
     GLOBAL[name] = value
 end
 
-AddClassPostConstruct("widgets/itemtile", function(origin)
+AddClassPostConstruct("widgets/itemtile", function (origin)
     local oldOnGainFocus = origin.OnGainFocus
-    origin.OnGainFocus = function(self, ...)
+    origin.OnGainFocus = function (self, ...)
         TaxuePatch.hoverItem = self.item
         oldOnGainFocus(self, ...)
     end
     local oldOnLoseFocus = origin.OnLoseFocus
-    origin.OnLoseFocus = function(self, ...)
-        self.inst:DoTaskInTime(FRAMES, function()
+    origin.OnLoseFocus = function (self, ...)
+        self.inst:DoTaskInTime(FRAMES, function ()
             if TaxuePatch.hoverItem == self.item then TaxuePatch.hoverItem = nil end
         end)
         oldOnLoseFocus(self, ...)
     end
 end)
 
-AddClassPostConstruct("widgets/mapwidget", function(MapWidget)
+AddClassPostConstruct("widgets/mapwidget", function (MapWidget)
     MapWidget.mapOffset = Vector3(0, 0, 0)
 
     MapWidget._oldOnUpdate = MapWidget.OnUpdate
@@ -1863,21 +1861,21 @@ end)
 AddStategraphState("wilson",
     State {
         name = "useitem",
-        onenter = function(inst)
+        onenter = function (inst)
             inst.components.locomotor:Stop()
             inst.AnimState:PlayAnimation("give")
         end,
 
         timeline =
         {
-            TimeEvent(4 * FRAMES, function(inst)
+            TimeEvent(4 * FRAMES, function (inst)
                 inst:PerformBufferedAction()
             end),
         },
 
         events =
         {
-            EventHandler("animover", function(inst) inst.sg:GoToState("idle") end),
+            EventHandler("animover", function (inst) inst.sg:GoToState("idle") end),
         },
     })
 AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.USEITEM, "useitem"))
@@ -1885,7 +1883,7 @@ ACTIONS.USEITEM.priority = 3
 ACTIONS.USEITEM.rmb = true
 ACTIONS.USEITEM.instant = false
 ACTIONS.USEITEM.distance = 1
-ACTIONS.USEITEM.fn = function(act)
+ACTIONS.USEITEM.fn = function (act)
     local target = act.target or act.invobject
     if target and target.components.useableitem then
         if target.components.useableitem:CanInteract() then
@@ -1894,13 +1892,13 @@ ACTIONS.USEITEM.fn = function(act)
         end
     end
 end
-ACTIONS.USEITEM.strfn = function(act)
+ACTIONS.USEITEM.strfn = function (act)
     local target = act.target or act.invobject
     if target and target.components.useableitem then
         return target.components.useableitem.verb
     end
 end
-AddComponentPostInit("useableitem", function(comp)
+AddComponentPostInit("useableitem", function (comp)
     function comp:CollectSceneActions(doer, actions, right)
         if right and self:CanInteract() then
             table.insert(actions, ACTIONS.USEITEM)
@@ -1913,19 +1911,19 @@ STRINGS.ACTIONS.ITEMGIVER = "给予"
 ACTIONS.ITEMGIVER = Action({ mount_enabled = true }, 3)
 ACTIONS.ITEMGIVER.str = ACTIONS.GIVE.str
 ACTIONS.ITEMGIVER.id = "ITEMGIVER"
-ACTIONS.ITEMGIVER.fn = function(act)
+ACTIONS.ITEMGIVER.fn = function (act)
     act.invobject.components.itemGiver:fn(act.doer, act.target)
     return true
 end
 AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.ITEMGIVER, "give"))
 
-AddSimPostInit(function(player)
-    player:DoTaskInTime(0, function()
+AddSimPostInit(function (player)
+    player:DoTaskInTime(0, function ()
         TaxuePatch.dyc = DYCLegendary or DYCInfoPanel
         if TaxuePatch.dyc then
             local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
             TaxuePatch.bannerColor = TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
-            TaxuePatch.showBanner = function(msg, time)
+            TaxuePatch.showBanner = function (msg, time)
                 if TaxuePatch.dyc then
                     TaxuePatch.dyc.bannerSystem:ShowMessage(msg, time or 5, TaxuePatch.bannerColor)
                 end

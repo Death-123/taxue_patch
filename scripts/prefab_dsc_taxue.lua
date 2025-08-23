@@ -80,7 +80,7 @@ function string.split(input, delimiter)
     delimiter = tostring(delimiter)
     if (delimiter == "") then return {} end
     local pos, arr = 0, {}
-    for st, sp in function() return string.find(input, delimiter, pos, true) end do
+    for st, sp in function () return string.find(input, delimiter, pos, true) end do
         table.insert(arr, string.sub(input, pos, st - 1))
         pos = sp + 1
     end
@@ -226,8 +226,9 @@ end
 
 ---获取幸运描述
 ---@param player Taxue
----@return string
-local function GetFortuneStr(player)
+---@return {[1]:string, [2]:string}
+function GetFortuneStr(player)
+    local str = {}
     local fortune_list = {
         { str = "巅峰运势", value = 1.8 },
         { str = "极品欧皇", value = 1.5 },
@@ -240,16 +241,27 @@ local function GetFortuneStr(player)
         { str = "霉上加霉", value = 0.4 },
         { str = "梅老板附体", value = 0.2 },
     }
-    for _, entry in pairs(fortune_list) do
-        if player.badluck_num >= entry.value then
-            return entry.str
+    for i = 1, 2 do
+        for _, entry in pairs(fortune_list) do
+            if player.badluck_num[i] >= entry.value then
+                str[i] = entry.str
+            end
         end
+        str[i] = str[i] or "比煤老板还煤"
     end
-    return "比煤老板还煤"
+    str[1] = "今日运势: " .. str[1]
+    str[2] = "明日运势: " .. str[2]
+    if cfg("fortunePatch.showNum") then
+        str[1] = str[1] .. ("(%.2f)"):format(player.badluck_num[1])
+        str[2] = str[2] .. ("(%.2f)"):format(player.badluck_num[2])
+    end
+    return str
 end
+
 --#endregion
 
 --#region Info
+
 ---@class Info
 ---@field data table|string
 ---@field index integer
@@ -327,15 +339,16 @@ local function getItemInfo(target)
         Info:Add("美味值:" .. formatNumber(player.delicious_value) .. "," .. GetDeliciousStr(player))
         Info:Add("银行存款:" .. formatCoins(player.bank_value * 100) .. "," .. GetBankStr(player))
         Info:Add("已收获利息:" .. formatCoins(player.interest_num * 100))
+        local fortuneStr = GetFortuneStr(player)
         if cfg("fortunePatch.usePatch", true) then
             local str = cfg("fortunePatch.usePatch") and "梅运券已装载: " .. (player.fortune_day or 0) or ""
-            if player.fortune_day and player.fortune_day > 0 then
-                str = str .. ", 今日运势: " .. GetFortuneStr(player)
-                if cfg("fortunePatch.showNum", true) then
-                    str = str .. ("(%.2f)"):format(player.badluck_num)
-                end
-            end
             Info:Add(str)
+            Info:Add(fortuneStr[1])
+            if player.fortune_day and player.fortune_day > 0 then
+                Info:Add(fortuneStr[2])
+            end
+        else
+            Info:Add(fortuneStr[1])
         end
 
         return Info.data
@@ -593,7 +606,7 @@ local function getItemInfo(target)
             local amountMap = target.amountMap
             local valueMap = target.valueMap
             local orders = TaxuePatch.ItemTypeOders
-            local getNameStr = function(name) return TaxuePatch.ItemTypeNameMap[name] or name end
+            local getNameStr = function (name) return TaxuePatch.ItemTypeNameMap[name] or name end
             local showLines
 
             if singleType then
@@ -601,7 +614,7 @@ local function getItemInfo(target)
                 amountMap = amountMap[singleType].sub
                 valueMap = valueMap[singleType].sub
                 orders = TaxuePatch.ItemTypeMap[singleType] or { "noOrder" }
-                getNameStr = function(name) return TaxueToChs(name) end
+                getNameStr = function (name) return TaxueToChs(name) end
 
                 singleItem = table.count(list) == 1 and next(list)
                 if singleItem and type(list[singleItem]) == "table" then
@@ -609,7 +622,7 @@ local function getItemInfo(target)
                     valueMap = valueMap[singleItem].sub
                     list = list[singleItem]
                     orders = { "noOrder" }
-                    getNameStr = function(name) return TaxueToChs(singleItem) .. "(" .. TaxuePatch.DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
+                    getNameStr = function (name) return TaxueToChs(singleItem) .. "(" .. TaxuePatch.DataStrMap[singleItem]:format(type(name) == "string" and TaxueToChs(name) or tostring(name)) .. ")" end
                     showLines = table.containskey(TaxuePatch.ItemDataMap, singleItem) or "nodata"
 
                     singleData = showLines ~= "nodata" and table.count(list) == 1 and next(list)
@@ -917,10 +930,10 @@ function Text:GetStringAdd()
 end
 
 --修改鼠标覆盖显示内容
-AddClassPostConstruct("widgets/hoverer", function(self)
+AddClassPostConstruct("widgets/hoverer", function (self)
     local old_SetString = self.text.SetString
     self.text:SetColour(getColor())
-    self.text.SetString = function(text, str)
+    self.text.SetString = function (text, str)
         if Info.type == "text" then
             local target = TheInput:GetWorldEntityUnderMouse() --获取鼠标所指的实体
             local success, err, result = pcall(getItemInfo, target)
@@ -930,14 +943,14 @@ AddClassPostConstruct("widgets/hoverer", function(self)
     end
 end)
 
-AddPlayerPostInit(function(inst)
-    inst:DoTaskInTime(0.1, function()
+AddPlayerPostInit(function (inst)
+    inst:DoTaskInTime(0.1, function ()
         local dyc = DYCLegendary or DYCInfoPanel
         if dyc and dyc.objectDetailWindow then
             --使用信息面板显示
             --修改颜色
             local oldSetObjectDetail = dyc.objectDetailWindow.SetObjectDetail
-            dyc.objectDetailWindow.SetObjectDetail = function(self, page)
+            dyc.objectDetailWindow.SetObjectDetail = function (self, page)
                 for _, line in ipairs(page.lines) do
                     if line.component == 'custom' then
                         if line.text:startWith("#") then
@@ -954,7 +967,7 @@ AddPlayerPostInit(function(inst)
             Info:init("table")
             --添加信息显示
             local oldGetPanelDescriptions = EntityScript.GetPanelDescriptions
-            EntityScript.GetPanelDescriptions = function(self)
+            EntityScript.GetPanelDescriptions = function (self)
                 Info:setTarget(self)
                 --清空上次添加的信息
                 for _, index in ipairs(Info.indexs) do

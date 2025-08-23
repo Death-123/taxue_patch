@@ -926,6 +926,9 @@ function patchLib.MultHarvest(crop, itemList, isBook)
                 shoudSay = true
             end
             --处理三色四叶草
+            if not cfg("buffThings.equipmentLimit") then
+                threecolourclover_chance = math.min(1, threecolourclover_chance)
+            end
             if threecolourclover_chance and math.random() < (threecolourclover_chance / 3) then
                 patchLib.ListAdd(itemList, "threecolor_essence")
                 patchLib.PlayItemMove("threecolor_essence", srcPos, targetPos)
@@ -1162,6 +1165,14 @@ function patchLib.TaxueOnKilled(player, target)
         if TaxuePatch.cfg("taxueFix.betterDrop") then
             package = patchLib.GetNearestPackageMachine(target)
         end
+        local faceblack = player.faceblack
+        local lockpick_chance = player.lockpick_chance
+        local thieves_chance = player.thieves_chance
+        if not cfg("buffThings.equipmentLimit") then
+            faceblack = math.min(faceblack, 1)
+            lockpick_chance = math.min(lockpick_chance, 1)
+            thieves_chance = math.min(thieves_chance, 1)
+        end
         --处理赌狗
         if player.gamble_multiple > 0 then
             has_save = true
@@ -1239,10 +1250,10 @@ function patchLib.TaxueOnKilled(player, target)
             -- print("触发脸黑奖掉落")
             --超级掉落
             if math.random() <= 0.005 then                     --拥有奖杯则0.5%触发总概率1/3(向下取整)的数量掉落			
-                patchLib.AddLootsToList(lootdropper, dorpList, math.floor((player.faceblack * 100) / 3))
+                patchLib.AddLootsToList(lootdropper, dorpList, math.floor((faceblack * 100) / 3))
                 player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
                 if showBanner then
-                    TaxuePatch.dyc.bannerSystem:ShowMessage("哇！欧气爆炸！！！" .. math.floor((player.faceblack * 100) / 3) .. " 倍多爆！", 5, bannerColor)
+                    TaxuePatch.dyc.bannerSystem:ShowMessage("哇！欧气爆炸！！！" .. math.floor((faceblack * 100) / 3) .. " 倍多爆！", 5, bannerColor)
                 else
                     TaXueSay("哇！欧气爆炸！！！")
                 end
@@ -1250,8 +1261,8 @@ function patchLib.TaxueOnKilled(player, target)
                 -- print("触发超级掉落")
             end
         end
-        -------------------------------------------------
-        if math.random() <= 0.01 then                      --默认1%概率双倍战利品
+        --默认1%概率双倍战利品
+        if math.random() <= 0.01 then
             player.SoundEmitter:PlaySound("drop/sfx/drop") --播放掉落音效
             patchLib.AddLootsToList(lootdropper, dorpList)
             -- print("双倍掉落")
@@ -1265,20 +1276,11 @@ function patchLib.TaxueOnKilled(player, target)
             --#endregion
 
             --#region 处理撬锁器
-            local key_1 = {
-                "corkchest_key",     --软木桶钥匙
-                "treasurechest_key", --木箱钥匙
-                "skullchest_key",    --骨钥匙
-            }
-            local key_2 = {
-                "pandoraschest_key", --精致钥匙
-                "minotaurchest_key", --豪华钥匙
-            }
             if player.lockpick_chance > 0 and math.random() <= player.lockpick_chance then
                 local key = TaxueList.key1[math.random(#TaxueList.key1)]
                 dorpList[key] = dorpList[key] and dorpList[key] + 1 or 1
             end
-            if player.lockpick_chance > 0 and math.random() <= player.lockpick_chance / 10 then
+            if player.lockpick_chance > 0 and math.random() <= lockpick_chance / 10 then
                 local key = TaxueList.key2[math.random(#TaxueList.key2)]
                 dorpList[key] = dorpList[key] and dorpList[key] + 1 or 1
             end
@@ -1293,11 +1295,18 @@ function patchLib.TaxueOnKilled(player, target)
 
             --#region 处理窃贼手套
             if player.thieves_chance > 0 then
-                local num = math.floor(player.thieves_chance) --大于1的数量
-                if math.random() < (player.thieves_chance - num) then
-                    num = num + 1
+                if math.random() < thieves_chance then
+                    local num = 0
+                    for i = 1, 20 do
+                        if math.random() < 0.7 then
+                            num = num + 1
+                        end
+                    end
+                    dorpList["taxue_coin_silver"] = dorpList["taxue_coin_silver"] and dorpList["taxue_coin_silver"] + num or num
+                    if math.random() < 0.1 then
+                        dorpList["taxue_coin"] = dorpList["taxue_coin"] and dorpList["taxue_coin"] + 1 or 1
+                    end
                 end
-                dorpList["taxue_coin_silver"] = dorpList["taxue_coin_silver"] and dorpList["taxue_coin_silver"] + num or num
             end
             --#endregion
 
@@ -1545,8 +1554,9 @@ end
 
 ---获取幸运描述
 ---@param player Taxue
----@return string
+---@return {[1]:string, [2]:string}
 function patchLib.GetFortuneStr(player)
+    local str = {}
     local fortune_list = {
         { str = "巅峰运势", value = 1.8 },
         { str = "极品欧皇", value = 1.5 },
@@ -1559,12 +1569,21 @@ function patchLib.GetFortuneStr(player)
         { str = "霉上加霉", value = 0.4 },
         { str = "梅老板附体", value = 0.2 },
     }
-    for _, entry in pairs(fortune_list) do
-        if player.badluck_num >= entry.value then
-            return entry.str
+    for i = 1, 2 do
+        for _, entry in pairs(fortune_list) do
+            if player.badluck_num[i] >= entry.value then
+                str[i] = entry.str
+            end
         end
+        str[i] = str[i] or "比煤老板还煤"
     end
-    return "比煤老板还煤"
+    str[1] = "今日运势: " .. str[1]
+    str[2] = "明日运势: " .. str[2]
+    if cfg("fortunePatch.showNum") then
+        str[1] = str[1] .. ("(%.2f)"):format(player.badluck_num[1])
+        str[2] = str[2] .. ("(%.2f)"):format(player.badluck_num[2])
+    end
+    return str
 end
 
 local function compare(a, b, up)

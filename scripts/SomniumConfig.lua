@@ -103,12 +103,12 @@ local keybindOptions = {
 
 ---@type ConfigEntry[]
 local cfg = {
-    {
+    {-- 启用补丁
         id = "patchEnable",
         name = "启用补丁",
         description = "是否启用补丁,关闭补丁前请禁用此选项加载一次"
     },
-    {
+    {--文件校验
         id = "fileCheck",
         name = "文件校验",
         description = "是否启用文件校验,用于检测踏雪mod文件是否可以被patch,如果禁用,请确保补丁版本匹配,并且踏雪文件没有被改动",
@@ -130,14 +130,14 @@ local cfg = {
             }
         }
     },
-    {
+    {--配置界面按键
         id = "configKeybind",
         name = "配置界面按键",
         description = "打开踏雪补丁配置界面按键",
         type = "keybind",
         default = 256
     },
-    {
+    {--内存清理
         id = "ingameGC",
         name = "内存清理",
         description = "定时清理内存,设置清理检查间隔",
@@ -152,7 +152,7 @@ local cfg = {
         },
         default = 10,
     },
-    {
+    {--踏雪优化
         id = "taxueFix",
         name = "踏雪优化",
         description = "优化踏雪mod部分功能",
@@ -301,7 +301,7 @@ local cfg = {
             }
         },
     },
-    {
+    {--定位猫猫
         id = "teleportCat",
         name = "定位猫猫",
         description = "强制检查猫猫地灯会传送到猫猫地灯位置",
@@ -362,7 +362,7 @@ local cfg = {
             },
         }
     },
-    {
+    {--一键使用
         id = "oneClickUse",
         name = "一键使用",
         description = "利息券,战利品券等一键使用",
@@ -426,7 +426,7 @@ local cfg = {
             },
         }
     },
-    {
+    {--显示设置
         id = "displaySetting",
         name = "显示设置",
         type = "forceEnable",
@@ -463,7 +463,7 @@ local cfg = {
             }
         }
     },
-    {
+    {--梅运券修改
         id = "fortunePatch",
         name = "梅运券修改",
         subConfigs = {
@@ -479,31 +479,31 @@ local cfg = {
             }
         }
     },
-    {
+    {--物品增强
         id = "buffThings",
         name = "物品增强",
         subConfigs = {
-            {
+            {--可以锤迷你箱
                 id = "chestCanHammer",
                 name = "可以锤迷你箱",
                 description = "让迷你箱子可以被锤"
             },
-            {
+            {--打包机防破坏
                 id = "packageMachineCantHammer",
                 name = "打包机防破坏",
                 description = "让打包机只能被黄金法杖摧毁"
             },
-            {
+            {--夜明珠地上发光
                 id = "lightPearlBuff",
                 name = "夜明珠地上发光",
                 description = "让夜明珠在地上时光照范围等于数值大小",
             },
-            {
+            {--禁止宝石自动保存
                 id = "disableGemSave",
                 name = "禁止宝石自动保存",
                 description = "移除使用宝石时的保存"
             },
-            {
+            {--售货亭修改
                 id = "sellPavilion",
                 name = "售货亭修改",
                 description = "金砖模式会在卖出后梅币大于500时,将售货亭内梅币转换为金砖,代替银行模式会同时拥有银行的功能",
@@ -514,16 +514,16 @@ local cfg = {
                 },
                 default = "goldBrick"
             },
-            {
+            {--移除花盆碰撞
                 id = "flowerporPhysics",
                 name = "移除花盆碰撞",
             },
-            {
+            {--五彩宝石加速合成
                 id = "colorfulGemCraft",
                 name = "五彩宝石加速合成",
                 description = "可以将五彩宝石给予烹饪锅,炼药台,炼煤炉等,使合成瞬间完成"
             },
-            {
+            {--法杖增强
                 id = "buffStaff",
                 name = "法杖增强",
                 subConfigs = {
@@ -591,7 +591,7 @@ local cfg = {
                     },
                 }
             },
-            {
+            {--超级绿护符次数
                 id = "greenAmulet",
                 name = "超级绿护符次数",
                 description = "修改超级建造护符添加绿宝石增加的耐久",
@@ -606,7 +606,7 @@ local cfg = {
                 },
                 default = 4
             },
-            {
+            {--宝藏去质黑名单
                 id = "treasureDeprotonation",
                 name = "宝藏去质黑名单",
                 description = "宝藏去质不会击杀黑名单中的怪物",
@@ -629,9 +629,14 @@ local cfg = {
                 },
                 default = 2
             },
+            {--去除五彩上限
+                id = "equipmentLimit",
+                name = "去除五彩上限",
+                default = false
+            }
         }
     },
-    {
+    {--打包系统
         id = "package",
         name = "打包系统",
         description = "你值得拥有",
@@ -729,7 +734,7 @@ local cfg = {
             },
         }
     },
-    {
+    {--终极自动护符
         id = "autoAmulet",
         name = "终极自动护符",
         description = "自动维修,自动吃药,终极自动护符等你体验",
