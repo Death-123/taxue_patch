@@ -248,7 +248,7 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "da84bd27688c9d3095cbbc4fcfb73e74", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "d6439395a45bc90184bf98052f617245", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     -- ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "91b746a2f2a561202eb33f876bbad500", lines = {} },
@@ -268,7 +268,7 @@ local PATCHS = {
     --优化收获书
     ["scripts/prefabs/taxue_book.lua"] = { md5 = "0d351683a9ebe047a86f9e7f07d995f8", lines = {} },
     --箱子可以被锤
-    ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "d1fad116213baf97c67bab84a557662e", lines = {} },
+    ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "f947a06c4d96b45d3ba5c38a9d1f87b2", lines = {} },
     --宝石保存,夜明珠地上发光
     ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "cbd69d61f4b532fae2e72ee71fc96fe0", lines = {} },
     --打包机防破坏,法杖增强
@@ -679,7 +679,7 @@ addPatchFn("taxueFix.betterDrop", function ()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3111, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3113, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })

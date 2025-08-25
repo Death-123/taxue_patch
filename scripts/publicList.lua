@@ -274,6 +274,8 @@ ItemTypeMap = {
         "random_agentia",     --随机药剂
         "chest_agentia",      --宝箱药剂
         "surprised_sword",    --惊喜之刃
+        "golden_bomb",        --黄金炸弹
+        "gem_bomb",           --宝石炸弹
     },
     ruins = {
         "armorruins",       --铥矿甲
