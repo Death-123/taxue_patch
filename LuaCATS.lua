@@ -365,16 +365,17 @@ function CreateEntity() end
 ---@field EXP_ONE number
 ---@field level number
 ---@field bank_value number
----@field badluck_num number
+---@field badluck_num {[1]:number, [2]:number}
 ---@field exp number
 ---@field combat_capacity number
 ---@field charm_value number
 ---@field exp_extra number
 ---@field charm_value_extra number
----@field has_ticket? boolean
----@field gamble_multiple? integer
----@field loot_multiple? integer
----@field substitute_item? string
+---@field has_ticket boolean
+---@field gamble_multiple integer
+---@field loot_multiple integer
+---@field super_fortune_num number
+---@field substitute_item string
 ---@field faceblack number
 ---@field golden number
 ---@field lockpick_chance number

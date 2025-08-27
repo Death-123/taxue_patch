@@ -226,7 +226,7 @@ end
 
 ---获取幸运描述
 ---@param player Taxue
----@return {[1]:string, [2]:string}
+---@return {[1]:string, [2]:string} str 今日, 明日
 function GetFortuneStr(player)
     local str = {}
     local fortune_list = {
@@ -251,8 +251,11 @@ function GetFortuneStr(player)
     end
     str[1] = "今日运势: " .. str[1]
     str[2] = "明日运势: " .. str[2]
+    str[1] = str[1] .. ("(%.2f)"):format(player.badluck_num[1])
+    if player.super_fortune_num > 0 then
+        str[1] = str[1] .. string.format("(%s)", formatNumber(player.super_fortune_num))
+    end
     if cfg("fortunePatch.showNum") then
-        str[1] = str[1] .. ("(%.2f)"):format(player.badluck_num[1])
         str[2] = str[2] .. ("(%.2f)"):format(player.badluck_num[2])
     end
     return str

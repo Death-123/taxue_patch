@@ -121,6 +121,7 @@ ItemTypeMap = {
         "refreshticket_ticket",         --刷券券
         "fortune_change_ticket",        --转运券
         "loot_ticket_fill",             --填充式战利品券
+        "super_fortune_ticket",         --超级好运券
     },
     egg_all = {
         "taxue_egg_nomal",

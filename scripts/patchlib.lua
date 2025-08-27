@@ -1194,7 +1194,7 @@ function patchLib.TaxueOnKilled(player, target)
             player.has_ticket = false
         end
         --处理战利品券
-        if player.loot_multiple > 0 then --触发战利品券
+        if player.loot_multiple > 0 then
             has_save = true
             if showBanner then
                 TaxuePatch.dyc.bannerSystem:ShowMessage("触发战利品券! 额外" .. player.loot_multiple .. "倍掉落", 5, bannerColor)
@@ -1222,6 +1222,21 @@ function patchLib.TaxueOnKilled(player, target)
             lootdropper:SetLoot(loot_list)
             player.substitute_item = ""
             player.has_ticket = false
+        end
+        --处理超级好运券
+        if player.super_fortune_num > 0 then
+            has_save = true
+
+            target:Remove()
+            player.badluck_num[1] = player.super_fortune_num
+            local temp = SpawnPrefab(target.prefab)
+            patchLib.AddLootsToList(temp.components.lootdropper, dorpList)
+            temp:Remove()
+
+            player.super_fortune_num = 0
+            player.badluck_num[1] = 0
+            player.has_ticket = false
+            TaXueSay("哇塞！")
         end
         --处理脸黑值,概率为0~0.2
         if player.faceblack > 0 and math.random() <= player.faceblack then
@@ -1387,7 +1402,6 @@ function patchLib.TaxueOnKilled(player, target)
             --#endregion
         end
         --#region  处理灌铅骰子
-        --print("处理灌铅骰子",inst.loaded_dice_chance)
         if player.loaded_dice_chance > 0 and math.random() < player.loaded_dice_chance then --触发包裹掉落
             local monster_item_list = {}
             if lootdropper then
@@ -1554,7 +1568,7 @@ end
 
 ---获取幸运描述
 ---@param player Taxue
----@return {[1]:string, [2]:string}
+---@return {[1]:string, [2]:string} str 今日, 明日
 function patchLib.GetFortuneStr(player)
     local str = {}
     local fortune_list = {
@@ -1579,8 +1593,11 @@ function patchLib.GetFortuneStr(player)
     end
     str[1] = "今日运势: " .. str[1]
     str[2] = "明日运势: " .. str[2]
+    str[1] = str[1] .. ("(%.2f)"):format(player.badluck_num[1])
+    if player.super_fortune_num > 0 then
+        str[1] = str[1] .. string.format("(%s)", patchLib.formatNumber(player.super_fortune_num))
+    end
     if cfg("fortunePatch.showNum") then
-        str[1] = str[1] .. ("(%.2f)"):format(player.badluck_num[1])
         str[2] = str[2] .. ("(%.2f)"):format(player.badluck_num[2])
     end
     return str
