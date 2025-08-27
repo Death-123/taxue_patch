@@ -1231,7 +1231,8 @@ function patchLib.TaxueOnKilled(player, target)
             player.badluck_num[1] = player.super_fortune_num
             local temp = SpawnPrefab(target.prefab)
             patchLib.AddLootsToList(temp.components.lootdropper, dorpList)
-            temp:Remove()
+            temp:PushEvent("death")
+            inst:DoTaskInTime(0.1, function () temp:Remove() end)
 
             player.super_fortune_num = 0
             player.badluck_num[1] = 0
