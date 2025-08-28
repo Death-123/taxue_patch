@@ -385,6 +385,7 @@ function CreateEntity() end
 ---@field colourful_windmill_chance number
 ---@field loaded_dice_chance number
 ---@field has_surprised_sword boolean
+---@field light Light
 
 ---@return Taxue
 function GetPlayer() end

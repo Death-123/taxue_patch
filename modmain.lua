@@ -308,6 +308,7 @@ local function patchFile(filePath, data)
     local sameVersion
     local originPath = taxuePath .. filePath
     local lineHex
+    --计算md5
     if data.lines and fileCheck then
         md5lib.init()
         for _, line in ipairs(data.lines) do
@@ -317,6 +318,7 @@ local function patchFile(filePath, data)
     end
     local versionStr = patchVersionStr .. (lineHex and ("." .. lineHex) or "")
     local file, error = io.open(originPath, "r")
+    --读取文件
     if file then
         local line = file:read("*l")
         --根据是否已经被patch,读取文件内容
@@ -370,8 +372,7 @@ local function patchFile(filePath, data)
     if data.mode == "unpatch" then
         print("unpatched")
         contents = oringinContents
-        --如果md5相同
-    elseif not data.md5NotSame then
+    elseif not data.md5NotSame then --如果md5相同
         --插入patch版本
         table.insert(contents, patchStr .. versionStr)
         --如果是文件覆写模式,直接覆盖原文件
@@ -539,6 +540,7 @@ end
 ---@param line cfgLine
 local function addPatch(key, cfgKey, line)
     local patch = PATCHS[key]
+    if not patch then return end
     if cfgKey then
         patch.cfgKeys = patch.cfgKeys or {}
         patch.cfgKeys[cfgKey] = true
@@ -832,6 +834,14 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
         grounds[#grounds] = cobbleroad
     ]]
 })
+--临时修随机掉包劵
+addPatch("scripts/prefabs/taxue_other_items.lua", "oneClickUse.ticket", {
+    index = 604, content = [[MakeItems("substitute_ticket_random",nil, nil, true),	--随机掉包券]]
+})
+--修夜明珠
+addPatch("scripts/prefabs/taxue_equipment.lua", "buffThings.disableGemSave", {
+    index = 122, type = "add", content = [[owner.Light:SetIntensity(0.6)]]
+})
 --#endregion
 
 --#region 猫猫定位
@@ -877,6 +887,7 @@ end)
 --#endregion
 
 --#region 一键使用
+
 --券类
 addPatchs("scripts/prefabs/taxue_other_items.lua", "oneClickUse.ticket", {
     --利息券连地上一起读

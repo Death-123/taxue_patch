@@ -190,6 +190,7 @@ ItemTypeMap = {
         "red_moon_sword",    --腥红之月
         "falchion_sword",    --青龙阔剑
         "crescent_sword",    --月牙阔剑
+        "shadow_killer_sword",  --暗影杀手
     },
     armor1 = {
         "reinforce_armorwood",         --强化木甲
