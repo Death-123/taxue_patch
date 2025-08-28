@@ -5,6 +5,7 @@
 ---@field _base Class
 
 --#region Widget
+
 ---@class Widget:Class
 ---@field _ctor fun(self, name)
 ---@field children table[]
@@ -390,7 +391,10 @@ function CreateEntity() end
 ---@return Taxue
 function GetPlayer() end
 
+--#endregion
+
 --#region Vector3
+
 ---@class Vector3
 ---@overload fun(x?:number,y?:number,z?:number):Vector3
 ---@operator add(Vector3):Vector3
@@ -420,6 +424,8 @@ Vector3 = {}
 function ToVector3(obj, y, z) end
 
 --#endregion
+
+TaxuePatch = {}
 
 ---@class Transform
 ---@field SetPosition fun(self,x:number,y:number,z:number)

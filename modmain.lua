@@ -132,8 +132,6 @@ end
 
 --#endregion
 
-local TaxuePatch = GLOBAL.TaxuePatch
-
 TaxuePatch.dataSaver = require("dataSave")(modname)
 local config = require("SomniumConfig")(modname)
 TaxuePatch.config = config
@@ -835,11 +833,11 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
     ]]
 })
 --临时修随机掉包劵
-addPatch("scripts/prefabs/taxue_other_items.lua", "oneClickUse.ticket", {
+addPatch("scripts/prefabs/taxue_other_items.lua", nil, {
     index = 604, content = [[MakeItems("substitute_ticket_random",nil, nil, true),	--随机掉包券]]
 })
 --修夜明珠
-addPatch("scripts/prefabs/taxue_equipment.lua", "buffThings.disableGemSave", {
+addPatch("scripts/prefabs/taxue_equipment.lua", nil, {
     index = 122, type = "add", content = [[owner.Light:SetIntensity(0.6)]]
 })
 --#endregion
@@ -1402,6 +1400,37 @@ addPatchFn("buffThings.colorfulGemCraft", function ()
         end
     end)
 end)
+--增强青龙aoe
+addPatchFn("buffThings.falchionAoe", function ()
+    local function getTargets(target, range, attacker)
+        local test = function (ent)
+            return ent ~= target and attacker.components.combat:CanTarget(ent) and not attacker.components.combat:IsAlly(ent)
+        end
+        return TaxuePatch.GetNearByEntities(target, range, test, nil, { "NOBLOCK", "player", "FX", "INLIMBO", "DECOR" })
+    end
+    AddPrefabPostInit("falchion_sword", function (sword)
+        sword.components.weapon:SetOnAttack(function (inst, attacker, target)
+            for _, ent in pairs(getTargets(target, 3, attacker)) do
+                ent.components.combat:GetAttacked(attacker, attacker.components.combat:CalcDamage(ent, inst) * 0.4, inst)
+            end
+        end)
+    end)
+    AddPrefabPostInit("black_falchion_sword", function (sword)
+        sword.components.weapon:SetOnAttack(function (inst, attacker, target)
+            TaxueFx(target, "laser_explosion", 1, { 0, 104, 139 })
+            inst.components.fueled:DoDelta(-1)
+            if inst.components.fueled:IsEmpty() then
+                inst.components.talker:Say("耐久耗尽！")
+            end
+            local range = inst.forge_level >= 20 and 4 or 3
+            local dmg_percent = inst.level * 0.005 + 0.5
+            for _, ent in pairs(getTargets(target, range, attacker)) do
+                ent.components.combat:GetAttacked(attacker, attacker.components.combat:CalcDamage(ent, inst) * dmg_percent, inst)
+            end
+        end)
+    end)
+end
+)
 --#endregion
 
 --#region 打包系统

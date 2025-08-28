@@ -632,7 +632,14 @@ local cfg = {
             {--去除五彩上限
                 id = "equipmentLimit",
                 name = "去除五彩上限",
+                description = "去除五彩装备的百分比数值上限",
                 default = false
+            },
+            {--增强青龙aoe
+                id = "falchionAoe",
+                name = "增强青龙aoe",
+                description = "增强青龙和黑暗青龙的aoe范围伤害计算为 主目标乘范围伤害比例",
+                default = true
             }
         }
     },
