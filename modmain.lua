@@ -1,5 +1,6 @@
 GLOBAL.setmetatable(env, { __index = function (t, k) return GLOBAL.rawget(GLOBAL, k) end })
 local ModConfigurationScreen = require("screens/modconfigurationscreen")
+local Text = require "widgets/text" 
 
 GLOBAL.TaxuePatch = {
     id = "TaxuePatch",
@@ -219,10 +220,12 @@ TaxuePatch.ControlPanel = require "screens/controlPanel"
 
 local patchStr = "--patch "
 local patchVersionStr = modinfo.version
-local patchVersion = patchVersionStr:split(".")[3]
+local patchMasterVersion = patchVersionStr:gsub("%.[^.]*$", "")
 local patchComment = patchStr .. patchVersionStr
 local modPath = "../mods/" .. modname .. "/"
 local taxueName = "Taxue1.00"
+TaxuePatch.patchVersionStr = patchVersionStr
+TaxuePatch.patchMasterVersion = patchMasterVersion
 TaxuePatch.name = KnownModIndex:GetModFancyName(modname):trim()
 local taxueLoaded = false
 local taxueEnabled = false
@@ -1960,6 +1963,7 @@ AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.ITEMGIVER, "give"))
 
 AddSimPostInit(function (player)
     player:DoTaskInTime(0, function ()
+        --#region 面板
         TaxuePatch.dyc = DYCLegendary or DYCInfoPanel
         if TaxuePatch.dyc then
             local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
@@ -1970,6 +1974,26 @@ AddSimPostInit(function (player)
                 end
             end
         end
+        --#endregion
+        local taxueLevelText = player.HUD.controls.taxue_widget.text
+        TaxuePatch.taxueLevelText = taxueLevelText
+        local oldSetString = taxueLevelText:GetString()
+        local taxueVersion = TUNING.TEST_STR:split(":")[2]
+        taxueLevelText:SetString(oldSetString .. "  补丁版本:" .. modinfo.version)
+        TaxuePatch.patchVersionMatchStr = taxueLevelText:AddChild(Text(BODYTEXTFONT, 60))
+
+        local color = { 1, 0, 0, 1 }
+        local str = " 补丁版本不匹配"
+        if patchMasterVersion == taxueVersion then
+            color = { 0, 1, 0, 1 }
+            str = " 补丁版本匹配"
+        end
+        TaxuePatch.patchVersionMatchStr:SetPosition(0, -50)
+        TaxuePatch.patchVersionMatchStr:SetColour(color)
+        TaxuePatch.patchVersionMatchStr:SetString(str)
+        player:DoTaskInTime(60, function ()
+            TaxuePatch.patchVersionMatchStr:Kill()
+        end)
     end)
 end)
 

@@ -1230,7 +1230,7 @@ function TaxuePatch.TaxueOnKilled(player, target)
             local temp = SpawnPrefab(target.prefab)
             TaxuePatch.AddLootsToList(temp.components.lootdropper, dorpList)
             temp:PushEvent("death")
-            inst:DoTaskInTime(0.1, function () temp:Remove() end)
+            temp:DoTaskInTime(0.1, function () temp:Remove() end)
 
             player.super_fortune_num = 0
             player.badluck_num[1] = 0
