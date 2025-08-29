@@ -249,7 +249,7 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "e01a92d9afcff825fd7c57a442b28e62", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "28860b63d48d067568767c986ac91b3e", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     -- ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "91b746a2f2a561202eb33f876bbad500", lines = {} },
@@ -269,17 +269,17 @@ local PATCHS = {
     --优化收获书
     ["scripts/prefabs/taxue_book.lua"] = { md5 = "0d351683a9ebe047a86f9e7f07d995f8", lines = {} },
     --箱子可以被锤
-    ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "f947a06c4d96b45d3ba5c38a9d1f87b2", lines = {} },
+    -- ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "55fd6082fe93360355e9face67115bec", lines = {} },
     --宝石保存,夜明珠地上发光
-    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "7f5aead4b5afc13298c642ae13baa9b5", lines = {} },
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "7b79cc50b65ad54ade29d4879b83a129", lines = {} },
     --打包机防破坏,法杖增强
-    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "b451070dd0a90b2c6750afbb5364930d", lines = {} },
+    ["scripts/prefabs/taxue_staff.lua"] = { md5 = "ce04691460a4f4899f38696f68964454", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "90f4f7539cd85161d706afab73fc3bb1", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "fdd70694087974bc9f1fe07ca3255cb9", lines = {} },
     --金钱就是力量
-    ["scripts/prefabs/taxue.lua"] = { md5 = "a8652a400c340a804546bd9ba4d70cb2", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "865c2aea6628e0839b1dcbf835d8f6c5", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -682,7 +682,7 @@ addPatchFn("taxueFix.betterDrop", function ()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3115, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3118, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
@@ -834,14 +834,6 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
         end
         grounds[#grounds] = cobbleroad
     ]]
-})
---临时修随机掉包劵
-addPatch("scripts/prefabs/taxue_other_items.lua", nil, {
-    index = 604, content = [[MakeItems("substitute_ticket_random",nil, nil, true),	--随机掉包券]]
-})
---修夜明珠
-addPatch("scripts/prefabs/taxue_equipment.lua", nil, {
-    index = 122, type = "add", content = [[owner.Light:SetIntensity(0.6)]]
 })
 --#endregion
 
@@ -1983,7 +1975,7 @@ AddSimPostInit(function (player)
         TaxuePatch.patchVersionMatchStr = taxueLevelText:AddChild(Text(BODYTEXTFONT, 60))
 
         local color = { 1, 0, 0, 1 }
-        local str = " 补丁版本不匹配"
+        local str = " 补丁版本不匹配,可能导致bug"
         if patchMasterVersion == taxueVersion then
             color = { 0, 1, 0, 1 }
             str = " 补丁版本匹配"

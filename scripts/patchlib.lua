@@ -405,7 +405,6 @@ function TaxuePatch.GoldenChestButton(inst)
     elseif statue.prefab == "golden_statue" or statue.prefab == "golden_statue_colorful" then
         local datas = {
             golden_statue = {
-                goldValueLevel = 500,
                 changeLevel = 1000,
                 chances = {
                     defalut = {
@@ -437,7 +436,6 @@ function TaxuePatch.GoldenChestButton(inst)
                 }
             },
             golden_statue_colorful = {
-                goldValueLevel = 5000,
                 changeLevel = 10000,
                 chances = {
                     defalut = {
@@ -505,7 +503,7 @@ function TaxuePatch.GoldenChestButton(inst)
                     if item:HasTag("golden_food") then
                         for _ = 1, amount do
                             setLevel(getLevel() + 1)
-                            valueNum = valueNum + math.floor(item.components.tradable.goldvalue * math.min(2, getLevel() / data.goldValueLevel + 1))
+                            valueNum = valueNum + item.components.tradable.goldvalue
                             if not lvGreater and getLevel() > data.changeLevel then
                                 lvGreaterChange = true
                                 item.components.stackable:SetStackSize(amount - getLevel() + oldLevel)
@@ -1228,8 +1226,8 @@ function TaxuePatch.TaxueOnKilled(player, target)
             target:Remove()
             player.badluck_num[1] = player.super_fortune_num
             local temp = SpawnPrefab(target.prefab)
-            TaxuePatch.AddLootsToList(temp.components.lootdropper, dorpList)
             temp:PushEvent("death")
+            TaxuePatch.AddLootsToList(temp.components.lootdropper, dorpList)
             temp:DoTaskInTime(0.1, function () temp:Remove() end)
 
             player.super_fortune_num = 0

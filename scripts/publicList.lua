@@ -185,12 +185,14 @@ ItemTypeMap = {
         "shadow_thorn_sword", --暗影尖刺
     },
     weapon2 = {
-        "real_damage_sword", --真实伤害
-        "gold_sword",        --黄金阔剑
-        "red_moon_sword",    --腥红之月
-        "falchion_sword",    --青龙阔剑
-        "crescent_sword",    --月牙阔剑
-        "shadow_killer_sword",  --暗影杀手
+        "real_damage_sword",   --真实伤害
+        "gold_sword",          --黄金阔剑
+        "red_moon_sword",      --腥红之月
+        "falchion_sword",      --青龙阔剑
+        "crescent_sword",      --月牙阔剑
+        "shadow_killer_sword", --暗影杀手
+        "blazing_sword",       --烈焰杀手
+        "freeze_sword",        --极寒之刃
     },
     armor1 = {
         "reinforce_armorwood",         --强化木甲

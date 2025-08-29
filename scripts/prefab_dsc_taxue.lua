@@ -420,7 +420,12 @@ local function getItemInfo(target)
     end
     --武器
     if target.damage then
-        Info:Add("伤害:" .. string.format("%6.2f", target.damage))
+        local damage = target.damage
+        if target.prefab == "blazing_sword" then
+            local charge, maxcharge = target.components.obsidiantool:GetCharge()
+            damage = target.damage + target.damage * (charge / maxcharge)
+        end
+        Info:Add("伤害:" .. string.format("%6.2f", damage))
     end
     if target.components and target.components.weapon then
         if target.armor_penetration then
