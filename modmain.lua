@@ -1,6 +1,6 @@
 GLOBAL.setmetatable(env, { __index = function (t, k) return GLOBAL.rawget(GLOBAL, k) end })
 local ModConfigurationScreen = require("screens/modconfigurationscreen")
-local Text = require "widgets/text" 
+local Text = require "widgets/text"
 
 GLOBAL.TaxuePatch = {
     id = "TaxuePatch",
@@ -1424,8 +1424,24 @@ addPatchFn("buffThings.falchionAoe", function ()
             end
         end)
     end)
-end
-)
+end)
+--金砖取出
+addPatchFn("buffThings.goldBrick", function ()
+    AddPrefabPostInit("gold_brick", function (_inst)
+        _inst:AddComponent("useableitem")
+        _inst.components.useableitem:SetCanInteractFn(function (inst) return inst.taxue_coin_value > 3 end)
+        _inst.components.useableitem:SetOnUseFn(function (inst)
+            local value = inst.taxue_coin_value
+            local goldMaxNum = math.floor(value / 3)
+            local maxTake = cfg("buffThings.goldBrick.maxGoldNum")
+            local goldNum = math.min(goldMaxNum, maxTake)
+            if goldNum > 0 then
+                inst.taxue_coin_value = value - goldNum * 3
+                TaxuePatch.GiveItems(inst, { goldnugget = goldNum })
+            end
+        end)
+    end)
+end)
 --#endregion
 
 --#region 打包系统
@@ -1958,7 +1974,8 @@ AddSimPostInit(function (player)
         --#region 面板
         TaxuePatch.dyc = DYCLegendary or DYCInfoPanel
         if TaxuePatch.dyc then
-            local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
+            local color = TaxuePatch.cfg("displaySetting.showBanner.bannerColor")
+            local BANNER_COLOR = TaxuePatch.RGBAColor(color)
             TaxuePatch.bannerColor = TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
             TaxuePatch.showBanner = function (msg, time)
                 if TaxuePatch.dyc then
@@ -1986,6 +2003,11 @@ AddSimPostInit(function (player)
         player:DoTaskInTime(60, function ()
             TaxuePatch.patchVersionMatchStr:Kill()
         end)
+
+        --兼容4.0.2运势修改
+        if type(player.badluck_num) == "number" then
+            player.badluck_num = { 1, 1 }
+        end
     end)
 end)
 

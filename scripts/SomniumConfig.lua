@@ -639,7 +639,31 @@ local cfg = {
                 id = "falchionAoe",
                 name = "增强青龙aoe",
                 description = "增强青龙和黑暗青龙的aoe范围伤害计算为 主目标乘范围伤害比例",
-                default = true
+            },
+            {--金砖取出
+                id = "goldBrick",
+                name = "金砖取出",
+                description = "可以右键从金砖中取出金子",
+                subConfigs = {
+                    {
+                        id = "maxGoldNum",
+                        name = "单次最大取出",
+                        description = "单次从金砖取出的最大金子数量",
+                        type = "integer",
+                        options = {
+                            { des = "5", value = 5 },
+                            { des = "10", value = 10 },
+                            { des = "20", value = 20 },
+                            { des = "50", value = 50 },
+                            { des = "100", value = 100 },
+                            { des = "200", value = 200 },
+                            { des = "500", value = 500 },
+                            { des = "1000", value = 1000 },
+                            { des = "5000", value = 5000 },
+                        },
+                        default = 100
+                    }
+                }
             }
         }
     },

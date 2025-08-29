@@ -311,8 +311,8 @@ function TaxuePatch.SellPavilionSellItems(inst)
             end
         end
     end
-    if itemCount == 1 and lastItem.prefab == "gold_brick" then return end
-    print("总硬币价值：", coins)
+    if itemCount == 0 or (itemCount == 1 and lastItem.prefab == "gold_brick") then return end
+    mprint("总硬币价值：", coins)
     local tempCoins = 0
     local coinNum = {}
     for slot, coin in pairs(coinList) do
@@ -331,15 +331,13 @@ function TaxuePatch.SellPavilionSellItems(inst)
         TaxuePatch.RemoveSlotsItems(container, coinList)
         GetPlayer().bank_value = GetPlayer().bank_value + (coins + tempCoins) / 100
         playSound = true
-        --如果不是禁用,并且金额大于500梅币
-    elseif cfg("buffThings.sellPavilion") and coins + tempCoins >= 50000 then
+    elseif cfg("buffThings.sellPavilion") and coins + tempCoins >= 50000 then --如果不是禁用,并且金额大于500梅币
         TaxuePatch.RemoveSlotsItems(container, coinList)
         local goldBrick = SpawnPrefab("gold_brick")
         goldBrick.taxue_coin_value = coins + tempCoins
         container:GiveItem(goldBrick)
         playSound = true
-        --否则,生成梅币
-    else
+    else --否则,生成梅币
         for _, coin in pairs({ "taxue_coin_silver", "taxue_coin_copper" }) do
             if coinNum[coin] and coinNum[coin] > 100 then
                 local amount = math.floor(coinNum[coin] / 100) * 100
@@ -540,9 +538,10 @@ function TaxuePatch.GoldenChestButton(inst)
                         end
                     end
                 end
-                local showBanner = TaxuePatch.cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
+                local showBanner = cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
                 if showBanner then
-                    local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
+                    local color = cfg("displaySetting.showBanner.bannerColor")
+                    local BANNER_COLOR = TaxuePatch.RGBAColor(color)
                     local bannerColor = TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
                     TaxuePatch.dyc.bannerSystem:ShowMessage("本次金肉价值为: " .. TaxuePatch.FormatNumber(valueNum), 10, bannerColor)
                 end
@@ -729,7 +728,7 @@ function TaxuePatch.StackDrops(target, dorpList, package)
         end
         superPackageLib.AddItemsToSuperPackage(package, dorpList, nil, testFn)
         if next(dorpList) then TaxueFx(target, "small_puff") end
-    elseif TaxuePatch.cfg("taxueFix.betterDrop.stackDrop") then
+    elseif cfg("taxueFix.betterDrop.stackDrop") then
         for name, amount in pairs(dorpList) do
             local item = SpawnPrefab(name)
             if item and item.components and item.components.stackable then
@@ -978,9 +977,9 @@ end
 ---@param inst entityPrefab|Vector3
 ---@param must? boolean
 function TaxuePatch.CostTeleport(inst, must)
-    local costFactor = TaxuePatch.cfg("teleportCat.costFactor")
-    local maxCost = TaxuePatch.cfg("teleportCat.maxCost")
-    local sanityFactor = TaxuePatch.cfg("teleportCat.sanityFactor")
+    local costFactor = cfg("teleportCat.costFactor")
+    local maxCost = cfg("teleportCat.maxCost")
+    local sanityFactor = cfg("teleportCat.sanityFactor")
     local x, y, z
     local player = GetPlayer()
     if inst.prefab then
@@ -1040,8 +1039,8 @@ end
 ---@param target entityPrefab
 function TaxuePatch.TaxueOnKilled(player, target)
     local has_save = false --是否保存
-    local showBanner = TaxuePatch.cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
-    local BANNER_COLOR = TaxuePatch.RGBAColor(TaxuePatch.cfg("displaySetting.showBanner.bannerColor"))
+    local showBanner = cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
+    local BANNER_COLOR = TaxuePatch.RGBAColor(cfg("displaySetting.showBanner.bannerColor"))
     local bannerColor = showBanner and TaxuePatch.dyc.RGBAColor(BANNER_COLOR:Get())
     --#region 是boss
     local IsBoss = false
@@ -1158,7 +1157,7 @@ function TaxuePatch.TaxueOnKilled(player, target)
         local dorpList = {}
         local lootdropper = target.components.lootdropper
         local package
-        if TaxuePatch.cfg("taxueFix.betterDrop") then
+        if cfg("taxueFix.betterDrop") then
             package = TaxuePatch.GetNearestPackageMachine(target)
         end
         local faceblack = player.faceblack
@@ -1784,8 +1783,8 @@ function TaxuePatch.TaxueIntoChestKey()
         for name, _ in pairs(TaxuePatch.IntoChestBlackList) do
             blackList[name] = true
         end
-        if TaxuePatch.cfg("taxueFix.intoChest.disableVanillaChest") then blackList["treasurechest"] = true end
-        if not TaxuePatch.cfg("taxueFix.intoChest.allowOtherChest") then
+        if cfg("taxueFix.intoChest.disableVanillaChest") then blackList["treasurechest"] = true end
+        if not cfg("taxueFix.intoChest.allowOtherChest") then
             whiteList = {
                 taxue_icebox = true,
                 taxue_sell_pavilion = true,
@@ -1801,7 +1800,7 @@ function TaxuePatch.TaxueIntoChestKey()
             for name, _ in pairs(TaxuePatch.IntoChestWhiteList) do
                 whiteList[name] = true
             end
-            if TaxuePatch.cfg("taxueFix.intoChest.allowPortablecellar") then whiteList["portablecellar"] = true end
+            if cfg("taxueFix.intoChest.allowPortablecellar") then whiteList["portablecellar"] = true end
             result = whiteList[inst.prefab]
             for tag, _ in pairs(whiteTags) do
                 if inst:HasTag(tag) then result = true end
