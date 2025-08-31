@@ -1269,7 +1269,18 @@ addPatchFn("buffThings.sellPavilion", function ()
 end)
 --移除花盆碰撞
 addPatchFn("buffThings.flowerporPhysics", function ()
-    AddPrefabPostInit("taxue_flowerpot", RemovePhysicsColliders)
+    local pots = {
+        "taxue_flowerpot",           --蔬菜花盆
+        "taxue_flowerpot_golden",    --黄金蔬菜花盆
+        "taxue_flowerpot_water",     --蔬菜水盆
+        "taxue_flowerpot_volcano",   --火山花盆
+        "taxue_flowerpot_ancient",   --远古花盆
+        "taxue_flowerpot_livinglog", --活木盆
+        "taxue_flowerpot_colorful",  --五彩花盆
+    }
+    for _, pot in pairs(pots) do
+        AddPrefabPostInit(pot, RemovePhysicsColliders)
+    end
 end)
 --法杖增强
 addPatchFn("buffThings.buffStaff", function ()

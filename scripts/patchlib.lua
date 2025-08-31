@@ -1473,7 +1473,7 @@ end
 ---@param decimalDigits? integer
 ---@param short? boolean
 ---@return string
-function TaxuePatch.formatNumber(number, decimalDigits, short)
+function TaxuePatch.FormatNumber(number, decimalDigits, short)
     local num = tonumber(number)
     if not num then return "NaN" end
 
