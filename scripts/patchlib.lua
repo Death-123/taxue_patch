@@ -36,6 +36,7 @@ function TaxuePatch.ListAdd(List, key, value)
     value = value or 1
     List[key] = List[key] and List[key] + value or value
 end
+local listAdd = TaxuePatch.ListAdd
 
 ---测试物品是否符合条件
 ---@param item entityPrefab
@@ -613,7 +614,7 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
             for k = 1, lootDropper.numrandomloot do
                 local loot = lootDropper:PickRandomLoot()
                 if loot then
-                    dorpList[loot] = dorpList[loot] and dorpList[loot] + 1 or 1
+                    listAdd(dorpList, loot)
                 end
             end
         end
@@ -623,7 +624,7 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
         for k, v in pairs(lootDropper.chanceloot) do
             for _ = 1, times do
                 if math.random() < v.chance then
-                    dorpList[v.prefab] = dorpList[v.prefab] and dorpList[v.prefab] + 1 or 1
+                    listAdd(dorpList, v.prefab)
                     lootDropper.droppingchanceloot = true
                 end
             end
@@ -638,7 +639,7 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
                 local chance = entry[2]
                 for _ = 1, times do
                     if math.random() <= chance then
-                        dorpList[prefab] = dorpList[prefab] and dorpList[prefab] + 1 or 1
+                        listAdd(dorpList, prefab)
                         lootDropper.droppingchanceloot = true
                     end
                 end
@@ -649,13 +650,13 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
     if not lootDropper.droppingchanceloot and lootDropper.ifnotchanceloot then
         lootDropper.inst:PushEvent("ifnotchanceloot")
         for k, v in pairs(lootDropper.ifnotchanceloot) do
-            dorpList[v.prefab] = dorpList[v.prefab] and dorpList[v.prefab] + times or times
+            listAdd(dorpList, v.prefab, times)
         end
     end
 
     if lootDropper.loot then
         for k, v in ipairs(lootDropper.loot) do
-            dorpList[v] = dorpList[v] and dorpList[v] + times or times
+            listAdd(dorpList, v, times)
         end
     end
 
@@ -686,11 +687,11 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
                 local oinc10        = math.floor((amt - (oinc100 * 100)) / 10)
                 local oinc          = amt - (oinc100 * 100) - (oinc10 * 10)
 
-                dorpList["oinc100"] = dorpList["oinc100"] and dorpList["oinc100"] + oinc100 or oinc100
-                dorpList["oinc10"]  = dorpList["oinc10"] and dorpList["oinc10"] + oinc10 or oinc10
-                dorpList["oinc"]    = dorpList["oinc"] and dorpList["oinc"] + oinc or oinc
+                listAdd(dorpList, "oinc100", oinc100)
+                listAdd(dorpList, "oinc10", oinc10)
+                listAdd(dorpList, "oinc", oinc)
             else
-                dorpList[v.type] = dorpList[v.type] and dorpList[v.type] + amt or amt
+                listAdd(dorpList, v.type, amt)
             end
         end
     end
@@ -698,10 +699,30 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
     if lootDropper.inst:HasTag("burnt") then
         for _ = 1, times do
             if math.random() < 0.4 then
-                dorpList["charcoal"] = dorpList["charcoal"] and dorpList["charcoal"] + 1 or 1
+                listAdd(dorpList, "charcoal")
             end
         end
     end
+
+    if #lootDropper.taxueLoots > 0 then
+        local luck = GetPlayer().badluck_num[1]
+        for _, loot in ipairs(lootDropper.taxueLoots) do
+            local chance = loot.chance or 1
+            local item = loot.item
+            -- 根据概率和运气值判断是否掉落
+            for _ = 1, times do
+                if math.random() < chance * luck then
+                    -- 处理不同类型的物品配置（单个物品或随机物品列表）
+                    if type(item) == "string" then
+                        listAdd(dorpList, item)
+                    elseif type(item) == "table" then
+                        listAdd(dorpList, item[math.random(#item)])
+                    end
+                end
+            end
+        end
+    end
+
     return dorpList
 end
 

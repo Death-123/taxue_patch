@@ -3,6 +3,7 @@ local command = {}
 ---获取鼠标指向的实体
 ---@return table
 function command.Sel()
+    mprint("Sel")
     if TaxuePatch.hoverItem then
         return TaxuePatch.hoverItem
     else
@@ -45,7 +46,7 @@ function command.test()
     if test then
         test()
     else
-        TaxuePatch.mpaint(err)
+        TaxuePatch.mprint(err)
     end
 end
 

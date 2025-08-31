@@ -255,7 +255,7 @@ local PATCHS = {
     -- ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "91b746a2f2a561202eb33f876bbad500", lines = {} },
     --按键排序
     ["scripts/press_key_taxue.lua"] = { md5 = "8e64ea9c309141fbdc1efd4e9013df7b", lines = {} },
-    -- ["scripts/public_method_taxue.lua"] = { md5 = "2e04ba4757b6c79a8a5f25c8ac9cc03a", lines = {} },s
+    ["scripts/public_method_taxue.lua"] = { md5 = "8737317196a94d704ad8351dcaf697bd", lines = {} },
     --提高石板路优先级
     ["modworldgenmain.lua"] = { md5 = nil, lines = {} },
     --种子机修复
@@ -287,7 +287,8 @@ local PATCHS = {
     ["scripts/prefabs/taxue_greenamulet.lua"] = { md5 = "9cd5d16770da66120739a4b260f23b4d", lines = {} },
     -- ["scripts/prefabs/taxue_agentia_compressor.lua"] = { md5 = "a4d92b944eb75c53a8280966ee18ef79", lines = {} },
 }
-local PATCH_FN = {}
+---@type {always: function[], [string]: function}
+local PATCH_FN = { always = {} }
 local playerSavedDataItems = {}
 TaxuePatch.PATCHS = PATCHS
 TaxuePatch.PATCH_FN = PATCH_FN
@@ -564,9 +565,12 @@ local function addPatchs(key, cfgKey, lines)
 end
 
 ---添加patch方法
----@param cfgKey string
----@param fn function
+---@param cfgKey string|function
+---@param fn? function
 local function addPatchFn(cfgKey, fn)
+    if type(cfgKey) == "function" then
+        table.insert(PATCH_FN.always, cfgKey)
+    end
     PATCH_FN[cfgKey] = fn
 end
 
@@ -835,6 +839,13 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
         grounds[#grounds] = cobbleroad
     ]]
 })
+--修光源阻止放置建筑
+addPatchFn(function ()
+    AddPrefabPostInit("taxue_light_holder", function (inst)
+        inst:AddTag("NOBLOCK")
+        inst:AddTag("FX")
+    end)
+end)
 --#endregion
 
 --#region 猫猫定位
@@ -1442,6 +1453,12 @@ addPatchFn("buffThings.goldBrick", function ()
         end)
     end)
 end)
+--龙猫荧光果换便便
+addPatch("scripts/public_method_taxue.lua", "buffThings.totoroPoop", {
+    index = 481,
+    type = "add",
+    content = [[    Refine("lightbulb","poop",1)]]
+})
 --#endregion
 
 --#region 打包系统
@@ -1599,9 +1616,13 @@ if taxueLoaded then
     TaxuePatch.PatchAll(not patchEnable)
 
     if patchEnable then
-        for key, fn in pairs(PATCH_FN) do
-            if cfg(key) then
-                fn()
+        for key, fns in pairs(PATCH_FN) do
+            if key == "always" then
+                for _, fn in pairs(fns) do
+                    fn()
+                end
+            elseif cfg(key) then
+                fns()
             end
         end
     end
@@ -1968,6 +1989,53 @@ ACTIONS.ITEMGIVER.fn = function (act)
     return true
 end
 AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.ITEMGIVER, "give"))
+
+--#region 修改lootdropper
+AddComponentPostInit("lootdropper", function (comp)
+    comp.taxueLoots = {}
+    local oldGenerateLoot = comp.GenerateLoot
+
+    ---重写GenerateLoot函数，在原有战利品基础上添加踏雪战利品掉落逻辑
+    ---@return table 战利品列表
+    comp.GenerateLoot = function (self)
+        local loots = oldGenerateLoot(self)
+        -- 如果存在踏雪战利品配置，则根据概率和运气值进行额外掉落
+        if #self.taxueLoots > 0 then
+            local luck = GetPlayer().badluck_num[1]
+            for _, loot in ipairs(self.taxueLoots) do
+                local chance = loot.chance or 1
+                local item = loot.item
+                -- 根据概率和运气值判断是否掉落
+                if math.random() < chance * luck then
+                    -- 处理不同类型的物品配置（单个物品或随机物品列表）
+                    if type(item) == "string" then
+                        table.insert(loots, item)
+                    elseif type(item) == "table" then
+                        table.insert(loots, item[math.random(#item)])
+                    end
+                end
+            end
+        end
+        return loots
+    end
+
+    ---设置特殊战利品及其掉落概率
+    ---@param loot string|table 战利品配置（可以是字符串或表）
+    ---@param chance number? 基础掉落概率
+    comp.setTaxueLoots = function (self, loot, chance)
+        local num = GetModConfigData("DIFFICULTY") == "retarded" and 100 or 1
+        table.insert(self.taxueLoots, { item = loot, chance = (chance or 1) * num })
+    end
+
+    local oldSetLoot = comp.SetLoot
+    ---重写SetLoot函数，重置特殊战利品列表
+    ---@param loot table 原始战利品配置
+    comp.SetLoot = function (self, loot)
+        self.taxueLoots = {}
+        oldSetLoot(self, loot)
+    end
+end)
+--#endregion
 
 AddSimPostInit(function (player)
     player:DoTaskInTime(0, function ()

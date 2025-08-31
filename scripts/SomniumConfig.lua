@@ -664,7 +664,13 @@ local cfg = {
                         default = 100
                     }
                 }
-            }
+            },
+            {--龙猫荧光果换便便
+                id = "totoroPoop",
+                name = "荧光果换便便",
+                description = "让龙猫可以用荧光果换便便",
+            },
+            
         }
     },
     {--打包系统

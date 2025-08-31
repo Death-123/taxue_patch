@@ -21,10 +21,11 @@
 --     mprint(chanceloot.prefab, chanceloot.chance)
 -- end
 
-local player = GetPlayer()
-local locomotor = player.components.locomotor
-local bufferedaction = locomotor.bufferedaction
-mprint(bufferedaction.action, player.sg.sg.actionhandlers[bufferedaction.action])
+-- local player = GetPlayer()
+-- local locomotor = player.components.locomotor
+-- local bufferedaction = locomotor.bufferedaction
+-- mprint(bufferedaction.action, player.sg.sg.actionhandlers[bufferedaction.action])
+
 -- locomotor:GoToEntity(Sel(), nil, true)
 -- local arrive_dist = locomotor.arrive_dist
 -- local destpos_x, destpos_y, destpos_z = locomotor.dest:GetPoint()
@@ -33,3 +34,12 @@ mprint(bufferedaction.action, player.sg.sg.actionhandlers[bufferedaction.action]
 -- local dsq = distsq(destpos_x, destpos_z, mypos_x, mypos_z)
 -- local run_dist = locomotor:GetRunSpeed()*0.016*.5
 -- mprint(dsq, run_dist * run_dist, arrive_dist * arrive_dist)
+local cpath = package.cpath
+-- package.cpath = "c:/Users/Death/.vscode/extensions/tangzx.emmylua-0.9.28-win32-x64/debugger/emmy/windows/x64/?.dll"
+package.cpath = "c:/Users/Death/.vscode/extensions/tangzx.emmylua-0.9.28-win32-x64/debugger/emmy/windows/x86/?.dll"
+local dbg = require("emmy_core")
+dbg.tcpListen("localhost", 9966)
+dbg.waitIDE()
+dbg.breakHere()
+print("EmmyLua debugger listening on localhost:9966")
+package.cpath = cpath

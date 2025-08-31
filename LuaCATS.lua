@@ -397,6 +397,9 @@ function GetPlayer() end
 
 ---@class Vector3
 ---@overload fun(x?:number,y?:number,z?:number):Vector3
+---@field x number
+---@field y number
+---@field z number
 ---@operator add(Vector3):Vector3
 ---@operator sub(Vector3):Vector3
 ---@operator mul(Vector3):Vector3
