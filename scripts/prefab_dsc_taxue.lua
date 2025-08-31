@@ -90,33 +90,51 @@ end
 
 ---格式化数字
 ---@param number number
----@param formatStr? string
+---@param decimalDigits? integer
+---@param short? boolean
 ---@return string
-local function formatNumber(number, formatStr)
-    local number = tonumber(number)
-    local a = math.floor(number)
-    local b = number - a + 0.00000001
-    local numberStr = string.reverse(tostring(a))
-    local str = {}
-    local length = string.len(tostring(a))
-    for i = 1, length do
-        table.insert(str, string.sub(numberStr, i, i))
-        if i % 3 == 0 and i < length then
-            table.insert(str, ",")
+local function formatNumber(number, decimalDigits, short)
+    local num = tonumber(number)
+    if not num then return "NaN" end
+
+    -- 处理负数
+    local sign = ""
+    if num < 0 then
+        sign = "-"
+        num = -num
+    end
+
+    -- 分离整数和小数部分
+    local integerPart = math.floor(num)
+    local decimalPart = num - integerPart
+    -- 格式化小数部分
+
+    local decimalDigits = decimalDigits or 2
+    local decimalStr = string.format("%." .. decimalDigits .. "f", decimalPart)
+    if decimalStr:sub(1, 1) == "1" then
+        integerPart = integerPart + 1
+    end
+    if short ~= false then
+        local len = 0
+        while (decimalStr:sub(-1) == "0" or decimalStr:sub(-1) == ".") and len < decimalDigits + 1 do
+            decimalStr = decimalStr:sub(1, -2)
+            len = len + 1
         end
     end
-    if not formatStr then
-        formatStr = "%.f"
-        if b >= 0.01 then
-            local c = math.floor(b * 10) / 10
-            if b - c < 0.01 then
-                formatStr = "%.1f"
-            else
-                formatStr = "%.2f"
-            end
+
+    -- 格式化整数部分（千分位）
+    local integerStr = tostring(integerPart)
+    local formattedInteger = ""
+    local len = #integerStr
+    for i = 1, len do
+        if i > 1 and (len - i + 1) % 3 == 0 then
+            formattedInteger = formattedInteger .. ","
         end
+        formattedInteger = formattedInteger .. integerStr:sub(i, i)
     end
-    return string.reverse(table.concat(str)) .. string.sub(string.format(formatStr, b), 2)
+
+
+    return sign .. formattedInteger .. decimalStr:sub(2)
 end
 
 ---格式化梅币
@@ -460,9 +478,9 @@ local function getItemInfo(target)
         taxue_coin_silver = taxue_coin_silver > max and max or taxue_coin_silver
         local interest = player.bank_interest * 100                                                                  --今日利率百分比
         if player.bank_value > 0 then                                                                                --有钱
-            Info:Add("银行存款: " .. formatNumber(player.bank_value, "%.2f") .. "梅币")
+            Info:Add("银行存款: " .. formatNumber(player.bank_value, 2, false) .. "梅币")
             Info:Add("最大利息: " .. formatNumber(max * 100) .. "银梅币")
-            Info:Add("明日预计收入: " .. formatNumber(taxue_coin_silver * 100, "%.2f") .. "银梅币")
+            Info:Add("明日预计收入: " .. formatNumber(taxue_coin_silver * 100, 2, false) .. "银梅币")
         end
         Info:Add("今日利率: " .. string.format("%6.2f", interest) .. "%")
         --破甲法杖
