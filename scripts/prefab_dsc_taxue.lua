@@ -92,10 +92,12 @@ end
 ---@param number number
 ---@param decimalDigits? integer
 ---@param short? boolean
+---@param SegmentLen? integer
 ---@return string
-local function formatNumber(number, decimalDigits, short)
+local function formatNumber(number, decimalDigits, short, SegmentLen)
     local num = tonumber(number)
     if not num then return "NaN" end
+    local SegmentLen = math.clamp(SegmentLen or cfg("displaySetting.showNumberSegmentLen") or 4, 2, 10)
 
     -- 处理负数
     local sign = ""
@@ -127,7 +129,7 @@ local function formatNumber(number, decimalDigits, short)
     local formattedInteger = ""
     local len = #integerStr
     for i = 1, len do
-        if i > 1 and (len - i + 1) % 3 == 0 then
+        if i > 1 and (len - i + 1) % SegmentLen == 0 then
             formattedInteger = formattedInteger .. ","
         end
         formattedInteger = formattedInteger .. integerStr:sub(i, i)

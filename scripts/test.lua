@@ -34,12 +34,10 @@
 -- local dsq = distsq(destpos_x, destpos_z, mypos_x, mypos_z)
 -- local run_dist = locomotor:GetRunSpeed()*0.016*.5
 -- mprint(dsq, run_dist * run_dist, arrive_dist * arrive_dist)
-local cpath = package.cpath
--- package.cpath = "c:/Users/Death/.vscode/extensions/tangzx.emmylua-0.9.28-win32-x64/debugger/emmy/windows/x64/?.dll"
-package.cpath = "c:/Users/Death/.vscode/extensions/tangzx.emmylua-0.9.28-win32-x64/debugger/emmy/windows/x86/?.dll"
-local dbg = require("emmy_core")
-dbg.tcpListen("localhost", 9966)
-dbg.waitIDE()
-dbg.breakHere()
-print("EmmyLua debugger listening on localhost:9966")
-package.cpath = cpath
+
+reload()
+local target = SpawnPrefab("taxue_spat")
+target.Transform:SetPosition(GetPlayer().Transform:GetWorldPosition())
+-- GetPlayer().super_fortune_num = 100
+target.components.health:Kill()
+TaxuePatch.TaxueOnKilled(GetPlayer(), target)

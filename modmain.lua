@@ -1652,9 +1652,6 @@ if taxueLoaded then
 end
 
 local command = require "command"
-for name, value in pairs(command) do
-    GLOBAL[name] = value
-end
 
 AddClassPostConstruct("widgets/itemtile", function (origin)
     local oldOnGainFocus = origin.OnGainFocus

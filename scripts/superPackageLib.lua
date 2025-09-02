@@ -576,7 +576,7 @@ function superPackageLib.OpenTreasures(treasures, isBook)
                 numbers[2]["statue"] = numbers[2]["statue"] and numbers[2]["statue"] + 1 or 1
                 local statue = SpawnPrefab(statues[math.random(#statues)])
                 if TaxuePatch.cfg("package.destoryStatue") then
-                    local dorps = statue.components.lootdropper:GetAllLoot()
+                    local dorps = statue.components.lootdropper:GenerateLoot()
                     for _, prefab in ipairs(dorps) do
                         loots[prefab] = loots[prefab] and loots[prefab] + 1 or 1
                         statue:Remove()

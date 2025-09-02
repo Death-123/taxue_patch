@@ -509,3 +509,9 @@ TheSim = {}
 ---@field OnControl function
 ---@field AddKeyDownHandler function
 TheInput = {}
+
+---@param ends string
+function string:endsWith(ends) end
+
+---@param starts string
+function string:startsWith (starts) end

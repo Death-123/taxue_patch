@@ -36,7 +36,29 @@ function TaxuePatch.ListAdd(List, key, value)
     value = value or 1
     List[key] = List[key] and List[key] + value or value
 end
+
 local listAdd = TaxuePatch.ListAdd
+
+---精确触发事件
+---@param inst EntityScript
+---@param event string
+---@param src string
+---@param data any?
+function TaxuePatch.PrecisePushEvent(inst, event, src, data)
+    if inst.event_listeners then
+        local listeners = inst.event_listeners[event]
+        if listeners then
+            for entity, fns in pairs(listeners) do
+                for i, fn in ipairs(fns) do
+                    local info = debug.getinfo(fn)
+                    if info.source:endsWith(src) then
+                        fn(inst, data)
+                    end
+                end
+            end
+        end
+    end
+end
 
 ---测试物品是否符合条件
 ---@param item entityPrefab
@@ -683,9 +705,9 @@ function TaxuePatch.AddLootsToList(lootDropper, dorpList, times)
             end
 
             if v.type == "oinc" then
-                local oinc100       = math.floor(amt / 100)
-                local oinc10        = math.floor((amt - (oinc100 * 100)) / 10)
-                local oinc          = amt - (oinc100 * 100) - (oinc10 * 10)
+                local oinc100 = math.floor(amt / 100)
+                local oinc10  = math.floor((amt - (oinc100 * 100)) / 10)
+                local oinc    = amt - (oinc100 * 100) - (oinc10 * 10)
 
                 listAdd(dorpList, "oinc100", oinc100)
                 listAdd(dorpList, "oinc10", oinc10)
@@ -1189,6 +1211,26 @@ function TaxuePatch.TaxueOnKilled(player, target)
             lockpick_chance = math.min(lockpick_chance, 1)
             thieves_chance = math.min(thieves_chance, 1)
         end
+        --处理超级好运券
+        if player.super_fortune_num > 0 then
+            has_save = true
+
+            player.badluck_num[1] = player.super_fortune_num
+            local temp = SpawnPrefab(target.prefab)
+            temp.Transform:SetPosition(target.Transform:GetWorldPosition())
+            target:Remove()
+            target = temp
+            target.components.health:Kill()
+            lootdropper = temp.components.lootdropper
+            temp:DoTaskInTime(0.2, function ()
+                -- temp:Remove()
+                player.super_fortune_num = 0
+                player.badluck_num[1] = 0
+            end)
+
+            player.has_ticket = false
+            TaXueSay("哇塞！")
+        end
         --处理赌狗
         if player.gamble_multiple > 0 then
             has_save = true
@@ -1238,22 +1280,6 @@ function TaxuePatch.TaxueOnKilled(player, target)
             lootdropper:SetLoot(loot_list)
             player.substitute_item = ""
             player.has_ticket = false
-        end
-        --处理超级好运券
-        if player.super_fortune_num > 0 then
-            has_save = true
-
-            target:Remove()
-            player.badluck_num[1] = player.super_fortune_num
-            local temp = SpawnPrefab(target.prefab)
-            temp:PushEvent("death")
-            TaxuePatch.AddLootsToList(temp.components.lootdropper, dorpList)
-            temp:DoTaskInTime(0.1, function () temp:Remove() end)
-
-            player.super_fortune_num = 0
-            player.badluck_num[1] = 0
-            player.has_ticket = false
-            TaXueSay("哇塞！")
         end
         --处理脸黑值,概率为0~0.2
         if player.faceblack > 0 and math.random() <= player.faceblack then
@@ -1460,6 +1486,8 @@ function TaxuePatch.TaxueOnKilled(player, target)
         end
         --#endregion
 
+        TaxuePatch.AddLootsToList(lootdropper, dorpList)
+        lootdropper.DropLoot = function () end
         TaxuePatch.StackDrops(target, dorpList, package)
 
         if has_save then
@@ -1472,10 +1500,12 @@ end
 ---@param number number
 ---@param decimalDigits? integer
 ---@param short? boolean
+---@param SegmentLen? integer
 ---@return string
-function TaxuePatch.FormatNumber(number, decimalDigits, short)
+function TaxuePatch.FormatNumber(number, decimalDigits, short, SegmentLen)
     local num = tonumber(number)
     if not num then return "NaN" end
+    local SegmentLen = math.clamp(SegmentLen or cfg("displaySetting.showNumberSegmentLen") or 4, 2, 10)
 
     -- 处理负数
     local sign = ""
@@ -1507,7 +1537,7 @@ function TaxuePatch.FormatNumber(number, decimalDigits, short)
     local formattedInteger = ""
     local len = #integerStr
     for i = 1, len do
-        if i > 1 and (len - i + 1) % 3 == 0 then
+        if i > 1 and (len - i + 1) % SegmentLen == 0 then
             formattedInteger = formattedInteger .. ","
         end
         formattedInteger = formattedInteger .. integerStr:sub(i, i)

@@ -1,5 +1,7 @@
 local command = {}
 
+local global = GLOBAL or _G
+
 ---获取鼠标指向的实体
 ---@return table
 function command.Sel()
@@ -8,6 +10,13 @@ function command.Sel()
         return TaxuePatch.hoverItem
     else
         return TheInput:GetWorldEntityUnderMouse()
+    end
+end
+
+function command.remove()
+    local item = command.Sel()
+    if item and item:IsValid() then
+        item:Remove()
     end
 end
 
@@ -27,7 +36,7 @@ function command.setFast(enable)
     if enable then
         TaxuePatch.oldDolongaction = { tags = dolongaction.tags, onenter = dolongaction.onenter }
         dolongaction.tags = nil
-        dolongaction.onenter = function(inst)
+        dolongaction.onenter = function (inst)
             inst.sg:GoToState("doshortaction")
         end
     else
@@ -57,7 +66,7 @@ end
 function command.getArgs(fun)
     if not fun then return end
     local args = {}
-    local hook = function(...)
+    local hook = function (...)
         local info = debug.getinfo(3)
         if info.name ~= 'pcall' then return end
 
@@ -76,6 +85,18 @@ function command.getArgs(fun)
     pcall(fun)
 
     return unpack(args)
+end
+
+function command.reload()
+    -- 热更新开始：
+    package.loaded["patchlib"] = nil -- 删除缓存
+    collectgarbage()                 -- 可选：触发垃圾回收（如果旧模块有资源）
+
+    require("patchlib")
+end
+
+for name, value in pairs(command) do
+    global[name] = value
 end
 
 return command
