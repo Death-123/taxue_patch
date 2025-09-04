@@ -514,4 +514,76 @@ TheInput = {}
 function string:endsWith(ends) end
 
 ---@param starts string
-function string:startsWith (starts) end
+function string:startsWith(starts) end
+
+--#region modutil
+function AddLevelPreInit(evelid, fn) end
+function AddLevelPreInitAny(fn) end
+function AddTaskPreInit(taskname, fn) end
+function AddRoomPreInit(roomname, fn) end
+function AddLevel(tyoe, data) end
+function AddTask(name, data) end
+function AddRoom(name, data) end
+function AddAction(action) end
+function AddMinimapAtlas(atlaspath) end
+function AddStategraphActionHandler(stategraph, handler) end
+function AddStategraphState(stategraph, state) end
+function AddStategraphEvent(stategraph, event) end
+function AddStategraphPostInit(stategraph, fn) end
+function AddComponentPostInit(component, fn) end
+function AddPrefabPostInitAny(fn) end
+function AddPlayerPostInit(fn) end
+function AddPrefabPostInit(prefab, fn) end
+function AddGamePostInit(fn) end
+function AddSimPostInit(fn) end
+function AddBrainPostInit(brain, fn) end
+function AddGlobalClassPostConstruct(package, classname, fn) end
+function AddClassPostConstruct(package, fn) end
+function AddIngredientValues(names, tags, cancook, candry) end
+function AddCookerRecipe(cooker, recipe) end
+function AddModCharacter(name) end
+function Recipe(name, ingredients, tab, level, game_type, placer, min_spacing, nounlock, numtogive, aquatic, distance, decor, flipable, image, wallitem, alt_ingredients) end
+function LoadPOFile(path, lang) end
+function RemapSoundEvent(name, new_name) end
+function RegisterInventoryItemAtlas(atlas, prefabname) end
+function AddTreasurePreInit(treasurename, fn) end
+function AddTreasureLootPreInit(lootname, fn) end
+function AddTreasure(name, data) end
+function AddTreasureLoot(name, data) end
+--#endregion
+
+function ForceEnableMod(modname) end
+function ProfileStatsAdd(stats) end
+function GetRecipe(recipename) end
+---@return number
+function GetTime() end
+---@return boolean
+function IsPaused() end
+---@param prefab string
+---@return boolean
+function PrefabExists(prefab) end
+function RemovePhysicsColliders(inst) end
+function Ingredient(item, count) end
+function State(data) end
+function TimeEvent(time, fn) end
+function EventHandler(event, fn) end
+function ActionHandler(action, name) end
+function Action(data, time) end
+function GetTaskRemaining(task) end
+---@param number number
+---@return integer
+function round(number) end
+function SavePersistentString(path, str, encode, callback, local_save) end
+function MakeInventoryPhysics(inst) end
+function MakeInventoryFloatable(inst, water, default) end
+function GetDescription(name, inst, status) end
+function Prefab(name, fn, assets, deps) end
+---@param path string
+---@return string path
+function resolvefilepath(path) end
+
+SaveGameIndex = {}
+STRINGS = {}
+Prefabs = {}
+LOC = {}
+TheInputProxy = {}

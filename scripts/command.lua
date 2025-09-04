@@ -1,7 +1,5 @@
 local command = {}
 
-local global = GLOBAL or _G
-
 ---获取鼠标指向的实体
 ---@return table
 function command.Sel()
@@ -17,6 +15,16 @@ function command.remove()
     local item = command.Sel()
     if item and item:IsValid() then
         item:Remove()
+    end
+end
+
+function command.GetTaxueValue()
+    local item = command.Sel()
+    if not item then return nil end
+    if item.equip_value then
+        return item.equip_value
+    elseif item.time then
+        return item.time
     end
 end
 
@@ -53,7 +61,8 @@ end
 function command.test()
     local test, err = kleiloadlua(TaxuePatch.modRoot .. "scripts/test.lua")
     if test then
-        test()
+        setfenv(test, _G)
+        xpcall(test, debug.traceback)
     else
         TaxuePatch.mprint(err)
     end
@@ -61,6 +70,12 @@ end
 
 function command.mprint(...)
     TaxuePatch.mprint(...)
+end
+
+function command.tablePrint(table)
+    for k, v in pairs(table) do
+        command.mprint(k, v)
+    end
 end
 
 function command.getArgs(fun)
@@ -88,15 +103,7 @@ function command.getArgs(fun)
 end
 
 function command.reload()
-    -- 热更新开始：
-    package.loaded["patchlib"] = nil -- 删除缓存
-    collectgarbage()                 -- 可选：触发垃圾回收（如果旧模块有资源）
-
-    require("patchlib")
-end
-
-for name, value in pairs(command) do
-    global[name] = value
+    TaxuePatch.reload()
 end
 
 return command

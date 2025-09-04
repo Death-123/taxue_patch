@@ -8,33 +8,15 @@ GLOBAL.TaxuePatch = {
     cfg = {},
 }
 
---#region tool functions
-function string.split(input, delimiter)
-    input = tostring(input)
-    delimiter = tostring(delimiter)
-    if (delimiter == "") then return false end
-    local pos, arr = 0, {}
-    for st, sp in function () return string.find(input, delimiter, pos, true) end do
-        table.insert(arr, string.sub(input, pos, st - 1))
-        pos = sp + 1
-    end
-    table.insert(arr, string.sub(input, pos))
-    return arr
+require("patchUtil")
+TaxuePatch.dataSaver = require("dataSave")(modname)
+local config = require("SomniumConfig")(modname)
+TaxuePatch.config = config
+TaxuePatch.cfg = function (key)
+    return TaxuePatch.config:GetValue(key)
 end
-
----如果字符串开头是strStart
----@param str string
----@param strStart string
----@return boolean
-function string.startWith(str, strStart)
-    return str:sub(1, #strStart) == strStart
-end
-
-function string.trim(s)
-    return (s:gsub("^%s+", ""):gsub("%s+$", ""))
-end
-
-local function mprint(...)
+local cfg = TaxuePatch.cfg
+function mprint(...)
     local msg, argnum = "", select("#", ...)
     for i = 1, argnum do
         local v = select(i, ...)
@@ -48,96 +30,28 @@ local function mprint(...)
         prefix = string.format("%s:%s:", d.source or "?", d.currentline or 0)
     end
 
-    local prettyname = KnownModIndex:GetModFancyName(modname)
-    return print(prefix .. "[" .. modname .. " (" .. prettyname:trim() .. ")" .. "]:", msg)
+    local prettyname = KnownModIndex:GetModFancyName(TaxuePatch.name)
+    return print(prefix .. "[" .. TaxuePatch.name .. " (" .. prettyname:trim() .. ")" .. "]:", msg)
 end
-local print = mprint
+
 TaxuePatch.mprint = mprint
+local print = mprint
 
-function string.compare(s1, s2)
-    if type(s1) == "string" and type(s2) == "string" then
-        for i = 1, #s1 do
-            local n1 = s1:byte(i)
-            local n2 = s2:byte(i)
-            if n1 ~= n2 then
-                return n2 == nil or n1 > n2
-            end
-        end
-        return false
+TaxuePatch.reload = function ()
+    package.loaded["patchlib"] = nil
+    package.loaded["command"] = nil
+    collectgarbage()
+
+    require("patchlib")
+    local command = require "command"
+    for name, value in pairs(command) do
+        GLOBAL[name] = value
     end
 end
 
----比较两个表是否相同
----@param t1 table
----@param t2 table
----@return boolean equal
-function TableEq(t1, t2)
-    if t1 == t2 then return true end
-    for key, value in pairs(t1) do
-        if value ~= t2[key] then return false end
-    end
-    for key, value in pairs(t2) do
-        if value ~= t1[key] then return false end
-    end
-    return true
-end
-
-TaxuePatch.TableEq = TableEq
-
----深度比较比较两个表是否相同
----@param t1 table
----@param t2 table
----@return boolean equal
-function TableDeepEq(t1, t2)
-    if not (type(t1) == "table" and type(t2) == "table") then
-        return t1 == t2
-    end
-    for key, value in pairs(t1) do
-        if not TableDeepEq(value, t2[key]) then return false end
-    end
-    for key, value in pairs(t2) do
-        if not TableDeepEq(value, t1[key]) then return false end
-    end
-    return true
-end
-
-TaxuePatch.TableDeepEq = TableDeepEq
-
----覆写保存加载数据
----@param inst entityPrefab
----@param dataItems table<string, boolean>
----@param after? boolean
-function OverrideSLData(inst, dataItems, after)
-    local onsave = inst.OnSave
-    inst.OnSave = function (self, data)
-        if after then onsave(self, data) end
-        for dataItem, save in pairs(dataItems) do
-            if save then
-                if self[dataItem] then data[dataItem] = self[dataItem] end
-            end
-        end
-        if not after then onsave(self, data) end
-    end
-
-    local onload = inst.OnLoad
-    inst.OnLoad = function (self, data)
-        if after then onload(self, data) end
-        for dataItem, save in pairs(dataItems) do
-            if save then
-                if data[dataItem] then self[dataItem] = data[dataItem] end
-            end
-        end
-        if not after then onload(self, data) end
-    end
-end
-
---#endregion
-
-TaxuePatch.dataSaver = require("dataSave")(modname)
-local config = require("SomniumConfig")(modname)
-TaxuePatch.config = config
-TaxuePatch.cfg = function (key)
-    return TaxuePatch.config:GetValue(key)
+local command = require "command"
+for name, value in pairs(command) do
+    GLOBAL[name] = value
 end
 
 TheInput:AddKeyDownHandler(TaxuePatch.cfg("configKeybind"), function ()
@@ -150,66 +64,18 @@ end)
 -- for _, option in ipairs(KnownModIndex:GetModConfigurationOptions(modname)) do
 --     TaxuePatch.cfg[option.name] = GetModConfigData(option.name)
 -- end
-local cfg = TaxuePatch.cfg
 
-local md5lib
 local fileCheck = cfg("fileCheck")
 if cfg("fileCheck.md5Bytes") == "C" and PLATFORM:startWith("WIN32") then
-    -- local removeFiles = {
-    --     "lua51.DLL",
-    --     "lua51DS.DLL",
-    --     "WINMM.DLL",
-    -- }
-    -- for _, name in pairs(removeFiles) do
-    --     local path = "..\\bin\\" .. name
-    --     if kleifileexists(path) then
-    --        local file = io.popen("del " .. path)
-    --        if file then file:close() end
-    --     end
-    -- end
-    local luaBin = io.open("../bin/lua5.1.dll")
-    if not luaBin then
-        print(luaBin)
-        luaBin = io.open("../bin/lua5.1.dll", "w")
-        local luaPatch = io.open(MODROOT .. "scripts/lua5.1.txt", "r")
-        if luaBin and luaPatch then
-            luaBin:write(luaPatch:read("*a"))
-        end
-        if luaBin then luaBin:close() end
-        if luaPatch then luaPatch:close() end
-    else
-        luaBin:close()
-    end
-    -- local oldCpath = package.cpath
-    package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/md5lib.dll"
-    md5lib = require("md5lib")
-    -- package.cpath = oldCpath
+    local oldCpath = package.cpath
+    package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/clib/?.dll"
+    TaxuePatch.md5lib = require("md5lib")
+    package.cpath = oldCpath
 elseif fileCheck then
-    md5lib = require("md5/md5")
+    TaxuePatch.md5lib = require("md5")
 end
 
-local function getFileMd5(path)
-    if not fileCheck then return nil, "fileCheck disabled" end
-    local file, err = io.open(path, "rb")
-    if file then
-        md5lib.init()
-        local md5Bytes = cfg("fileCheck.md5Bytes")
-        local bytes = 1024 * (type(md5Bytes) == "number" and md5Bytes or 16)
-        local line = file:read(bytes)
-        while line do
-            collectgarbage("collect")
-            -- print("calculating md5, chunk size: " .. cfg.MD5_BYTES .. ", memory usage: " .. collectgarbage("count"))
-            md5lib.update(line)
-            line = file:read(bytes)
-        end
-        collectgarbage("collect")
-        return md5lib.toHex()
-    else
-        return nil, err
-    end
-end
-
-local json = require "json"
+-- local json = require "json"
 require "publicList"
 TaxuePatch.patchlib = require "patchlib"
 TaxuePatch.superPackageLib = require "superPackageLib"
@@ -218,11 +84,9 @@ TaxuePatch.RGBAColor = TaxuePatch.SomniumUtil.RGBAColor
 TaxuePatch.SomniumButton = require "widgets/SomniumButton"
 TaxuePatch.ControlPanel = require "screens/controlPanel"
 
-local patchStr = "--patch "
 local patchVersionStr = modinfo.version
 local patchMasterVersion = patchVersionStr:gsub("%.[^.]*$", "")
-local patchComment = patchStr .. patchVersionStr
-local modPath = "../mods/" .. modname .. "/"
+local modRoot = "../mods/" .. modname .. "/"
 local taxueName = "Taxue1.00"
 TaxuePatch.patchVersionStr = patchVersionStr
 TaxuePatch.patchMasterVersion = patchMasterVersion
@@ -239,7 +103,7 @@ for _, name in pairs(KnownModIndex:GetModNames()) do
     end
 end
 local taxuePath = "../mods/" .. taxueName .. "/"
-TaxuePatch.modRoot = modPath
+TaxuePatch.modRoot = modRoot
 PrefabFiles = {}
 
 local PATCHS = {
@@ -287,320 +151,39 @@ local PATCHS = {
     ["scripts/prefabs/taxue_greenamulet.lua"] = { md5 = "9cd5d16770da66120739a4b260f23b4d", lines = {} },
     -- ["scripts/prefabs/taxue_agentia_compressor.lua"] = { md5 = "a4d92b944eb75c53a8280966ee18ef79", lines = {} },
 }
----@type {always: function[], [string]: function}
-local PATCH_FN = { always = {} }
+
 local playerSavedDataItems = {}
-TaxuePatch.PATCHS = PATCHS
-TaxuePatch.PATCH_FN = PATCH_FN
 TaxuePatch.playerSavedDataItems = playerSavedDataItems
 
---#region patch
+local ModPatchLib = require("ModPatchLib")({
+    enable = taxueEnabled,
+    print = mprint,
+    originPath = modRoot,
+    targetPath = taxuePath,
+    versionStr = patchVersionStr,
+    fileCheck = fileCheck,
+    md5lib = TaxuePatch.md5lib,
+    md5Bytes = cfg("fileCheck.md5Bytes"),
+    cfgCheck = cfg,
+    cfgDisable = function (key)
+        config:ForceDisable(key)
+        mprint("force disable config " .. key)
+    end,
+    PATCHS = PATCHS
+})
+TaxuePatch.ModPatchLib = ModPatchLib
 
----@class cfgLine
----@field index integer
----@field endIndex? integer
----@field type? string
----@field content? string
----@field cfgKey? string
-
-local function patchFile(filePath, data)
-    local oringinContents = {}
-    local contents = {}
-    local isPatched = data.isPatched
-    local sameVersion
-    local originPath = taxuePath .. filePath
-    local lineHex
-    --计算md5
-    if data.lines and fileCheck then
-        md5lib.init()
-        for _, line in ipairs(data.lines) do
-            md5lib.update(tostring(line.index))
-        end
-        lineHex = md5lib.toHex()
-    end
-    local versionStr = patchVersionStr .. (lineHex and ("." .. lineHex) or "")
-    local file, error = io.open(originPath, "r")
-    --读取文件
-    if file then
-        local line = file:read("*l")
-        --根据是否已经被patch,读取文件内容
-        if isPatched then
-            --判断patch版本是否一致
-            sameVersion = data.version == versionStr
-            if not sameVersion or data.mode == "unpatch" then
-                --如果不一致,读取去除patch的内容
-                line = file:read("*l")
-                local inPatch = false
-                local type = ""
-                while line do
-                    if not inPatch and line:startWith(patchStr) then
-                        inPatch = true
-                        type = line:sub(#patchStr + 1):trim()
-                    elseif inPatch and line:startWith("--endPatch") then
-                        line = file:read("*l")
-                        inPatch = false
-                    end
-                    if not inPatch then
-                        table.insert(oringinContents, line)
-                    else
-                        if type == "override" and line:startWith("--oringin ") then
-                            table.insert(oringinContents, line:sub(#"--oringin " + 1))
-                        end
-                    end
-                    line = file:read("*l")
-                end
-            end
-        else
-            if data.mode == "unpatch" then
-                return
-            end
-            --如果未被patch,直接读取文件内容
-            while line do
-                table.insert(oringinContents, line)
-                line = file:read("*l")
-            end
-        end
-        file:close()
-        local endLine = oringinContents[#oringinContents]
-        if endLine and endLine:sub(#endLine) == "\r" then oringinContents[#oringinContents] = oringinContents[#oringinContents] .. "\n" end
-    end
-    print("------------------------")
-    print(filePath)
-    --如果补丁版本一致,直接返回
-    if isPatched and sameVersion and data.mode ~= "unpatch" then
-        print("patch version is same, pass")
-        return
-    end
-    if data.mode == "unpatch" then
-        print("unpatched")
-        contents = oringinContents
-    elseif not data.md5NotSame then --如果md5相同
-        --插入patch版本
-        table.insert(contents, patchStr .. versionStr)
-        --如果是文件覆写模式,直接覆盖原文件
-        if data.mode == "override" then
-            print("patch mode override")
-            local targetPath = modPath .. (data.file or filePath)
-            local patchFile, error = io.open(targetPath, "r")
-            if not patchFile then return error end
-            local patchLine = patchFile:read("*l")
-            while patchLine do
-                table.insert(contents, patchLine)
-                patchLine = patchFile:read("*l")
-            end
-            patchFile:close()
-        else
-            local patchLines = data.lines
-            table.sort(patchLines, function (a, b) return a.index < b.index end)
-            local i = 1
-            local index, type, endIndex, content
-            local inPatch = false
-            --遍历原文件每一行
-            for lineNum, line in ipairs(oringinContents) do
-                if patchLines[i] then
-                    local linedata = patchLines[i]
-                    index, type, endIndex, content = linedata.index, linedata.type or "override", linedata.endIndex or linedata.index, linedata.content
-                    --是目标行
-                    if lineNum == index then
-                        table.insert(contents, "--patch " .. type)
-                        if type == "override" then
-                            print("patching line " .. (linedata.endIndex and index .. " to " .. endIndex or index) .. " type override")
-                            inPatch = true
-                            if content then table.insert(contents, content) end
-                        elseif type == "add" then
-                            print("patching line " .. index .. " type add")
-                            table.insert(contents, content)
-                            table.insert(contents, "--endPatch")
-                            i = i + 1
-                        end
-                        --是目标结束行
-                    elseif inPatch and lineNum == endIndex + 1 then
-                        inPatch = false
-                        table.insert(contents, "--endPatch")
-                        i = i + 1
-                    end
-                end
-                --如果patch目标行内,在源代码前插入"--origin "注释
-                if inPatch then
-                    table.insert(contents, "--oringin " .. line)
-                else
-                    table.insert(contents, line)
-                end
-            end
-            if inPatch then
-                inPatch = false
-                table.insert(contents, "--endPatch")
-            end
-        end
-    else
-        print("md5 not same, skip")
-    end
-    --写入原文件
-    if #contents > 0 then
-        local originFile, error = io.open(originPath, "w")
-        if not originFile then
-            print(error)
-            return
-        end
-        originFile:write(table.concat(contents, "\n"))
-        originFile:close()
-    end
+local function addPatchFn(cfgkey, fn)
+    ModPatchLib:addPatchFn(cfgkey, fn)
 end
 
-function TaxuePatch.TestAllMd5()
-    if taxueLoaded then
-        for path, data in pairs(PATCHS) do
-            local originPath = taxuePath .. path
-            local isPatched = false
-            local file, error = io.open(originPath, "r")
-            if file then
-                local line = file:read("*l")
-                if line:startWith(patchStr) then
-                    isPatched = true
-                end
-            end
-            if not isPatched then
-                local md5, err = getFileMd5(originPath)
-                print("-----------------------------")
-                print(path)
-                if md5 then
-                    print(md5, data.md5 or "", (md5 == data.md5) and "same" or "")
-                else
-                    print(err)
-                end
-            end
-        end
-    end
+local function addPatch(path, cfgkey, line)
+    ModPatchLib:addPatch(path, cfgkey, line)
 end
 
-function TaxuePatch.PatchAll(unpatch)
-    for path, data in pairs(PATCHS) do
-        local isPatched = false
-        local originPath = taxuePath .. path
-        local file, error = io.open(originPath, "r")
-        if file then
-            local line = file:read("*l")
-            --根据是否已经被patch,读取文件内容
-            if line:startWith(patchStr) then
-                isPatched    = true
-                --判断patch版本是否一致
-                data.version = line:sub(#patchStr + 1):trim()
-            end
-            file:close()
-        end
-        data.isPatched = isPatched
-        if not isPatched then
-            local md5Same, md5, err = true, "", nil
-            if data.md5 and fileCheck then
-                md5, err = getFileMd5(taxuePath .. path)
-                md5Same = data.md5 == md5
-                if err then print(err) end
-                data.md5NotSame = not md5Same
-            end
-            if not md5Same then
-                print(("file %s md5 check not same, current md5: %s"):format(path, md5))
-                if data.cfgKeys then
-                    for key, _ in pairs(data.cfgKeys) do
-                        config:ForceDisable(key)
-                        mprint("force disable config " .. key)
-                    end
-                end
-            end
-        end
-    end
-    for path, data in pairs(PATCHS) do
-        if data.lines and #data.lines > 0 then
-            for i = #data.lines, 1, -1 do
-                local line = data.lines[i]
-                if cfg(line.cfgKey) == false then
-                    table.remove(data.lines, i)
-                end
-            end
-        end
-        if unpatch or (data.lines and #data.lines == 0) then
-            data.mode = "unpatch"
-        end
-        if data.mode == "file" then
-            local target, err = io.open(taxuePath .. path, "wb")
-            if target then
-                target:write(io.open(modPath .. data.path, "rb"):read("*a"))
-                target:close()
-            end
-        elseif data.isPatched or data.mode ~= "unpatch" then
-            patchFile(path, data)
-        end
-    end
+local function addPatchs(path, cfgkey, lines)
+    ModPatchLib:addPatchs(path, cfgkey, lines)
 end
-
-local function disablePatch(key)
-    PATCHS[key].mode = "unpatch"
-end
-
----添加patch
----@param key string
----@param cfgKey? string
----@param line cfgLine
-local function addPatch(key, cfgKey, line)
-    local patch = PATCHS[key]
-    if not patch then return end
-    if cfgKey then
-        patch.cfgKeys = patch.cfgKeys or {}
-        patch.cfgKeys[cfgKey] = true
-        line.cfgKey = cfgKey
-    end
-    table.insert(patch.lines, line)
-end
-
----添加多个patch
----@param key string
----@param cfgKey? string
----@param lines cfgLine[]
-local function addPatchs(key, cfgKey, lines)
-    for _, line in ipairs(lines) do
-        if not PATCHS[key] then
-            PATCHS[key] = { lines = {} }
-        end
-        addPatch(key, cfgKey, line)
-    end
-end
-
----添加patch方法
----@param cfgKey string|function
----@param fn? function
-local function addPatchFn(cfgKey, fn)
-    if type(cfgKey) == "function" then
-        table.insert(PATCH_FN.always, cfgKey)
-    end
-    PATCH_FN[cfgKey] = fn
-end
-
-local cfgKey
-
----压入cfgkey
----@param key string
-local function pushCfgKey(key)
-    cfgKey = key
-end
-
----弹出cfgkey
-local function popCfgKey()
-    cfgKey = nil
-end
-
----推送patch
----@param key string
----@param line cfgLine
-local function pushPatch(key, line)
-    addPatch(key, cfgKey, line)
-end
-
----推送多个patch
----@param key string
----@param lines cfgLine[]
-local function pushPatchs(key, lines)
-    addPatchs(key, cfgKey, lines)
-end
---#endregion
 
 local oldLookAtFn = ACTIONS.LOOKAT.fn
 ACTIONS.LOOKAT.fn = function (act)
@@ -1614,7 +1197,7 @@ if taxueEnabled and cfg("autoAmulet") then
 end
 --#endregion
 
-local customPatch = kleiloadlua(modPath .. "custompatch.lua")()
+local customPatch = kleiloadlua(modRoot .. "custompatch.lua")()
 if next(customPatch) then
     for path, lines in pairs(customPatch) do
         addPatchs(path, nil, lines)
@@ -1624,19 +1207,8 @@ end
 --开始patch
 if taxueLoaded then
     local patchEnable = cfg("patchEnable")
-    TaxuePatch.PatchAll(not patchEnable)
+    ModPatchLib:PatchAll(not patchEnable)
 
-    if patchEnable then
-        for key, fns in pairs(PATCH_FN) do
-            if key == "always" then
-                for _, fn in pairs(fns) do
-                    fn()
-                end
-            elseif cfg(key) then
-                fns()
-            end
-        end
-    end
     AddPrefabPostInit("taxue", function (inst)
         OverrideSLData(inst, playerSavedDataItems)
     end)
@@ -1644,14 +1216,12 @@ if taxueLoaded then
     function KnownModIndex:Save(...)
         for name, data in pairs(self.savedata.known_mods) do
             if name == modname and not data.enabled then
-                TaxuePatch.PatchAll(true)
+                ModPatchLib:PatchAll(true)
             end
         end
         oldSave(self, ...)
     end
 end
-
-local command = require "command"
 
 AddClassPostConstruct("widgets/itemtile", function (origin)
     local oldOnGainFocus = origin.OnGainFocus

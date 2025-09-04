@@ -1,0 +1,5 @@
+<svg width="200" height="40" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="198" height="38" rx="6" ry="6" fill="#e0e0e0" stroke="#bbbbbb" stroke-width="2"/>
+  <!-- 下拉箭头 -->
+  <polygon points="180,15 185,25 190,15" fill="black"/>
+</svg>

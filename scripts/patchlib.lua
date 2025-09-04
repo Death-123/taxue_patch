@@ -1127,24 +1127,26 @@ function TaxuePatch.TaxueOnKilled(player, target)
     local IsSpecial = target.prefab == "spiderden" or target.prefab == "lureplant"
 
     --#region 处理经验值,战斗力,魅力值
-    local exp
-    local combat
-    local charm
-    --击杀boss
-    if IsBoss then
+
+    ---@type number, number, number
+    local exp, combat, charm = 0, 0, 0
+
+    if IsBoss then                                                 --击杀boss
         exp = math.random() * 5 + 10 + player.exp_extra            --经验值10~15
         combat = math.random() * 5 + 5                             --战斗力5~10
         charm = math.random() * 10 + 10 + player.charm_value_extra --魅力值10~20
-        --击杀非小生物
-    elseif NotSmall then
-        exp = math.random() * 0.5 + 0.5 + player.exp_extra       --经验值0.5~1
-        combat = math.random() * 0.8 + 0.2                       --战斗力0.2~1
-        charm = math.random() * 1 + 1 + player.charm_value_extra --魅力值1~2
+    elseif NotSmall then                                           --击杀非小生物
+        exp = math.random() * 0.5 + 0.5 + player.exp_extra         --经验值0.5~1
+        combat = math.random() * 0.8 + 0.2                         --战斗力0.2~1
+        charm = math.random() * 1 + 1 + player.charm_value_extra   --魅力值1~2
     end
     if IsBoss or NotSmall then
-        player.exp = player.exp and player.exp + exp                                                       --经验值
-        player.combat_capacity = player.combat_capacity and math.min(player.combat_capacity + combat, 400) --战斗力
-        player.charm_value = player.charm_value and player.charm_value + charm                             --魅力值
+        player.exp = player.exp and player.exp + exp                                        --经验值
+        player.combat_capacity = player.combat_capacity and player.combat_capacity + combat --战斗力
+        player.charm_value = player.charm_value and player.charm_value + charm              --魅力值
+        if player.combat_capacity > 400 and not cfg("taxueFix.maxCombat") then
+            player.combat_capacity = 400
+        end
         if showBanner then
             local bannerExp
             local dyc = TaxuePatch.dyc

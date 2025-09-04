@@ -1,0 +1,6 @@
+<svg width="160" height="70" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="158" height="58" rx="8" ry="8" fill="#333" stroke="#555" stroke-width="2"/>
+  <!-- <text x="80" y="32" font-family="Arial" font-size="14" fill="white" text-anchor="middle">Tooltip</text> -->
+  <!-- 小三角指向 -->
+  <polygon points="70,60 80,70 90,60" fill="#333" stroke="#555" stroke-width="1"/>
+</svg>

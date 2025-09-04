@@ -1,0 +1,6 @@
+<svg width="100" height="40" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="98" height="38" rx="6" ry="6" fill="#4a6b8a" stroke="#3a5a7a" stroke-width="2"/>
+  <!-- <text x="50" y="26" font-family="Arial" font-size="16" fill="white" text-anchor="middle">Active</text> -->
+  <!-- 底部高亮条 -->
+  <rect x="10" y="37" width="80" height="3" fill="white"/>
+</svg>

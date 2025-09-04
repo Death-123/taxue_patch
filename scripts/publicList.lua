@@ -280,16 +280,16 @@ ItemTypeMap = {
         "surprised_sword",    --惊喜之刃
         "golden_bomb",        --黄金炸弹
         "gem_bomb",           --宝石炸弹
+        "cave_regenerator",   --遗迹之种
     },
     ruins = {
-        "armorruins",       --铥矿甲
-        "ruinshat",         --铥矿皇冠
-        "ruins_bat",        --铥矿棒
-        "orangestaff",      --懒人法杖
-        "yellowstaff",      --唤星法杖
-        "orangeamulet",     --懒人护符
-        "yellowamulet",     --魔光护符
-        "cave_regenerator", --遗迹之种
+        "armorruins",   --铥矿甲
+        "ruinshat",     --铥矿皇冠
+        "ruins_bat",    --铥矿棒
+        "orangestaff",  --懒人法杖
+        "yellowstaff",  --唤星法杖
+        "orangeamulet", --懒人护符
+        "yellowamulet", --魔光护符
     },
 }
 TaxuePatch.ItemTypeMap = ItemTypeMap

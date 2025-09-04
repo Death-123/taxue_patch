@@ -837,7 +837,7 @@ local function getItemInfo(target)
         end
     end
     --特殊装备
-    if target.components and target.equip_position then
+    if target.components and target.equip_position and target.equip_sign then
         local value = target.equip_value
         local sign = target.equip_sign
         local formatStrs = {
@@ -880,8 +880,10 @@ local function getItemInfo(target)
                 Info:Add("防雷:100%")
             end
             Info:Add(formatStr:format(formatNumber(showValue)))
-            Info:Add("穿戴位置:" .. GetEquipmentName(target.equip_position))
+        else
+            Info:Add(("数值:%s"):format(formatNumber(value)))
         end
+        Info:Add("穿戴位置:" .. GetEquipmentName(target.equip_position))
         local activeitem = player.components.inventory.activeitem
         if activeitem and activeitem.prefab == "copy_gem" and target.components.trader:CanAccept(activeitem, player) and cfg("displaySetting.showCopyChance", true) then
             Info:Add(("复制成功率:%.2f%%"):format(100 / (math.ceil(value / target.MAX_EQUIP_VALUE))))

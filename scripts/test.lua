@@ -35,9 +35,9 @@
 -- local run_dist = locomotor:GetRunSpeed()*0.016*.5
 -- mprint(dsq, run_dist * run_dist, arrive_dist * arrive_dist)
 
-reload()
-local target = SpawnPrefab("taxue_spat")
-target.Transform:SetPosition(GetPlayer().Transform:GetWorldPosition())
--- GetPlayer().super_fortune_num = 100
-target.components.health:Kill()
-TaxuePatch.TaxueOnKilled(GetPlayer(), target)
+-- reload()
+-- local target = SpawnPrefab("taxue_spat")
+-- target.Transform:SetPosition(GetPlayer().Transform:GetWorldPosition())
+-- -- GetPlayer().super_fortune_num = 100
+-- target.components.health:Kill()
+-- TaxuePatch.TaxueOnKilled(GetPlayer(), target)

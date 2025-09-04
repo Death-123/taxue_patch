@@ -310,7 +310,13 @@ local cfg = {
                         default = 10
                     },
                 }
-            }
+            },
+            {
+                id = "maxCombat",
+                name = "战斗力解限",
+                description = "解除战斗力上限",
+                default = false
+            },
         },
     },
     { --定位猫猫
@@ -1129,6 +1135,7 @@ function Config:IsForceDisabled(key)
         end
         return forceDisabled or false
     end
+    return false
 end
 
 ---遍历所有配置项
