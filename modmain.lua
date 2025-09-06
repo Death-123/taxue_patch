@@ -8,9 +8,60 @@ GLOBAL.TaxuePatch = {
     cfg = {},
 }
 
-require("patchUtil")
-TaxuePatch.dataSaver = require("dataSave")(modname)
-local config = require("SomniumConfig")(modname)
+local patchVersionStr = modinfo.version
+local patchMasterVersion = patchVersionStr:gsub("%.[^.]*$", "")
+local modRoot = "../mods/" .. modname .. "/"
+local taxueName = "Taxue1.00"
+TaxuePatch.patchVersionStr = patchVersionStr
+TaxuePatch.patchMasterVersion = patchMasterVersion
+TaxuePatch.name = KnownModIndex:GetModFancyName(modname):gsub("^%s+", ""):gsub("%s+$", "")
+local taxueLoaded = false
+local taxueEnabled = false
+for _, name in pairs(KnownModIndex:GetModNames()) do
+    if string.gsub(KnownModIndex:GetModFancyName(name), "%s+", "") == "踏雪" then
+        local taxueInfo = KnownModIndex.savedata.known_mods[name]
+        taxueLoaded = true
+        taxueEnabled = taxueInfo.enabled
+        taxueName = name
+        break
+    end
+end
+local taxuePath = "../mods/" .. taxueName .. "/"
+TaxuePatch.modRoot = modRoot
+PrefabFiles = {}
+
+---@param modulename string
+---@param env table
+---@return table
+local function loadLua(modulename, env)
+    print("modimport: " .. TaxuePatch.modRoot .. modulename)
+    local result = kleiloadlua(TaxuePatch.modRoot .. modulename)
+    if result == nil then
+        print("Error in modimport: " .. modulename .. " not found!")
+    elseif type(result) == "string" then
+        print("Error in modimport: " .. TaxuePatch.name .. " importing " .. modulename .. "!\n" .. result)
+    else
+        setfenv(result, env)
+        return result()
+    end
+end
+local import = function (name)
+    return loadLua("scripts/" .. name .. ".lua", env)
+end
+TaxuePatch.loadLua = loadLua
+TaxuePatch.import = import
+
+import("patchUtil")
+TaxuePatch.dataSaver = import("dataSave")(modname)
+local config = import("SomniumConfig")(modname)
+-- local json = require "json"
+require "publicList"
+TaxuePatch.patchlib = require "patchlib"
+TaxuePatch.superPackageLib = require "superPackageLib"
+TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
+TaxuePatch.RGBAColor = TaxuePatch.SomniumUtil.RGBAColor
+TaxuePatch.SomniumButton = require "widgets/SomniumButton"
+TaxuePatch.ControlPanel = require "screens/controlPanel"
 TaxuePatch.config = config
 TaxuePatch.cfg = function (key)
     return TaxuePatch.config:GetValue(key)
@@ -42,17 +93,18 @@ TaxuePatch.reload = function ()
     package.loaded["command"] = nil
     collectgarbage()
 
-    require("patchlib")
-    local command = require "command"
+    import("patchlib")
+    local command = import "command"
     for name, value in pairs(command) do
         GLOBAL[name] = value
     end
 end
 
-local command = require "command"
+local command = import "command"
 for name, value in pairs(command) do
     GLOBAL[name] = value
 end
+
 
 TheInput:AddKeyDownHandler(TaxuePatch.cfg("configKeybind"), function ()
     if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
@@ -67,6 +119,19 @@ end)
 
 local fileCheck = cfg("fileCheck")
 if cfg("fileCheck.md5Bytes") == "C" and PLATFORM:startWith("WIN32") then
+    local luaBin = io.open("../bin/lua5.1.dll")
+    if not luaBin then
+        print(luaBin)
+        luaBin = io.open("../bin/lua5.1.dll", "w")
+        local luaPatch = io.open(MODROOT .. "scripts/clib/lua5.1.txt", "r")
+        if luaBin and luaPatch then
+            luaBin:write(luaPatch:read("*a"))
+        end
+        if luaBin then luaBin:close() end
+        if luaPatch then luaPatch:close() end
+    else
+        luaBin:close()
+    end
     local oldCpath = package.cpath
     package.cpath = package.cpath .. ";" .. MODROOT .. "scripts/clib/?.dll"
     TaxuePatch.md5lib = require("md5lib")
@@ -74,37 +139,6 @@ if cfg("fileCheck.md5Bytes") == "C" and PLATFORM:startWith("WIN32") then
 elseif fileCheck then
     TaxuePatch.md5lib = require("md5")
 end
-
--- local json = require "json"
-require "publicList"
-TaxuePatch.patchlib = require "patchlib"
-TaxuePatch.superPackageLib = require "superPackageLib"
-TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
-TaxuePatch.RGBAColor = TaxuePatch.SomniumUtil.RGBAColor
-TaxuePatch.SomniumButton = require "widgets/SomniumButton"
-TaxuePatch.ControlPanel = require "screens/controlPanel"
-
-local patchVersionStr = modinfo.version
-local patchMasterVersion = patchVersionStr:gsub("%.[^.]*$", "")
-local modRoot = "../mods/" .. modname .. "/"
-local taxueName = "Taxue1.00"
-TaxuePatch.patchVersionStr = patchVersionStr
-TaxuePatch.patchMasterVersion = patchMasterVersion
-TaxuePatch.name = KnownModIndex:GetModFancyName(modname):trim()
-local taxueLoaded = false
-local taxueEnabled = false
-for _, name in pairs(KnownModIndex:GetModNames()) do
-    if string.gsub(KnownModIndex:GetModFancyName(name), "%s+", "") == "踏雪" then
-        local taxueInfo = KnownModIndex.savedata.known_mods[name]
-        taxueLoaded = true
-        taxueEnabled = taxueInfo.enabled
-        taxueName = name
-        break
-    end
-end
-local taxuePath = "../mods/" .. taxueName .. "/"
-TaxuePatch.modRoot = modRoot
-PrefabFiles = {}
 
 local PATCHS = {
     --库
@@ -155,7 +189,7 @@ local PATCHS = {
 local playerSavedDataItems = {}
 TaxuePatch.playerSavedDataItems = playerSavedDataItems
 
-local ModPatchLib = require("ModPatchLib")({
+local ModPatchLib = import("ModPatchLib")({
     enable = taxueEnabled,
     print = mprint,
     originPath = modRoot,

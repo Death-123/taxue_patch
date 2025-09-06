@@ -1,22 +1,23 @@
+---@diagnostic disable: assign-type-mismatch
 local DataSave = require "dataSave"
 
 ---@enum ConfigType
 local ConfigType = {
-    enable  = "enable",
+    enable      = "enable",
     forceEnable = "forceEnable",
-    keybind = "keybind",
-    color   = "color",
-    percent = "percent",
-    number  = "number",
-    integer = "integer",
-    multSel = "multSel"
+    keybind     = "keybind",
+    color       = "color",
+    percent     = "percent",
+    number      = "number",
+    integer     = "integer",
+    multSel     = "multSel"
 }
 
 ---@class option
 ---@field des? string
 ---@field value any
 
----@class ConfigEntry
+---@class ConfigEntry: Config
 ---@field id string
 ---@field name string
 ---@field description? string
@@ -52,6 +53,11 @@ local enableOptions = {
 ---@type option[]
 local forceDisableOptions = {
     { des = "强制禁用", value = false }
+}
+
+---@type option[]
+local parentDisableOptions = {
+    { des = "被父级配置禁用", value = false }
 }
 
 ---@type option[]
@@ -874,6 +880,7 @@ local cfg = {
     }
 }
 
+---配置对象
 ---@class Config
 ---@overload fun(modname:string):Config
 ---@field modname string
@@ -889,11 +896,16 @@ local Config = Class(
         self:Load()
     end)
 
+---初始化配置系统
+---包括设置元表、拦截游戏原生函数以及设置配置保存和加载的钩子
 function Config:Init()
+    -- 为所有配置项设置元表和父级引用
     self:TraversalAllConfigEntry(function (ConfigEntry, parent)
         setmetatable(ConfigEntry, Config)
         ConfigEntry.parent = parent
     end)
+    
+    -- 拦截模组信息初始化函数，注入自定义配置
     local oldInitializeModInfo = KnownModIndex.InitializeModInfo
     function KnownModIndex.InitializeModInfo(_self, name, ...)
         local info = oldInitializeModInfo(_self, name, ...)
@@ -904,6 +916,8 @@ function Config:Init()
         return info
     end
 
+    ---覆盖配置值
+    ---@param configuration_options table 配置选项表
     local function overWriteConfig(configuration_options)
         for _, option in pairs(configuration_options) do
             if option.saved ~= nil then
@@ -929,6 +943,7 @@ function Config:Init()
         end
     end
 
+    -- 拦截模组配置加载函数
     local oldLoadModConfigurationOptions = KnownModIndex.LoadModConfigurationOptions
     function KnownModIndex.LoadModConfigurationOptions(_self, modname, ...)
         local configuration_options = oldLoadModConfigurationOptions(_self, modname, ...)
@@ -943,6 +958,7 @@ function Config:Init()
         return configuration_options
     end
 
+    -- 拦截模组配置保存函数
     local oldSaveConfigurationOptions = KnownModIndex.SaveConfigurationOptions
     function KnownModIndex.SaveConfigurationOptions(_self, callback, modname, configuration_options, ...)
         if modname == self.modname and configuration_options then
@@ -963,12 +979,23 @@ function Config:Init()
         oldSaveConfigurationOptions(_self, callback, modname, configuration_options, ...)
     end
 
+    -- 添加Mod配置界面的后构造函数
+    AddClassPostConstruct("screens/modconfigurationscreen", function (self)
+        local oldMakeDirty = self.MakeDirty
+        self.MakeDirty = function (inst, dirty)
+            oldMakeDirty(self, dirty)
+            if dirty ~= false then
+
+            end
+        end
+    end)
+
     KnownModIndex:LoadModInfo(self.modname)
 end
 
----获取配置
----@param key? string
----@return ConfigEntry|nil configEntry
+---获取配置项
+---@param key? string 配置项的键名，支持点号分隔的嵌套键名，如果为nil则返回自身
+---@return ConfigEntry|nil configEntry 配置项对象，如果未找到则返回nil
 function Config:Get(key)
     if not key then
         if self --[[@as ConfigEntry]].id then
@@ -995,11 +1022,23 @@ function Config:Get(key)
     end
 end
 
+---获取配置项的完整ID路径
+---@param configEntry ConfigEntry 配置项对象
+---@return string FullId 完整的ID路径，以点号分隔
+function Config.GetFullId(configEntry)
+    local id = configEntry.id
+    while configEntry.parent do
+        configEntry = configEntry.parent
+        id = configEntry.id .. "." .. id
+    end
+    return id
+end
+
 ---获取配置值
----@param key? string
----@param skipForce? boolean
----@return any value
----@return boolean isDefault
+---@param key? string 配置项的键名，支持点号分隔的嵌套键名，如果为nil则获取当前配置项的值
+---@param skipForce? boolean 是否跳过强制禁用检查
+---@return any value 配置项的值
+---@return boolean isDefault 是否使用默认值
 function Config:GetValue(key, skipForce)
     local configEntry = self:Get(key)
     if not configEntry then return nil, false end
@@ -1020,6 +1059,10 @@ function Config:GetValue(key, skipForce)
     return value, isDefault
 end
 
+---获取多选配置项的选中值
+---@param key string 配置项的键名
+---@return table selValues 选中的值列表
+---@return boolean isDefault 是否使用默认值
 function Config:GetSelectdValues(key)
     local configEntry = self:Get(key)
     if not configEntry then return nil, false end
@@ -1037,28 +1080,30 @@ function Config:GetSelectdValues(key)
 end
 
 ---设置配置值
----@param key string|any
----@param value? any
+---@param key string|any 配置项的键名或者直接传入值（当只有两个参数时）
+---@param value? any 配置项的值（当有三个参数时）
 function Config:Set(key, value)
     local configEntry = value and self:Get(key) or self
     configEntry.value = value or key
 end
 
 ---获取配置类型
----@param key? string
----@return string?
+---@param key? string 配置项的键名，如果为nil则获取当前配置项的类型
+---@return string? type 配置项的类型
 function Config:GetType(key)
     local configEntry = key and self:Get(key) or self
     return configEntry.type
 end
 
 ---获取配置选项
----@param configEntry ConfigEntry
----@return option[]?
+---@param configEntry ConfigEntry 配置项对象
+---@return option[]? options 配置选项列表
 function Config.getOptions(configEntry)
     local options
     if configEntry:IsForceDisabled() then
         options = forceDisableOptions
+    elseif configEntry.parent and not configEntry.parent:GetValue() then
+        options = parentDisableOptions
     elseif configEntry.options then
         options = configEntry.options
     elseif configEntry.type then
@@ -1086,16 +1131,16 @@ function Config.getOptions(configEntry)
 end
 
 ---获取配置选项
----@param key? string
----@return option[]?
+---@param key? string 配置项的键名，如果为nil则获取当前配置项的选项
+---@return option[]? options 配置选项列表
 function Config:GetOptions(key)
     local configEntry = key and self:Get(key) or self
     return Config.getOptions(configEntry)
 end
 
 ---获取默认值
----@param configEntry ConfigEntry
----@return any
+---@param configEntry ConfigEntry 配置项对象
+---@return any default 默认值
 function Config.getDefault(configEntry)
     if configEntry.default == nil then
         return true
@@ -1107,15 +1152,15 @@ function Config.getDefault(configEntry)
 end
 
 ---获取默认值
----@param key? string
----@return any
+---@param key? string 配置项的键名，如果为nil则获取当前配置项的默认值
+---@return any default 默认值
 function Config:GetDefault(key)
     local configEntry = key and self:Get(key) or self
     return Config.getDefault(configEntry)
 end
 
 ---设置强制禁用
----@param key? string
+---@param key? string 配置项的键名
 function Config:ForceDisable(key)
     local configEntry = self:Get(key)
     if configEntry then
@@ -1124,8 +1169,8 @@ function Config:ForceDisable(key)
 end
 
 ---是否强制禁用
----@param key? string
----@return boolean
+---@param key? string 配置项的键名
+---@return boolean foreceDisabled 是否被强制禁用
 function Config:IsForceDisabled(key)
     local configEntry = self:Get(key)
     if configEntry then
@@ -1139,10 +1184,10 @@ function Config:IsForceDisabled(key)
 end
 
 ---遍历所有配置项
----@param fn fun(ConfigEntry:ConfigEntry,parent?:ConfigEntry): stop:boolean?
----@param ConfigEntrys? ConfigEntry[]
----@param parent? ConfigEntry
----@return boolean? stop
+---@param fn fun(ConfigEntry:ConfigEntry,parent?:ConfigEntry): stop:boolean? 遍历回调函数，返回true可提前终止遍历
+---@param ConfigEntrys? ConfigEntry[] 配置项数组，默认为self.cfg
+---@param parent? ConfigEntry 父级配置项
+---@return boolean? stop 是否提前终止遍历
 function Config:TraversalAllConfigEntry(fn, ConfigEntrys, parent)
     ConfigEntrys = ConfigEntrys or self.cfg
     for _, ConfigEntry in pairs(ConfigEntrys) do
@@ -1153,6 +1198,9 @@ function Config:TraversalAllConfigEntry(fn, ConfigEntrys, parent)
     end
 end
 
+---将配置项转换为原版格式
+---@param ConfigEntry ConfigEntry 配置项对象
+---@return table entry 原版格式的配置项
 function Config.GetVanillaEntry(ConfigEntry)
     local entry = {}
     entry.name = ConfigEntry.id
@@ -1168,8 +1216,8 @@ function Config.GetVanillaEntry(ConfigEntry)
 end
 
 ---注入原版配置项
----@param configuration_options? table
----@return table configuration_options
+---@param configuration_options? table 原版配置选项表，如果为nil则从KnownModIndex获取
+---@return table configuration_options 更新后的配置选项表
 function Config:InjectModConfig(configuration_options)
     local configuration_options = configuration_options or KnownModIndex:GetModInfo(self.modname).configuration_options
     local function InjectModConfigEntry(ConfigEntry)
@@ -1179,6 +1227,7 @@ function Config:InjectModConfig(configuration_options)
     return configuration_options
 end
 
+---保存配置到文件
 function Config:SaveCfg()
     local data = {}
     local function save(ConfigEntry)
@@ -1190,6 +1239,7 @@ function Config:SaveCfg()
     self.dataSave:Save(data)
 end
 
+---从文件加载配置
 function Config:LoadCfg()
     local success, data = self.dataSave:Load()
     if data then
@@ -1205,6 +1255,7 @@ function Config:LoadCfg()
     end
 end
 
+---保存配置到游戏原生系统
 function Config:Save()
     local configuration_options = KnownModIndex:GetModInfo(self.modname).configuration_options
     local function save(ConfigEntry)
@@ -1221,6 +1272,7 @@ function Config:Save()
     KnownModIndex:SaveConfigurationOptions(nil, self.modname, configuration_options)
 end
 
+---从游戏原生系统加载配置
 function Config:Load()
     self:LoadCfg()
     KnownModIndex:LoadModConfigurationOptions(self.modname)
