@@ -1859,8 +1859,8 @@ function TaxuePatch.IntoChest(inst, floor_intochest, items)
                     itemleft = false
                 end
             end
-            return has, itemleft
         end
+        return has, itemleft
     end
     local has
     for i, item in pairs(items) do
@@ -1869,7 +1869,7 @@ function TaxuePatch.IntoChest(inst, floor_intochest, items)
         if not itemleft then items[i] = nil end
     end
     if floor_intochest or cfg("taxueFix.intoChest.allowGroundItem") then
-        for _, ent in pairs(TaxuePatch.GetNearByEntities(GetPlayer(), 20)) do
+        for _, ent in pairs(TaxuePatch.GetNearByEntities(GetPlayer(), 20, testFn)) do
             if ent.components and ent.components.inventoryitem then
                 has = has or insertItem(ent)
             end
@@ -1948,9 +1948,11 @@ function TaxuePatch.TaxueIntoChestKey()
             end
         end
     end
+    local has = false
     for _, chest in pairs(chests) do
-        TaxuePatch.IntoChest(chest, false, items)
+        has = has or TaxuePatch.IntoChest(chest, false, items)
     end
+    TaXueSay("一键入箱！")
 end
 
 ---@param bannerTag string

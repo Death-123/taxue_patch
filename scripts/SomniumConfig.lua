@@ -175,59 +175,59 @@ local configs = {
         name = "踏雪优化",
         description = "优化踏雪mod部分功能",
         subConfigs = {
-            {--移除掉落物变灰烬
+            { --移除掉落物变灰烬
                 id = "dropAsh",
                 name = "移除掉落物变灰烬",
                 description = "让着火的怪物掉落物不会变成灰烬",
             },
-            {--物品掉落优化
+            { --物品掉落优化
                 id = "betterDrop",
                 name = "物品掉落优化",
                 description = "掉落物合并,当附近有开启的打包机时,直接进打包机",
                 subConfigs = {
-                    {--掉落物自动堆叠
+                    { --掉落物自动堆叠
                         id = "stackDrop",
                         name = "掉落物自动堆叠",
                         description = "掉落物会自动堆叠进附近已存在的物品"
                     }
                 }
             },
-            {--空格收菜修复
+            { --空格收菜修复
                 id = "taxueMoe",
                 name = "空格收菜修复",
                 description = "修复专属镰刀空格收割",
             },
-            {--难度未初始化修复
+            { --难度未初始化修复
                 id = "levelWidgetFix",
                 name = "难度未初始化修复",
                 description = "修复难度未初始化导致的崩溃",
             },
-            {--增强物品排序
+            { --增强物品排序
                 id = "itemSort",
                 name = "增强物品排序",
                 description = "使物品排序可以排序掉包券,定向刷新券等",
             },
-            {--增强一键入箱
+            { --增强一键入箱
                 id = "intoChest",
                 name = "增强一键入箱",
                 description = "使一键入箱可以将周围地上的物品入箱",
                 subConfigs = {
-                    {--允许地面物品
+                    { --允许地面物品
                         id = "allowGroundItem",
                         name = "允许地面物品",
                         description = "使一键入箱可以兼容地面物品",
                     },
-                    {--允许所有容器
+                    { --允许所有容器
                         id = "allowOtherChest",
                         name = "允许所有容器",
                         description = "使一键入箱可以兼容所有容器",
                     },
-                    {--禁止原版木箱
+                    { --禁止原版木箱
                         id = "disableVanillaChest",
                         name = "禁止原版木箱",
                         description = "当允许所有容器开启时,使一键入箱禁止入箱原版木箱",
                     },
-                    {--允许便携地窖
+                    { --允许便携地窖
                         id = "allowPortablecellar",
                         name = "允许便携地窖",
                         description = "当允许所有容器关闭时,使一键入箱可以入箱便携地窖",
@@ -909,7 +909,7 @@ function Config:Init()
         setmetatable(ConfigEntry, Config)
         ConfigEntry.parent = parent
     end)
-    
+
     -- 拦截模组信息初始化函数，注入自定义配置
     local oldInitializeModInfo = KnownModIndex.InitializeModInfo
     function KnownModIndex.InitializeModInfo(_self, name, ...)
@@ -958,6 +958,9 @@ function Config:Init()
                 if type(option.saved) == "table" then
                     AddTableDeepEq(option.saved)
                 end
+                local value, isDefault = self:GetValue(option.name)
+                if not isDefault then option.saved = value end
+                option.options = self:GetVanillaOptions(option.name)
             end
             overWriteConfig(configuration_options)
         end
@@ -984,17 +987,6 @@ function Config:Init()
         end
         oldSaveConfigurationOptions(_self, callback, modname, configuration_options, ...)
     end
-
-    -- 添加Mod配置界面的后构造函数
-    AddClassPostConstruct("screens/modconfigurationscreen", function (self)
-        local oldMakeDirty = self.MakeDirty
-        self.MakeDirty = function (inst, dirty)
-            oldMakeDirty(self, dirty)
-            if dirty ~= false then
-
-            end
-        end
-    end)
 
     KnownModIndex:LoadModInfo(self.modname)
 end
@@ -1145,6 +1137,18 @@ function Config:GetOptions(key)
     return Config.getOptions(configEntry)
 end
 
+---获取原版配置选项
+---@param key? string 配置项的键名，如果为nil则获取当前配置项的选项
+---@return option[]? options 配置选项列表
+function Config:GetVanillaOptions(key)
+    local options = Config.getOptions(key and self:Get(key) or self)
+    local vanillaOptions = {}
+    for _, option in pairs(options) do
+        table.insert(vanillaOptions, { description = option.des, data = option.value })
+    end
+    return vanillaOptions
+end
+
 ---获取默认值
 ---@private
 ---@param configEntry ConfigEntry 配置项对象
@@ -1240,7 +1244,7 @@ function Config:SaveCfg()
     local data = {}
     local function save(ConfigEntry)
         if ConfigEntry.value ~= nil then
-            table.insert(data, { id = ConfigEntry.id, value = ConfigEntry.value })
+            table.insert(data, { id = ConfigEntry:GetFullId(), value = ConfigEntry.value })
         end
     end
     self:TraversalAllConfigEntry(save)
@@ -1253,7 +1257,7 @@ function Config:LoadCfg()
     if data then
         local function load(ConfigEntry)
             for _, entry in pairs(data) do
-                if entry.id == ConfigEntry.id then
+                if entry.id == ConfigEntry.id or entry.id == ConfigEntry:GetFullId() then
                     ConfigEntry.value = entry.value
                     break
                 end
@@ -1269,7 +1273,7 @@ function Config:Save()
     local function save(ConfigEntry)
         if ConfigEntry.value ~= nil then
             for _, option in pairs(configuration_options) do
-                if option.name == ConfigEntry.id then
+                if option.name == ConfigEntry:GetFullId() then
                     option.saved = ConfigEntry.value
                     break
                 end

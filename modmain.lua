@@ -60,7 +60,7 @@ function mprint(...)
     end
 
     local prettyname = KnownModIndex:GetModFancyName(TaxuePatch.name)
-    return print(prefix .. "[" .. TaxuePatch.name .. " (" .. prettyname:trim() .. ")" .. "]:", msg)
+    return print(prefix .. "[" .. prettyname:trim() .. "]:", msg)
 end
 
 TaxuePatch.mprint = mprint
@@ -391,9 +391,9 @@ addPatchs("scripts/prefabs/taxue_fish_tank.lua", "taxueFix.fishTankFix", {
 })
 --优化收获书
 addPatchs("scripts/prefabs/taxue_book.lua", "taxueFix.harvestBookPatch", {
-    { index = 21, type = "add",                                                                                                                                                                                content = [[                local itemList = {}]] },
+    { index = 21, type = "add",                                                                                                                                                                                           content = [[                local itemList = {}]] },
     { index = 36, content = [[                            if TaxuePatch.cfg("taxueFix.harvestBookPatch") then TaxuePatch.MultHarvest(v.components.crop, itemList, true) else v.components.crop:Harvest(GetPlayer()) end]] },
-    { index = 49, type = "add",                                                                                                                                                                                content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
+    { index = 49, type = "add",                                                                                                                                                                                           content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
 })
 --自动保存CD
 addPatchFn(nil, "taxueFix.autoSavePatch", function ()
