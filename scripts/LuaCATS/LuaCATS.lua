@@ -385,6 +385,7 @@ function CreateEntity() end
 ---@field lollipop_chance number
 ---@field colourful_windmill_chance number
 ---@field loaded_dice_chance number
+---@field perd_tail_feather_chance number
 ---@field has_surprised_sword boolean
 ---@field light Light
 

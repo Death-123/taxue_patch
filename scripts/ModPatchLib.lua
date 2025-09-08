@@ -328,13 +328,15 @@ function ModPatchLib:addPatchs(path, cfgKey, lines)
 end
 
 ---添加patch方法
----@param cfgKey string|function
+---@param path string|string[]|function?
+---@param cfgKey string?
 ---@param fn? function
-function ModPatchLib:addPatchFn(cfgKey, fn)
-    if type(cfgKey) == "function" then
-        table.insert(self.PATCH_FN.always, cfgKey)
+function ModPatchLib:addPatchFn(path, cfgKey, fn)
+    if type(path) == "function" then
+        table.insert(self.PATCH_FN.always, fn)
+    else
+        self.PATCH_FN[cfgKey] = fn
     end
-    self.PATCH_FN[cfgKey] = fn
 end
 
 local cfgKey

@@ -30,10 +30,18 @@ end
 ---给列表key对应的值加value
 ---@param List table
 ---@param key any
----@param value any
-function TaxuePatch.ListAdd(List, key, value)
+---@param value number
+---@param ischance boolean?
+function TaxuePatch.ListAdd(List, key, value, ischance)
     if value == 0 then return end
     value = value or 1
+    if ischance then
+        local chance = value - math.floor(value)
+        value = math.floor(value)
+        if chance > math.random() then
+            value = value + 1
+        end
+    end
     List[key] = List[key] and List[key] + value or value
 end
 
@@ -262,8 +270,10 @@ function TaxuePatch.GetStackedItem(name, amount, maxsize)
     if stack_num > 0 then
         for i = 1, stack_num do
             local newItem = SpawnPrefab(name)
-            newItem.components.stackable.stacksize = maxsize
-            table.insert(items, newItem)
+            if newItem and newItem:IsValid() then
+                newItem.components.stackable.stacksize = maxsize
+                table.insert(items, newItem)
+            end
         end
     end
     if surplus_num > 0 then
@@ -750,13 +760,10 @@ end
 
 ---堆叠掉落物
 ---@param target entityPrefab
----@param dorpList table<string, integer>
+---@param dorpList {[string]:integer}
 ---@param package? package
 function TaxuePatch.StackDrops(target, dorpList, package)
-    local blackList = { "houndfire" }
-    for _, name in pairs(blackList) do
-        dorpList[name] = nil
-    end
+    local hasDrop = next(dorpList)
     if package then
         local blackList = { "chester_eyebone", "packim_fishbone", "ro_bin_gizzard_stone" }
         local function testFn(ent)
@@ -764,14 +771,17 @@ function TaxuePatch.StackDrops(target, dorpList, package)
             local itemName = ent.prefab
             local flag = inventoryitem and inventoryitem.canbepickedup and inventoryitem.cangoincontainer
             flag = flag and not ent:HasTag("doydoy") and not table.contains(blackList, itemName)
-            if not flag then
-                target.components.lootdropper:DropLootPrefab(ent)
-            end
             return flag
         end
-        superPackageLib.AddItemsToSuperPackage(package, dorpList, nil, testFn)
-        if next(dorpList) then TaxueFx(target, "small_puff") end
-    elseif cfg("taxueFix.betterDrop.stackDrop") then
+        dorpList = superPackageLib.AddItemsToSuperPackage(package, dorpList, nil, testFn)
+        if hasDrop then TaxueFx(target, "small_puff") end
+    end
+    if not next(dorpList) then return end
+    if cfg("taxueFix.betterDrop.stackDrop") then
+        local blackList = { "houndfire" }
+        for _, name in pairs(blackList) do
+            if dorpList[name] then dorpList[name] = 1 end
+        end
         for name, amount in pairs(dorpList) do
             local item = SpawnPrefab(name)
             if item and item.components and item.components.stackable then
@@ -907,7 +917,13 @@ function TaxuePatch.MultHarvest(crop, itemList, isBook)
         or crop.inst.prefab == "plant_bulb" then
         amount = 3
     elseif crop.inst.prefab == "plant_berry" then
-        if math.random() < 0.1 then
+        local chance = 0.1
+        if crop.grower and crop.grower.prefab == "taxue_flowerpot" and crop.grower.level then
+            if crop.grower.level == 1 then chance = 0.2 end
+            if crop.grower.level == 2 then chance = 0.3 end
+            if crop.grower.level == 3 then chance = 0.4 end
+        end
+        if math.random() < chance then
             local perd = SpawnPrefab("perd") --火鸡
             local spawnpos = Vector3(crop.inst.Transform:GetWorldPosition())
             spawnpos = spawnpos + TheCamera:GetDownVec()
@@ -1147,30 +1163,7 @@ function TaxuePatch.TaxueOnKilled(player, target)
         if player.combat_capacity > 400 and not cfg("taxueFix.maxCombat") then
             player.combat_capacity = 400
         end
-        if showBanner then
-            local bannerExp
-            local dyc = TaxuePatch.dyc
-            for index, banner in pairs(dyc.bannerSystem.banners) do
-                if banner:HasTag("taxueGetExpBanner") then
-                    bannerExp = banner
-                    break
-                end
-            end
-            if not bannerExp then
-                local str = ("*经验+%.2f* *战斗力+%.2f* *魅力值+%.2f*"):format(exp, combat, charm)
-                bannerExp = dyc.bannerSystem:ShowMessage(str, 5, bannerColor)
-                bannerExp:AddTag("taxueGetExpBanner")
-            end
-            bannerExp.exp = bannerExp.exp and bannerExp.exp + exp or exp
-            bannerExp.combat = bannerExp.combat and bannerExp.combat + combat or combat
-            bannerExp.charm = bannerExp.charm and bannerExp.charm + charm or charm
-            bannerExp:SetText(("*经验+%.2f* *战斗力+%.2f* *魅力值+%.2f*"):format(bannerExp.exp, bannerExp.combat, bannerExp.charm))
-            bannerExp.bannerTimer = 5
-            bannerExp:OnUpdate(0)
-        else
-            local str = ("*经验+%.2f*\n*战斗力+%.2f*\n魅力值+%.2f*"):format(exp, combat, charm)
-            TaXueSay(str)
-        end
+        TaxuePatch.ShowBanner("taxueGetExpBanner", "*经验+%.2f*\n*战斗力+%.2f*\n魅力值+%.2f*", exp, combat, charm)
     end
     --#endregion
 
@@ -1224,11 +1217,17 @@ function TaxuePatch.TaxueOnKilled(player, target)
             target = temp
             target.components.health:Kill()
             lootdropper = temp.components.lootdropper
-            temp:DoTaskInTime(0.2, function ()
-                -- temp:Remove()
-                player.super_fortune_num = 0
-                player.badluck_num[1] = 0
-            end)
+            target:Remove()
+            player.super_fortune_num = 0
+            player.badluck_num[1] = 0
+            TaxueOnKilled(GetPlayer(), target)
+            TaXueOnupdate(GetPlayer())
+            player.SoundEmitter:PlaySound("dontstarve/common/ghost_spawn")
+            TaxueFx(player, "statue_transition_2")                           --犀牛刷宝箱扒拉特效
+            TaxueFx(player, "statue_transition")                             --犀牛嗖~霹雳特效
+            local chest = SpawnPrefab("mini_pandoraschest")
+            AddChestItems(chest)                                             --添加物品
+            chest.Transform:SetPosition(target.Transform:GetWorldPosition()) --生成箱中箱
 
             player.has_ticket = false
             TaXueSay("哇塞！")
@@ -1328,6 +1327,32 @@ function TaxuePatch.TaxueOnKilled(player, target)
             -- print("双倍掉落")
         end
         ----------------------------------------------------
+        --处理火鸡
+        if target and target.prefab == "perd" then
+            if math.random() < player.perd_tail_feather_chance then
+                listAdd(dorpList, "perd_essence")
+            end
+            --处理冠羽剑掉落以及升级
+            local hand_item = player.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+            if hand_item and hand_item.prefab == "perd_sword" then
+                --处理掉落
+                listAdd(dorpList, "perd_feather", 0.1, true)
+                listAdd(dorpList, "golden_perd_beak", 0.05, true)
+                listAdd(dorpList, "golden_drumstick", 0.05, true)
+                --处理升级
+                if hand_item.level < 100 then
+                    local penetration_num = 0.033 / 100 --破甲
+                    local damage_num = math.random() * 0.3
+                    hand_item.level = hand_item.level + 0.1
+                    hand_item.damage = hand_item.damage + damage_num
+                    hand_item.armor_penetration = hand_item.armor_penetration + penetration_num
+                    TaxuePatch.ShowBanner("perd_sword", "冠羽剑: 攻击力+%s, 等级+%.1f", TaxuePatch.FormatNumber(damage_num), 0.1)
+                    if hand_item.components.finiteuses:GetPercent() > 0 then
+                        hand_item.components.weapon:SetDamage(hand_item.damage) --实时更新攻击力
+                    end
+                end
+            end
+        end
         if NotSmall then
             --#region 处理黄金戒指
             if player.golden > 0 and math.random() <= player.golden then
@@ -1768,9 +1793,10 @@ end
 
 ---一键入箱方法
 ---@param inst entityPrefab 箱子
----@param items Item[] 物品
+---@param floor_intochest boolean 包括地面物品
+---@param items Item[]? 物品
 ---@return boolean has
-function TaxuePatch.IntoChest(inst, items)
+function TaxuePatch.IntoChest(inst, floor_intochest, items)
     local container = inst.components.container
     if not container then return false end
     local itemList = {}
@@ -1810,26 +1836,42 @@ function TaxuePatch.IntoChest(inst, items)
         end
         return result
     end
-    local has
-    for i, item in pairs(items) do
+    local function insertItem(item)
+        local has, itemleft = false, true
         if itemList[item.prefab] and testFn(item) and container:CanTakeItemInSlot(item) then
             local itemPos = Vector3(TheSim:GetScreenPos(item.Transform:GetWorldPosition()))
             if not container:IsFull() then
                 container:GiveItem(get(item), nil, itemPos)
-                items[i] = nil
                 has = true
+                itemleft = false
             elseif container.acceptsstacks and item.components.stackable then
                 for slot, itemInChest in pairs(container.slots) do
                     if itemInChest and itemInChest.prefab == item.prefab and not itemInChest.components.stackable:IsFull() then
+                        itemInChest.components.stackable:Put(get(item), itemPos)
                         has = true
-                        if not itemInChest.components.stackable:Put(get(item), itemPos) then break end
                     end
                 end
-                if item and item:IsValid() and item.prevcontainer and not item.components.inventoryitem.owner then
-                    item.prevcontainer:GiveItem(item, item.prevslot)
+                if item and item:IsValid() then
+                    if item.prevcontainer and not item.components.inventoryitem.owner then
+                        item.prevcontainer:GiveItem(item, item.prevslot)
+                    end
                 else
-                    items[i] = nil
+                    itemleft = false
                 end
+            end
+            return has, itemleft
+        end
+    end
+    local has
+    for i, item in pairs(items) do
+        local has_, itemleft = insertItem(item)
+        has = has or has_
+        if not itemleft then items[i] = nil end
+    end
+    if floor_intochest or cfg("taxueFix.intoChest.allowGroundItem") then
+        for _, ent in pairs(TaxuePatch.GetNearByEntities(GetPlayer(), 20)) do
+            if ent.components and ent.components.inventoryitem then
+                has = has or insertItem(ent)
             end
         end
     end
@@ -1899,7 +1941,7 @@ function TaxuePatch.TaxueIntoChestKey()
     end
     for _, ent in pairs(TaxuePatch.GetNearByEntities(player, 20)) do
         if ent.components then
-            if ent.components.inventoryitem then
+            if ent.components.inventoryitem and cfg("taxueFix.intoChest.allowGroundItem") then
                 table.insert(items, ent)
             elseif ent.components.container and testChest(ent) then
                 table.insert(chests, ent)
@@ -1907,6 +1949,40 @@ function TaxuePatch.TaxueIntoChestKey()
         end
     end
     for _, chest in pairs(chests) do
-        TaxuePatch.IntoChest(chest, items)
+        TaxuePatch.IntoChest(chest, false, items)
+    end
+end
+
+---@param bannerTag string
+---@param bannerText string
+function TaxuePatch.ShowBanner(bannerTag, bannerText, ...)
+    local showBanner = cfg("displaySetting.showBanner") and TaxuePatch.dyc and TaxuePatch.dyc.bannerSystem
+    local color = cfg("displaySetting.showBanner.bannerColor")
+    local bannerColor = showBanner and TaxuePatch.dyc.RGBAColor(TaxuePatch.RGBAColor(color):Get())
+    bannerText = bannerText:gsub("\n", " ")
+    if showBanner then
+        local Banner
+        local dyc = TaxuePatch.dyc
+        for index, banner in pairs(dyc.bannerSystem.banners) do
+            if banner:HasTag(bannerTag) then
+                Banner = banner
+                break
+            end
+        end
+        if not Banner then
+            local str = bannerText:format(...)
+            Banner = dyc.bannerSystem:ShowMessage(str, 5, bannerColor)
+            Banner:AddTag(bannerTag)
+        end
+        if not Banner.args then Banner.args = {} end
+        for i, arg in pairs({ ... }) do
+            listAdd(Banner.args, i, arg)
+        end
+        Banner:SetText(bannerText:format(unpack(Banner.args)))
+        Banner.bannerTimer = 5
+        Banner:OnUpdate(0)
+    else
+        local str = bannerText:format(...)
+        TaXueSay(str)
     end
 end

@@ -86,6 +86,11 @@ local function GetAutoAmulet(owner)
     end
 end
 
+local repairMaterialMap = {
+    pink_crescent_sword = "pink_core_gem",
+    perd_sword = "red_core_gem"
+}
+
 -- 监听耐久消耗
 local function ListenDurableConsume(inst, ...)
     local owner = inst.components.inventoryitem.owner
@@ -109,17 +114,17 @@ local function ListenFueledChange(inst, data)
     if owner:HasTag("auto_amulet") then
         local weaponPer = TaxuePatch.cfg("autoAmulet.weaponPercent")
         if weaponPer and data.percent < weaponPer then
+            local repairMat = repairMaterialMap[inst.prefab]
             if inst.components.fueled then
                 local fueled = inst.components.fueled
-                local repairMaterial = GetOne(owner, function(item) return fueled:CanAcceptFuelItem(item) end)
+                local repairMaterial = GetOne(owner, repairMat or function (item) return fueled:CanAcceptFuelItem(item) end)
                 if repairMaterial then
                     fueled:TakeFuelItem(repairMaterial)
                     data.percent = fueled:GetPercent()
                     data.fuel = fueled.currentfuel
                 end
             elseif inst.components.finiteuses then
-                local repairMaterial = inst.prefab == "pink_crescent_sword" and "pink_core_gem" or "core_gem"
-                repairMaterial = GetOne(owner, repairMaterial)
+                local repairMaterial = GetOne(owner, repairMat or function (item) return inst.components.trader:CanAccept(item, owner) end)
                 if repairMaterial then
                     inst.components.trader:AcceptGift(owner, repairMaterial)
                     data.percent = inst.components.finiteuses:GetPercent()
@@ -232,7 +237,7 @@ local function onHealthdelta(owner, data)
     end
 end
 
-TheInput:AddKeyDownHandler(TaxuePatch.cfg("autoAmulet.autoHealKeybind"), function()
+TheInput:AddKeyDownHandler(TaxuePatch.cfg("autoAmulet.autoHealKeybind"), function ()
     if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
     enableHeal = not enableHeal
     TaXueSay(enableHeal and "自动喝血启用" or "自动喝血禁用")
@@ -378,7 +383,7 @@ local function fn()
     MakeInventoryFloatable(inst, "orangeamulet_water", "orangeamulet")
 
     inst:AddComponent("inspectable")
-    inst.components.inspectable.description = function(inst, viewer)
+    inst.components.inspectable.description = function (inst, viewer)
         local desc = GetDescription(string.upper(viewer.prefab), inst, inst.components.inspectable:GetStatus(viewer))
         if inst.level < 1 then
             desc = desc .. "\t可使用永动机核心升级,当前等级: " .. inst.level

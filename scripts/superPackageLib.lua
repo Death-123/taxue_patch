@@ -214,19 +214,19 @@ end
 ---@param showFx? boolean
 ---@param testFn? fun(ent:entityPrefab):boolean
 function superPackageLib.AddItemToSuperPackage(package, entity, showFx, testFn)
-    if not entity or testFn and not testFn(entity) then return end
+    if not entity or testFn and not testFn(entity) then return false end
     --特效
     if showFx then SpawnPrefab("small_puff").Transform:SetPosition(entity.Transform:GetWorldPosition()) end
     --fx.Transform:SetScale(0.5,0.5,0.5)
     if not package.isPatched then
         package = superPackageLib.TransformPackage(package)
-        if not package then return end
+        if not package then return false end
     end
 
     local item_list = package.item_list
     if entity.prefab == "super_package" then
         superPackageLib.MergePackage(package, entity)
-        return
+        return true
     end
     if entity:HasTag("loaded_package") and entity.loaded_item_list then
         local loaded_item_list = {}
@@ -235,7 +235,7 @@ function superPackageLib.AddItemToSuperPackage(package, entity, showFx, testFn)
         end
         superPackageLib.AddItemsToSuperPackage(package, loaded_item_list)
         entity:Remove()
-        return
+        return true
     end
     local itemType
     for type, list in pairs(TaxuePatch.ItemTypeMap) do
@@ -275,27 +275,38 @@ function superPackageLib.AddItemToSuperPackage(package, entity, showFx, testFn)
     superPackageLib.processPackageData(package, itemType, entity.prefab, amount, coinValue, data)
 
     entity:Remove()
+    return true
 end
 
 ---将表中物品添加到超级包裹中
 ---@param package package
----@param items table<string, integer>
+---@param items {[string]: integer}
 ---@param showFx? boolean
 ---@param testFn? fun(ent:entityPrefab):boolean
+---@return {[string]: integer} leftItems
 function superPackageLib.AddItemsToSuperPackage(package, items, showFx, testFn)
+    local blackList = { "houndfire" }
+    for _, name in pairs(blackList) do
+        items[name] = nil
+    end
+    local leftItems = {}
     for name, amount in pairs(items) do
         local prefab = SpawnPrefab(name)
+        local added = false
         if prefab and prefab.components.stackable then
             prefab.components.stackable.stacksize = amount
-            superPackageLib.AddItemToSuperPackage(package, prefab, showFx, testFn)
-        elseif prefab then
-            prefab:Remove()
+            added = superPackageLib.AddItemToSuperPackage(package, prefab, showFx, testFn)
+        elseif prefab and (not testFn or testFn(prefab)) then
+            added = true
             for _ = 1, amount do
                 superPackageLib.AddItemToSuperPackage(package, SpawnPrefab(name), showFx, testFn)
             end
         end
+        prefab:Remove()
+        if not added then leftItems[name] = amount end
     end
     superPackageLib.CheckPackageType(package)
+    return leftItems
 end
 
 ---打包所有实体
@@ -493,7 +504,7 @@ function superPackageLib.OpenTreasures(treasures, isBook)
     local inventory = GetPlayer().components.inventory
     local function getBook()
         local book
-        TaxuePatch.TraversalAllInventory(GetPlayer(), function(container, item, slot)
+        TaxuePatch.TraversalAllInventory(GetPlayer(), function (container, item, slot)
             if item.prefab == "book_treasure_deprotonation" or
                 (item.prefab == "book_treasure_deprotonation_super" and item.time > 0) then
                 book = item
@@ -656,7 +667,7 @@ function superPackageLib.AddTreasuresToPackage(package, treasures, isBook)
         package.components.talker.colour = Vector3(255 / 255, 131 / 255, 250 / 255)
         package.components.talker.offset = Vector3(0, 100, 0)
         package.components.talker:Say(str, 10)
-        package:ListenForEvent("onremove", function() package.components.talker:ShutUp() end)
+        package:ListenForEvent("onremove", function () package.components.talker:ShutUp() end)
     end
 end
 

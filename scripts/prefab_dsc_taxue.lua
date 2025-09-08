@@ -445,14 +445,14 @@ local function getItemInfo(target)
             local charge, maxcharge = target.components.obsidiantool:GetCharge()
             damage = target.damage + target.damage * (charge / maxcharge)
         end
-        Info:Add("伤害:" .. string.format("%6.2f", damage))
+        Info:Add("伤害:" .. formatNumber(damage))
     end
     if target.components and target.components.weapon then
         if target.armor_penetration then
-            Info:Add("护甲穿透:" .. math.floor(target.armor_penetration * 100) .. "%")
+            Info:Add("护甲穿透:" .. formatNumber(target.armor_penetration * 100) .. "%")
         end
         if target.level then
-            Info:Add("等级：" .. target.level)
+            Info:Add("等级：" .. formatNumber(target.level))
         end
         if target.forge_level then
             Info:Add("锻造等级：" .. target.forge_level)
@@ -867,6 +867,7 @@ local function getItemInfo(target)
             equipment_pearl_mussel       = "珍珠精华掉率:%s%%", --珍珠蚌
             equipment_loaded_dice        = "灌铅包裹掉率:%s%%", --灌铅骰子
             equipment_colourful_windmill = "特殊奖励掉率:%s%%", --炫彩风车
+            equipment_perd_tail_feather  = "火鸡精华掉率:%s%%", --火鸡尾羽
         }
         local formatStr = formatStrs[sign]
         if formatStr then

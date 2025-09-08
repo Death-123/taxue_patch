@@ -56,6 +56,7 @@ ItemTypeMap = {
         "golden_ingot",         --金元宝
         "silver_ingot",         --银元宝
         "perd_beak",            --鸡喙
+        "golden_perd_beak",     --鸡喙
     },
     gem = {
         "redgem",                 --红
@@ -81,6 +82,10 @@ ItemTypeMap = {
         "positioning_gem_green",  --
         "positioning_gem_blue",   --
         "positioning_gem_purple", --
+
+        "pink_core_gem",
+        "yellow_core_gem",
+        "red_core_gem",
     },
     equipment = {
         "equipment_unforgettable",      --刻骨铭心
@@ -107,6 +112,7 @@ ItemTypeMap = {
         "equipment_lollipop",           --波板糖
         "equipment_pearl_mussel",       --珍珠蚌
         "equipment_loaded_dice",        --灌铅骰子
+        "equipment_perd_tail_feather",  --火鸡尾羽
     },
     my_ticket = {
         "interest_ticket",              --利息券
@@ -171,7 +177,8 @@ ItemTypeMap = {
     treasure_map = {
         "treasure_map_nomal",
         "treasure_map_advanced",
-        "treasure_map_monster"
+        "treasure_map_monster",
+        "treasure_map_debris", --藏宝图碎片
     },
     --武器类
     weapon1 = {
@@ -270,7 +277,9 @@ ItemTypeMap = {
         "free_essence",          --白嫖精华
         "free_essence_advanced", --高级白嫖精华
         "chest_essence",         --宝箱精华
-        "chest_essence_nomal"    --稀有宝箱精华
+        "chest_essence_nomal",   --稀有宝箱精华
+        "perd_essence",          --火鸡精华
+        "basic_package",         --基础包裹
     },
     special = {
         "perpetual_core",     --永动机核心

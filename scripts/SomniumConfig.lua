@@ -120,7 +120,7 @@ local keybindOptions = {
 }
 
 ---@type ConfigEntry[]
-local cfg = {
+local configs = {
     { -- 启用补丁
         id = "patchEnable",
         name = "启用补丁",
@@ -175,54 +175,59 @@ local cfg = {
         name = "踏雪优化",
         description = "优化踏雪mod部分功能",
         subConfigs = {
-            {
+            {--移除掉落物变灰烬
                 id = "dropAsh",
                 name = "移除掉落物变灰烬",
                 description = "让着火的怪物掉落物不会变成灰烬",
             },
-            {
+            {--物品掉落优化
                 id = "betterDrop",
                 name = "物品掉落优化",
                 description = "掉落物合并,当附近有开启的打包机时,直接进打包机",
                 subConfigs = {
-                    {
+                    {--掉落物自动堆叠
                         id = "stackDrop",
                         name = "掉落物自动堆叠",
                         description = "掉落物会自动堆叠进附近已存在的物品"
                     }
                 }
             },
-            {
+            {--空格收菜修复
                 id = "taxueMoe",
                 name = "空格收菜修复",
                 description = "修复专属镰刀空格收割",
             },
-            {
+            {--难度未初始化修复
                 id = "levelWidgetFix",
                 name = "难度未初始化修复",
                 description = "修复难度未初始化导致的崩溃",
             },
-            {
+            {--增强物品排序
                 id = "itemSort",
                 name = "增强物品排序",
                 description = "使物品排序可以排序掉包券,定向刷新券等",
             },
-            {
+            {--增强一键入箱
                 id = "intoChest",
                 name = "增强一键入箱",
                 description = "使一键入箱可以将周围地上的物品入箱",
                 subConfigs = {
-                    {
+                    {--允许地面物品
+                        id = "allowGroundItem",
+                        name = "允许地面物品",
+                        description = "使一键入箱可以兼容地面物品",
+                    },
+                    {--允许所有容器
                         id = "allowOtherChest",
                         name = "允许所有容器",
                         description = "使一键入箱可以兼容所有容器",
                     },
-                    {
+                    {--禁止原版木箱
                         id = "disableVanillaChest",
                         name = "禁止原版木箱",
                         description = "当允许所有容器开启时,使一键入箱禁止入箱原版木箱",
                     },
-                    {
+                    {--允许便携地窖
                         id = "allowPortablecellar",
                         name = "允许便携地窖",
                         description = "当允许所有容器关闭时,使一键入箱可以入箱便携地窖",
@@ -884,13 +889,13 @@ local cfg = {
 ---@class Config
 ---@overload fun(modname:string):Config
 ---@field modname string
----@field cfg ConfigEntry[]
+---@field configs ConfigEntry[]
 ---@field dataSave DataSave
 local Config = Class(
     function (self, modname)
         ---@cast self Config
         self.modname = modname
-        self.cfg = cfg
+        self.configs = configs
         self.dataSave = DataSave(self.modname, { name = self.modname .. "_config" })
         self:Init()
         self:Load()
@@ -922,7 +927,8 @@ function Config:Init()
         for _, option in pairs(configuration_options) do
             if option.saved ~= nil then
                 local function set(configEntry)
-                    if configEntry.id == option.name then
+                    if configEntry.id == option.name or configEntry:GetFullId() == option.name then
+                        if option.name == configEntry.id then option.name = configEntry:GetFullId() end
                         if option.saved == option.default then
                             for _, value in pairs(KnownModIndex:GetModInfo(self.modname).configuration_options) do
                                 if value.name == option.name then
@@ -1005,7 +1011,7 @@ function Config:Get(key)
         end
     else
         local keys = key:split(".")
-        local data = self.cfg or self
+        local data = self.configs or self
         local found
         for _, key in pairs(keys) do
             found = nil
@@ -1080,8 +1086,8 @@ function Config:GetSelectdValues(key)
 end
 
 ---设置配置值
----@param key string|any 配置项的键名或者直接传入值（当只有两个参数时）
----@param value? any 配置项的值（当有三个参数时）
+---@param key string|any 配置项的键名或者直接传入值
+---@param value? any 配置项的值
 function Config:Set(key, value)
     local configEntry = value and self:Get(key) or self
     configEntry.value = value or key
@@ -1096,8 +1102,9 @@ function Config:GetType(key)
 end
 
 ---获取配置选项
+---@private
 ---@param configEntry ConfigEntry 配置项对象
----@return option[]? options 配置选项列表
+---@return option[] options 配置选项列表
 function Config.getOptions(configEntry)
     local options
     if configEntry:IsForceDisabled() then
@@ -1139,6 +1146,7 @@ function Config:GetOptions(key)
 end
 
 ---获取默认值
+---@private
 ---@param configEntry ConfigEntry 配置项对象
 ---@return any default 默认值
 function Config.getDefault(configEntry)
@@ -1189,7 +1197,7 @@ end
 ---@param parent? ConfigEntry 父级配置项
 ---@return boolean? stop 是否提前终止遍历
 function Config:TraversalAllConfigEntry(fn, ConfigEntrys, parent)
-    ConfigEntrys = ConfigEntrys or self.cfg
+    ConfigEntrys = ConfigEntrys or self.configs
     for _, ConfigEntry in pairs(ConfigEntrys) do
         if fn(ConfigEntry, parent) then return true end
         if ConfigEntry.subConfigs then
@@ -1203,7 +1211,7 @@ end
 ---@return table entry 原版格式的配置项
 function Config.GetVanillaEntry(ConfigEntry)
     local entry = {}
-    entry.name = ConfigEntry.id
+    entry.name = ConfigEntry:GetFullId()
     entry.label = ConfigEntry.name
     entry.hover = ConfigEntry.description
     entry.options = {}

@@ -1,5 +1,5 @@
 name = "    踏雪补丁"
-version = "4.0.5.6"
+version = "4.1.0.1"
 description = "踏雪mod补丁\n" .. version
 author = "Death"
 forumthread = ""

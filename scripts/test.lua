@@ -41,3 +41,45 @@
 -- -- GetPlayer().super_fortune_num = 100
 -- target.components.health:Kill()
 -- TaxuePatch.TaxueOnKilled(GetPlayer(), target)
+
+-- local intmax = 2 ^ 32
+-- local function hash(str)
+--     local hash = 5381
+--     for i = 1, #str do
+--         hash = (hash * 33 + str:byte(i)) % intmax
+--     end
+--     print(#str)
+--     return hash
+-- end
+-- local t = os.time()
+-- local file, error = io.open("../mods/Taxue1.00/scripts/game_changed_taxue.lua", "r")
+-- if file then
+--     local line = file:read("*a")
+--     print(hash(line))
+--     file:close()
+-- end
+-- print(os.time() - t)
+
+function d_decodedata(path, skipread, suffix, datacb)
+    print("DECODING", path)
+    suffix = suffix or "_decoded"
+    TheSim:GetPersistentString(path, function (load_success, str)
+        if load_success then
+            print("LOADED...")
+            if not skipread then
+                local success, savedata = RunInSandbox(str)
+                if datacb ~= nil then
+                    datacb(savedata)
+                end
+                str = DataDumper(savedata, nil, false)
+            end
+            TheSim:SetPersistentString(path .. suffix, str, false, function ()
+                print("SAVED!")
+            end)
+        else
+            print("ERROR LOADING FILE! (wrong path?)")
+        end
+    end)
+end
+
+d_decodedata(KnownModIndex:GetModConfigurationPath() .. "modconfiguration_taxue_patch")

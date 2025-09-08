@@ -1,11 +1,12 @@
 GLOBAL.setmetatable(env, { __index = function (t, k) return GLOBAL.rawget(GLOBAL, k) end })
 local ModConfigurationScreen = require("screens/modconfigurationscreen")
 local Text = require "widgets/text"
+GLOBAL.AddClassPostConstruct = AddClassPostConstruct
 
 GLOBAL.TaxuePatch = {
     id = "TaxuePatch",
     name = "踏雪补丁",
-    cfg = {},
+    env = env
 }
 
 local patchVersionStr = modinfo.version
@@ -28,45 +29,22 @@ for _, name in pairs(KnownModIndex:GetModNames()) do
 end
 local taxuePath = "../mods/" .. taxueName .. "/"
 TaxuePatch.modRoot = modRoot
+TaxuePatch.taxuePath = taxuePath
 PrefabFiles = {}
 
----@param modulename string
----@param env table
----@return table
-local function loadLua(modulename, env)
-    print("modimport: " .. TaxuePatch.modRoot .. modulename)
-    local result = kleiloadlua(TaxuePatch.modRoot .. modulename)
-    if result == nil then
-        print("Error in modimport: " .. modulename .. " not found!")
-    elseif type(result) == "string" then
-        print("Error in modimport: " .. TaxuePatch.name .. " importing " .. modulename .. "!\n" .. result)
-    else
-        setfenv(result, env)
-        return result()
-    end
-end
-local import = function (name)
-    return loadLua("scripts/" .. name .. ".lua", env)
-end
-TaxuePatch.loadLua = loadLua
-TaxuePatch.import = import
-
-import("patchUtil")
-TaxuePatch.dataSaver = import("dataSave")(modname)
-local config = import("SomniumConfig")(modname)
+require("patchUtil")
+require("publicList")
+TaxuePatch.dataSaver       = require("dataSave")(modname)
+TaxuePatch.config          = require("SomniumConfig")(modname)
+TaxuePatch.cfg             = function (key) return TaxuePatch.config:GetValue(key) end
 -- local json = require "json"
-require "publicList"
-TaxuePatch.patchlib = require "patchlib"
+TaxuePatch.patchlib        = require "patchlib"
 TaxuePatch.superPackageLib = require "superPackageLib"
-TaxuePatch.SomniumUtil = require "widgets/SomniumUtil"
-TaxuePatch.RGBAColor = TaxuePatch.SomniumUtil.RGBAColor
-TaxuePatch.SomniumButton = require "widgets/SomniumButton"
-TaxuePatch.ControlPanel = require "screens/controlPanel"
-TaxuePatch.config = config
-TaxuePatch.cfg = function (key)
-    return TaxuePatch.config:GetValue(key)
-end
-local cfg = TaxuePatch.cfg
+TaxuePatch.SomniumUtil     = require "widgets/SomniumUtil"
+TaxuePatch.RGBAColor       = TaxuePatch.SomniumUtil.RGBAColor
+TaxuePatch.SomniumButton   = require "widgets/SomniumButton"
+TaxuePatch.ControlPanel    = require "screens/controlPanel"
+local cfg                  = TaxuePatch.cfg
 function mprint(...)
     local msg, argnum = "", select("#", ...)
     for i = 1, argnum do
@@ -93,14 +71,14 @@ TaxuePatch.reload = function ()
     package.loaded["command"] = nil
     collectgarbage()
 
-    import("patchlib")
-    local command = import "command"
+    require("patchlib")
+    local command = require "command"
     for name, value in pairs(command) do
         GLOBAL[name] = value
     end
 end
 
-local command = import "command"
+local command = require "command"
 for name, value in pairs(command) do
     GLOBAL[name] = value
 end
@@ -147,37 +125,40 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "28860b63d48d067568767c986ac91b3e", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "ce5bed4b9d0c4a361ab698fbfa24d88a", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
-    -- ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "91b746a2f2a561202eb33f876bbad500", lines = {} },
+    ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "5bdb6b4fe02b55d74439a3c72a5469ef", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "8e64ea9c309141fbdc1efd4e9013df7b", lines = {} },
-    ["scripts/public_method_taxue.lua"] = { md5 = "8737317196a94d704ad8351dcaf697bd", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "2256df86b6b23355ca3a62ed39f9bc5e", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "28bce0a5b4d165a8c8b75876d992f757", lines = {} },
     --提高石板路优先级
     ["modworldgenmain.lua"] = { md5 = nil, lines = {} },
     --种子机修复
     ["scripts/prefabs/taxue_seeds_machine.lua"] = { md5 = "140bd4cce65d676b54a726827c8f17d3", lines = {} },
+    ["scripts/prefabs/taxue_golden_cat.lua"] = { md5 = "ddf0466292e75fd89c8e9636ca02e997", lines = {} },
     --鱼缸卡顿优化
     ["scripts/prefabs/taxue_fish_tank.lua"] = { md5 = "4512a2847f757c7a2355f3f620a286a8", lines = {} },
     --定位猫猫
     ["scripts/prefabs/taxue_cat_floorlamp.lua"] = { md5 = "6e4ed7b4a09add4bf24d85eda97a3c14", lines = {} },
-    -- ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "db41fa7eba267504ec68e578a3c31bb1", lines = {} },
-    -- ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "4e3155d658d26dc07183d50b0f0a1ce8", lines = {} },
+    ["scripts/prefabs/taxue_super_package_machine.lua"] = { md5 = "03aad65b63fb41400a253b2cdbd67eec", lines = {} },
+    ["scripts/prefabs/taxue_bundle.lua"] = { md5 = "5d5ba84f81e6dae9845d9b78ed02bdda", lines = {} },
     --优化收获书
-    ["scripts/prefabs/taxue_book.lua"] = { md5 = "0d351683a9ebe047a86f9e7f07d995f8", lines = {} },
+    ["scripts/prefabs/taxue_book.lua"] = { md5 = "7f867032b80b18147d4b590a4dcd2996", lines = {} },
     --箱子可以被锤
-    -- ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "55fd6082fe93360355e9face67115bec", lines = {} },
+    ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "a29ef00ba652a835ccdd79f7904bf1bf", lines = {} },
+    ["scripts/prefabs/taxue_chest.lua"] = { md5 = "56aeb596b3d8d2387a15b7b463dc28cb", lines = {} },
     --宝石保存,夜明珠地上发光
-    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "7b79cc50b65ad54ade29d4879b83a129", lines = {} },
-    --打包机防破坏,法杖增强
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d6e2b196b934b180c2cea0e9af3bac90", lines = {} },
+    ["scripts/prefabs/taxue_weapon.lua"] = { md5 = "1f4cb22ed04813ed100496e39634b4ea", lines = {} },
+    --法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "ce04691460a4f4899f38696f68964454", lines = {} },
     --花盆碰撞
     ["scripts/prefabs/taxue_flowerpot.lua"] = { md5 = "744ce77c03038276f59a48add2d5f9db", lines = {} },
     --梅运券显示
-    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "fdd70694087974bc9f1fe07ca3255cb9", lines = {} },
+    ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "3f5639a432cef63784fd5e7c755e6fd4", lines = {} },
     --金钱就是力量
-    ["scripts/prefabs/taxue.lua"] = { md5 = "865c2aea6628e0839b1dcbf835d8f6c5", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "6a9e9bd8fec9f33ac08c3af83feab3a0", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -189,7 +170,7 @@ local PATCHS = {
 local playerSavedDataItems = {}
 TaxuePatch.playerSavedDataItems = playerSavedDataItems
 
-local ModPatchLib = import("ModPatchLib")({
+local ModPatchLib = require("ModPatchLib")({
     enable = taxueEnabled,
     print = mprint,
     originPath = modRoot,
@@ -200,15 +181,18 @@ local ModPatchLib = import("ModPatchLib")({
     md5Bytes = cfg("fileCheck.md5Bytes"),
     cfgCheck = cfg,
     cfgDisable = function (key)
-        config:ForceDisable(key)
+        TaxuePatch.config:ForceDisable(key)
         mprint("force disable config " .. key)
     end,
     PATCHS = PATCHS
 })
 TaxuePatch.ModPatchLib = ModPatchLib
 
-local function addPatchFn(cfgkey, fn)
-    ModPatchLib:addPatchFn(cfgkey, fn)
+---@param path string|string[]|function?
+---@param cfgkey string?
+---@param fn function?
+local function addPatchFn(path, cfgkey, fn)
+    ModPatchLib:addPatchFn(path, cfgkey, fn)
 end
 
 local function addPatch(path, cfgkey, line)
@@ -217,6 +201,16 @@ end
 
 local function addPatchs(path, cfgkey, lines)
     ModPatchLib:addPatchs(path, cfgkey, lines)
+end
+
+local function replaceFn(cfgkey, old, new)
+    return function (...)
+        if cfg(cfgkey) then
+            return new(...)
+        else
+            return old(...)
+        end
+    end
 end
 
 local oldLookAtFn = ACTIONS.LOOKAT.fn
@@ -228,7 +222,7 @@ ACTIONS.LOOKAT.fn = function (act)
 end
 
 --#region 内存清理
-addPatchFn("ingameGC", function ()
+addPatchFn(nil, "ingameGC", function ()
     AddPlayerPostInit(function (player)
         player:DoPeriodicTask(cfg("ingameGC") * 60, function ()
             if collectgarbage("count") > 200000 then
@@ -243,7 +237,7 @@ end)
 --#region 踏雪优化
 
 --移除掉落物变灰烬
-addPatchFn("taxueFix.dropAsh", function ()
+addPatchFn(nil, "taxueFix.dropAsh", function ()
     local special_cooked_prefabs = {
         ["trunk_summer"] = "trunk_cooked",
         ["trunk_winter"] = "trunk_cooked",
@@ -275,16 +269,17 @@ addPatchFn("taxueFix.dropAsh", function ()
     end)
 end)
 --掉落优化
-addPatchFn("taxueFix.betterDrop", function ()
+addPatchFn("scripts/public_method_taxue.lua", "taxueFix.betterDrop", function ()
     AddGamePostInit(function ()
-        GLOBAL.TaxueOnKilled = TaxuePatch.TaxueOnKilled
+        local old = GLOBAL.TaxueOnKilled
+        GLOBAL.TaxueOnKilled = replaceFn("taxueFix.betterDrop", old, TaxuePatch.TaxueOnKilled)
     end)
 
     AddComponentPostInit("lootdropper", function (inst)
-        local oldDropLoot = inst.DropLoot
-        inst.DropLoot = function (self, pt, loots)
+        local old = inst.DropLoot
+        local new = function (self, pt, loots)
             if loots then
-                oldDropLoot(self, pt, loots)
+                old(self, pt, loots)
             else
                 local prefabs = self:GenerateLoot()
                 self:CheckBurnable(prefabs)
@@ -299,31 +294,33 @@ addPatchFn("taxueFix.betterDrop", function ()
                 TaxuePatch.StackDrops(target, dorpList, package)
             end
         end
+        inst.DropLoot = replaceFn("taxueFix.betterDrop", old, new)
     end)
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3118, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3130, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
 --按键排序
 addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
     index = 251,
-    endIndex = 357,
-    content = [[                    TaxuePatch.TaxueSortContainer(GetPlayer())]]
+    type = "add",
+    content = [[                    if TaxuePatch.cfg("taxueFix.itemSort") then TaxuePatch.TaxueSortContainer(GetPlayer()) return end]]
 })
 --增强一键入箱
 addPatchs("scripts/press_key_taxue.lua", "taxueFix.intoChest", {
-    { index = 176, endIndex = 198, content = [[TaxuePatch.TaxueIntoChestKey()]] },
+    { index = 176, type = "add", content = [[if TaxuePatch.cfg("taxueFix.intoChest") then TaxuePatch.TaxueIntoChestKey() return end]] },
 })
-addPatchFn("taxueFix.intoChest", function ()
+addPatchFn("scripts/press_key_taxue.lua", "taxueFix.intoChest", function ()
     AddGamePostInit(function ()
-        GLOBAL.TaxueIntoChest = TaxuePatch.IntoChest
+        local old = GLOBAL.TaxueIntoChest
+        GLOBAL.TaxueIntoChest = replaceFn("taxueFix.intoChest", old, TaxuePatch.IntoChest)
     end)
 end)
 --种子机修复
-addPatchFn("taxueFix.seedsMachineFix", function ()
+addPatchFn("scripts/prefabs/taxue_seeds_machine.lua", "taxueFix.seedsMachineFix", function ()
     local function pressButton(inst)
         local slots = inst.components.container.slots
         local has = false
@@ -358,13 +355,15 @@ addPatchFn("taxueFix.seedsMachineFix", function ()
         end
     end
     AddPrefabPostInit("taxue_seeds_machine", function (inst)
-        inst.components.container.widgetbuttoninfo.fn = pressButton
+        local old = inst.components.container.widgetbuttoninfo.fn
+        inst.components.container.widgetbuttoninfo.fn = replaceFn("taxueFix.seedsMachineFix", old, pressButton)
     end)
 end)
 --黄金宝箱优化
-addPatchFn("taxueFix.goldenChest", function ()
+addPatchFn("scripts/prefabs/taxue_chest.lua", "taxueFix.goldenChest", function ()
     AddPrefabPostInit("taxue_goldenchest", function (inst)
-        inst.components.container.widgetbuttoninfo.fn = TaxuePatch.GoldenChestButton
+        local old = inst.components.container.widgetbuttoninfo.fn
+        inst.components.container.widgetbuttoninfo.fn = replaceFn("taxueFix.goldenChest", old, TaxuePatch.GoldenChestButton)
     end)
 end)
 --鱼缸卡顿优化
@@ -392,25 +391,26 @@ addPatchs("scripts/prefabs/taxue_fish_tank.lua", "taxueFix.fishTankFix", {
 })
 --优化收获书
 addPatchs("scripts/prefabs/taxue_book.lua", "taxueFix.harvestBookPatch", {
-    { index = 21, type = "add",                                                                                       content = [[                local itemList = {}]] },
-    { index = 36, content = [[                            TaxuePatch.MultHarvest(v.components.crop, itemList, true)]] },
-    { index = 49, type = "add",                                                                                       content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
+    { index = 21, type = "add",                                                                                                                                                                                content = [[                local itemList = {}]] },
+    { index = 36, content = [[                            if TaxuePatch.cfg("taxueFix.harvestBookPatch") then TaxuePatch.MultHarvest(v.components.crop, itemList, true) else v.components.crop:Harvest(GetPlayer()) end]] },
+    { index = 49, type = "add",                                                                                                                                                                                content = [[                TaxuePatch.GiveItems(reader, itemList)]] },
 })
 --自动保存CD
-addPatchFn("taxueFix.autoSavePatch", function ()
+addPatchFn(nil, "taxueFix.autoSavePatch", function ()
     AddComponentPostInit("autosaver", function (comp, inst)
         local doSave = comp.DoSave
-        comp.DoSave = function (self)
+        local new = function (self)
             local cd = TaxuePatch.cfg("taxueFix.autoSavePatch")
             if cd and (not self.lastSaveTime or GetTime() - self.lastSaveTime > cd * 60) then
                 self.lastSaveTime = GetTime()
                 doSave(self)
             end
         end
+        comp.DoSave = replaceFn("taxueFix.autoSavePatch", doSave, new)
     end)
 end)
 --修复哈姆大蛇初始化崩溃
-addPatchFn("taxueFix.fixPugalisk", function ()
+addPatchFn(nil, "taxueFix.fixPugalisk", function ()
     AddPrefabPostInit("pugalisk", function (inst)
         local oldOnLoadPostPass = inst.OnLoadPostPass
         inst.OnLoadPostPass = function (inst, newents, data)
@@ -421,7 +421,7 @@ addPatchFn("taxueFix.fixPugalisk", function ()
 end)
 --每天减战斗力可以用钱抵消
 addPatch("scripts/prefabs/taxue.lua", "taxueFix.moneyIsPower", {
-    index = 232,
+    index = 233,
     type = "add",
     content = [[
         local min = TaxuePatch.cfg("taxueFix.moneyIsPower.minMoney")
@@ -456,17 +456,20 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
         grounds[#grounds] = cobbleroad
     ]]
 })
---修光源阻止放置建筑
+--修添加掉落崩溃
 addPatchFn(function ()
-    AddPrefabPostInit("taxue_light_holder", function (inst)
-        inst:AddTag("NOBLOCK")
-        inst:AddTag("FX")
+    AddPrefabPostInitAny(function (inst)
+        if inst.taxue_loot then
+            if not inst.components.lootdropper then
+                inst.taxue_loot = function () end
+            end
+        end
     end)
 end)
 --#endregion
 
 --#region 猫猫定位
-addPatchFn("teleportCat", function ()
+addPatchFn("scripts/prefabs/taxue_cat_floorlamp.lua", "teleportCat", function ()
     AddPrefabPostInit("taxue_cat_floorlamp", function (inst)
         inst:ListenForEvent("onLookAt", function (inst, data)
             if data.force then
@@ -476,7 +479,7 @@ addPatchFn("teleportCat", function ()
         end)
     end)
 end)
-addPatchFn("teleportCat.mapTeleport", function ()
+addPatchFn(nil, "teleportCat.mapTeleport", function ()
     AddClassPostConstruct("screens/mapscreen", function (MapScreen)
         local _oldOnControl = MapScreen.OnControl
         function MapScreen:OnControl(control, down)
@@ -644,10 +647,14 @@ addPatchs("scripts/prefabs/taxue_staff.lua", "oneClickUse.blueStaff", {
 -- })
 
 --点怪成金可以点召唤书
-addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
-    index = 780,
-    endIndex = 803,
-    content = [[
+addPatchFn("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", function ()
+    AddPrefabPostInit("book_touch_golden", function (inst)
+        local old = inst.components.book.onread
+        local new = function (book, reader)
+            local has = false
+            local num = book.golden_num
+            local pos = Vector3(book.Transform:GetWorldPosition())
+            local ents = TheSim:FindEntities(pos.x, pos.y, pos.z, 30, nil, { "INLIMBO", "NOCLICK", "catchable", "fire" })
             local goldenMap = {
                 bunnyman = "golden_bunnyman",
                 book_bunnyman = "golden_bunnyman",
@@ -658,39 +665,48 @@ addPatch("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", {
                 book_rocky = "golden_rocky",
                 rocky = "golden_rocky",
             }
-            for __, v in pairs(ents) do
-                if v and goldenMap[v.prefab] then
+            for __, ent in pairs(ents) do
+                if ent and goldenMap[ent.prefab] then
                     has = true
-                    local golden_monster = goldenMap[v.prefab]
-                    if v.components.health then
-                        v.components.lootdropper:SetLoot()
-                        v.components.health:Kill()	--先击杀保证猪人房能再次刷猪
+                    local golden_monster = goldenMap[ent.prefab]
+                    if ent.components.health then
+                        ent.components.lootdropper:SetLoot()
+                        ent.components.health:Kill()                                                      --先击杀保证猪人房能再次刷猪
                     end
-                    SpawnPrefab("collapse_small").Transform:SetPosition(v.Transform:GetWorldPosition())  -- 生成摧毁动画并设坐标
-		            SpawnPrefab("lightning").Transform:SetPosition(v.Transform:GetWorldPosition())  -- 生成闪电动画并设坐标
+                    SpawnPrefab("collapse_small").Transform:SetPosition(ent.Transform:GetWorldPosition()) -- 生成摧毁动画并设坐标
+                    SpawnPrefab("lightning").Transform:SetPosition(ent.Transform:GetWorldPosition())      -- 生成闪电动画并设坐标
                     local amount = 1
-                    if v.components.finiteuses then
-                        local uses = v.components.finiteuses.current
+                    if ent.components.finiteuses then
+                        local uses = ent.components.finiteuses.current
                         if uses > num then
-                            v.components.finiteuses.current = uses - num
+                            ent.components.finiteuses.current = uses - num
                             amount = num
                         else
-                            v:Remove()
+                            ent:Remove()
                             amount = uses
                         end
                     else
-                        v:Remove()
+                        ent:Remove()
                     end
                     for _ = 1, amount do
                         local newGoldenMonster = SpawnPrefab(golden_monster)
-                        newGoldenMonster.Transform:SetPosition(v.Transform:GetWorldPosition())
+                        newGoldenMonster.Transform:SetPosition(ent.Transform:GetWorldPosition())
                     end
                     num = num - amount
-                    if num == 0 then break end
-            ]]
-})
+                    if num <= 0 then break end
+                end
+            end
+            if has then
+                GetPlayer().components.talker:Say("成金吧！")
+            else
+                GetPlayer().components.talker:Say("周围没有合适的生物！")
+            end
+        end
+        inst.components.book.onread = replaceFn("oneClickUse.goldBook", old, new)
+    end)
+end)
 --一键水晶煤球
-addPatchFn("oneClickUse.crystalBall", function ()
+addPatchFn({ "scripts/prefabs/taxue_other_items.lua", "scripts/prefabs/taxue_golden_cat.lua" }, "oneClickUse.crystalBall", function ()
     AddPrefabPostInit("crystal_ball_taxue", function (_inst)
         _inst:AddComponent("useableitem")
         _inst.components.useableitem:SetCanInteractFn(function (inst) return GetPlayer().bank_value > 0.01 and inst.lv < 10 end)
@@ -751,7 +767,7 @@ end)
 --#region 梅运券修改
 
 playerSavedDataItems.fortune_day = true
-addPatchFn("fortunePatch.usePatch", function ()
+addPatchFn("scripts/prefabs/taxue_other_items.lua", "fortunePatch.usePatch", function ()
     AddPrefabPostInit("taxue", function (inst)
         local function daycomplete(inst, data)
             if TUNING.FUCK_DAY == true then
@@ -767,19 +783,19 @@ addPatchFn("fortunePatch.usePatch", function ()
         inst:ListenForEvent("daycomplete", daycomplete, GetWorld())
     end)
     AddPrefabPostInit("fortune_ticket", function (inst)
-        inst.components.book:SetOnReadFn(function (inst, reader)
-            local amount = inst.components.stackable.stacksize
+        inst.components.book:SetOnReadFn(function (inst_, reader)
+            local amount = inst_.components.stackable.stacksize
             reader.fortune_day = reader.fortune_day and reader.fortune_day + amount or amount
             TaXueSay("已装载梅运券: " .. amount)
-            inst:Remove()
+            inst_:Remove()
             return true
         end)
     end)
     AddPrefabPostInit("fortune_change_ticket", function (inst)
         local onread = inst.components.book.onread
-        inst.components.book:SetOnReadFn(function (inst, reader)
-            if inst.fortune_day and inst.fortune_day > 0 then inst.fortune_day = inst.fortune_day - 1 end
-            return onread(inst, reader)
+        inst.components.book:SetOnReadFn(function (inst_, reader)
+            if inst_.fortune_day and inst_.fortune_day > 0 then inst_.fortune_day = inst_.fortune_day - 1 end
+            return onread(inst_, reader)
         end)
     end)
 end)
@@ -793,7 +809,7 @@ addPatchs("scripts/prefabs/taxue_other_items.lua", "fortunePatch.showNum", {
 --#region 物品增强
 
 --箱子可以被锤
-addPatchFn("buffThings.chestCanHammer", function ()
+addPatchFn("scripts/prefabs/taxue_locked_chest.lua", "buffThings.chestCanHammer", function ()
     local miniChests = {
         "mini_pandoraschest",
         "mini_pandoraschest_advanced",
@@ -812,52 +828,9 @@ addPatchFn("buffThings.chestCanHammer", function ()
         end)
     end
 end)
---打包机防破坏
---[[ addPatchFn("buffThings.packageMachineCantHammer", function()
-    local items = {
-        super_package_machine = true
-    }
-    AddPrefabPostInit("golden_staff", function(inst)
-        local oldspelltest = inst.components.spellcaster.spelltest
-        inst.components.spellcaster.spelltest = function(inst, caster, target)
-            if target and items[target.prefab] then
-                return true
-            else
-                return oldspelltest(inst, caster, target)
-            end
-        end
-        local oldsspell = inst.components.spellcaster.spell
-        inst.components.spellcaster.spell = function(inst, target)
-            if items[target.prefab] then
-                if target.components.container then
-                    target.components.container:Close()
-                    target.components.container:DropEverything()
-                end
-                target.components.lootdropper:DropLoot()
-                SpawnPrefab("collapse_small").Transform:SetPosition(target.Transform:GetWorldPosition())
-                target.SoundEmitter:PlaySound("dontstarve/common/destroy_metal")
-                target:Remove()
-
-                inst.SoundEmitter:PlaySound("dontstarve/common/gem_shatter")
-                if inst.components.stackable then
-                    inst.components.stackable:Get(1):Remove()
-                else
-                    inst:Remove()
-                end
-            else
-                oldsspell(inst, target)
-            end
-        end
-    end)
-    for name, _ in pairs(items) do
-        AddPrefabPostInit(name, function(inst)
-            inst:RemoveComponent("workable")
-        end)
-    end
-end) ]]
 
 --夜明珠扔地上发光
-addPatchFn("buffThings.lightPearlBuff", function ()
+addPatchFn(nil, "buffThings.lightPearlBuff", function ()
     local lightPearls = {
         "equipment_light_pearl",
         "equipment_light_pearl_re",
@@ -873,19 +846,21 @@ addPatchFn("buffThings.lightPearlBuff", function ()
 end)
 --禁止宝石自动保存
 addPatchs("scripts/prefabs/taxue_equipment.lua", "buffThings.disableGemSave", {
-    { index = 348, type = "override" },
+    { index = 357, type = "override" },
 })
 --售货亭修改
-addPatchFn("buffThings.sellPavilion", function ()
+addPatchFn({ "scripts/prefabs/taxue_sell_pavilion.lua", "scripts/prefabs/taxue_portable_sell_pavilion.lua" }, "buffThings.sellPavilion", function ()
     AddPrefabPostInit("taxue_sell_pavilion", function (inst)
-        inst.components.container.widgetbuttoninfo.fn = TaxuePatch.SellPavilionSellItems
+        local old = inst.components.container.widgetbuttoninfo.fn
+        inst.components.container.widgetbuttoninfo.fn = replaceFn("buffThings.sellPavilion", old, TaxuePatch.SellPavilionSellItems)
     end)
     AddPrefabPostInit("taxue_portable_sell_pavilion", function (inst)
-        inst.components.container.widgetbuttoninfo.fn = TaxuePatch.SellPavilionSellItems
+        local old = inst.components.container.widgetbuttoninfo.fn
+        inst.components.container.widgetbuttoninfo.fn = replaceFn("buffThings.sellPavilion", old, TaxuePatch.SellPavilionSellItems)
     end)
 end)
 --移除花盆碰撞
-addPatchFn("buffThings.flowerporPhysics", function ()
+addPatchFn("scripts/prefabs/taxue_flowerpot.lua", "buffThings.flowerporPhysics", function ()
     local pots = {
         "taxue_flowerpot",           --蔬菜花盆
         "taxue_flowerpot_golden",    --黄金蔬菜花盆
@@ -900,7 +875,7 @@ addPatchFn("buffThings.flowerporPhysics", function ()
     end
 end)
 --法杖增强
-addPatchFn("buffThings.buffStaff", function ()
+addPatchFn("scripts/prefabs/taxue_staff.lua", "buffThings.buffStaff", function ()
     local function changeTool(inst, dig)
         if dig ~= nil then inst.dig = dig end
         local symbol = "swap_" .. inst.prefab .. (inst.dig and "_dig" or "")
@@ -927,28 +902,35 @@ addPatchFn("buffThings.buffStaff", function ()
         end
         SpawnPrefab("collapse_small").Transform:SetPosition(inst.Transform:GetWorldPosition())
     end
+    local getCfgFn = function (cfgkey)
+        return function () return cfg(cfgkey) end
+    end
     local staffs = {
-        blue_staff = { work_efficiency = cfg("buffThings.buffStaff.staffMult"), speed = cfg("buffThings.buffStaff.staffSpeed") },
-        forge_staff = { work_efficiency = cfg("buffThings.buffStaff.forgeStaffMult"), speed = cfg("buffThings.buffStaff.staffSpeed") },
-        colourful_staff = { speed = cfg("buffThings.buffStaff.colorfulStaffSpeed") },
+        blue_staff = { work_efficiency = getCfgFn("buffThings.buffStaff.staffMult"), speed = getCfgFn("buffThings.buffStaff.staffSpeed") },
+        forge_staff = { work_efficiency = getCfgFn("buffThings.buffStaff.forgeStaffMult"), speed = getCfgFn("buffThings.buffStaff.staffSpeed") },
+        colourful_staff = { speed = getCfgFn("buffThings.buffStaff.colorfulStaffSpeed") },
     }
     for name, data in pairs(staffs) do
         AddPrefabPostInit(name, function (inst)
-            if data.work_efficiency then
-                inst.work_efficiency = data.work_efficiency
-                inst.components.useableitem:SetOnUseFn(function (inst)
-                    if inst.components.tool then
-                        changeTool(inst, not inst.dig)
+            if data.work_efficiency() then
+                inst.work_efficiency = data.work_efficiency()
+                inst.components.useableitem:SetOnUseFn(function (inst_)
+                    if inst_.components.tool then
+                        inst.work_efficiency = data.work_efficiency()
+                        if data.speed() then
+                            inst.components.equippable.walkspeedmult = data.speed()
+                        end
+                        changeTool(inst_, not inst_.dig)
                     end
                 end)
                 local onload = inst.OnLoad
-                inst.OnLoad = function (inst, data)
-                    onload(inst, data)
-                    changeTool(inst)
+                inst.OnLoad = function (inst_, data_)
+                    onload(inst_, data_)
+                    changeTool(inst_)
                 end
             end
-            if data.speed then
-                inst.components.equippable.walkspeedmult = data.speed
+            if data.speed() then
+                inst.components.equippable.walkspeedmult = data.speed()
             end
         end)
     end
@@ -966,11 +948,11 @@ addPatch("scripts/prefabs/taxue_greenamulet.lua", "buffThings.greenAmulet", {
 --宝藏去质黑名单
 addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", {
     {
-        index = 1152,
+        index = 1160,
         content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
     },
     {
-        index = 1160,
+        index = 1168,
         content = [[
                                 local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
                                 if not table.contains(blackList, str) then
@@ -979,11 +961,11 @@ addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", 
         ]]
     },
     {
-        index = 1199,
+        index = 1207,
         content = [[                    if v and v:IsValid() and v:HasTag("taxue_treasure") then]]
     },
     {
-        index = 1207,
+        index = 1215,
         content = [[
                                 local blackList = TaxuePatch.config:GetSelectdValues("buffThings.treasureDeprotonation")
                                 if not table.contains(blackList, str) then
@@ -993,7 +975,7 @@ addPatchs("scripts/prefabs/taxue_book.lua", "buffThings.treasureDeprotonation", 
     },
 })
 --五彩宝石加速合成
-addPatchFn("buffThings.colorfulGemCraft", function ()
+addPatchFn(nil, "buffThings.colorfulGemCraft", function ()
     local function finish(comp)
         return function (self, doer, target)
             local task = target.components[comp].task
@@ -1035,7 +1017,7 @@ addPatchFn("buffThings.colorfulGemCraft", function ()
     end)
 end)
 --增强青龙aoe
-addPatchFn("buffThings.falchionAoe", function ()
+addPatchFn("scripts/prefabs/taxue_weapon.lua", "buffThings.falchionAoe", function ()
     local function getTargets(target, range, attacker)
         local test = function (ent)
             return ent ~= target and attacker.components.combat:CanTarget(ent) and not attacker.components.combat:IsAlly(ent)
@@ -1043,14 +1025,17 @@ addPatchFn("buffThings.falchionAoe", function ()
         return TaxuePatch.GetNearByEntities(target, range, test, nil, { "NOBLOCK", "player", "FX", "INLIMBO", "DECOR" })
     end
     AddPrefabPostInit("falchion_sword", function (sword)
-        sword.components.weapon:SetOnAttack(function (inst, attacker, target)
+        local old = sword.components.weapon.onattack
+        local new = function (inst, attacker, target)
             for _, ent in pairs(getTargets(target, 3, attacker)) do
                 ent.components.combat:GetAttacked(attacker, attacker.components.combat:CalcDamage(ent, inst) * 0.4, inst)
             end
-        end)
+        end
+        sword.components.weapon:SetOnAttack(replaceFn("buffThings.falchionAoe", old, new))
     end)
     AddPrefabPostInit("black_falchion_sword", function (sword)
-        sword.components.weapon:SetOnAttack(function (inst, attacker, target)
+        local old = sword.components.weapon.onattack
+        local new = function (inst, attacker, target)
             TaxueFx(target, "laser_explosion", 1, { 0, 104, 139 })
             inst.components.fueled:DoDelta(-1)
             if inst.components.fueled:IsEmpty() then
@@ -1061,11 +1046,12 @@ addPatchFn("buffThings.falchionAoe", function ()
             for _, ent in pairs(getTargets(target, range, attacker)) do
                 ent.components.combat:GetAttacked(attacker, attacker.components.combat:CalcDamage(ent, inst) * dmg_percent, inst)
             end
-        end)
+        end
+        sword.components.weapon:SetOnAttack(replaceFn("buffThings.falchionAoe", old, new))
     end)
 end)
 --金砖取出
-addPatchFn("buffThings.goldBrick", function ()
+addPatchFn("scripts/prefabs/taxue_other_items.lua", "buffThings.goldBrick", function ()
     AddPrefabPostInit("gold_brick", function (_inst)
         _inst:AddComponent("useableitem")
         _inst.components.useableitem:SetCanInteractFn(function (inst) return inst.taxue_coin_value > 3 end)
@@ -1083,14 +1069,14 @@ addPatchFn("buffThings.goldBrick", function ()
 end)
 --龙猫荧光果换便便
 addPatch("scripts/public_method_taxue.lua", "buffThings.totoroPoop", {
-    index = 481,
+    index = 510,
     type = "add",
     content = [[    Refine("lightbulb","poop",1)]]
 })
 --#endregion
 
 --#region 打包系统
-addPatchFn("package", function ()
+addPatchFn("scripts/prefabs/taxue_bundle.lua", "package", function ()
     AddPrefabPostInit("super_package", function (inst)
         local dataItems = {
             isPatched = true,
@@ -1219,15 +1205,15 @@ if taxueEnabled and cfg("autoAmulet") then
     AddPlayerPostInit(function (player)
         if player.prefab == "taxue" then
             Recipe("taxue_ultimate_armor_auto_amulet",
-                {
-                    Ingredient("chest_essence", 5, "images/inventoryimages/chest_essence.xml"),
-                    Ingredient("thulecite", 10),
-                    Ingredient("greengem", 5)
-                },
-                RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
+                   {
+                       Ingredient("chest_essence", 5, "images/inventoryimages/chest_essence.xml"),
+                       Ingredient("thulecite", 10),
+                       Ingredient("greengem", 5)
+                   },
+                   RECIPETABS.TAXUE_TAB, TECH.SCIENCE_TWO).atlas = "images/inventoryimages/taxue_ultimate_armor_auto_amulet.xml"
         end
     end)
-    addPatch("scripts/prefabs/taxue_equipment.lua", nil, { index = 115 })
+    addPatch("scripts/prefabs/taxue_equipment.lua", nil, { index = 118 })
 end
 --#endregion
 
@@ -1240,6 +1226,14 @@ end
 
 --开始patch
 if taxueLoaded then
+    local debug = false
+    if not debug then
+        for path, data in pairs(PATCHS) do
+            if data.mode ~= "overwrite" and data.lines and not next(data.lines) then
+                PATCHS[path] = nil
+            end
+        end
+    end
     local patchEnable = cfg("patchEnable")
     ModPatchLib:PatchAll(not patchEnable)
 
@@ -1544,25 +1538,25 @@ end)
 
 --#region 修改useitem
 AddStategraphState("wilson",
-    State {
-        name = "useitem",
-        onenter = function (inst)
-            inst.components.locomotor:Stop()
-            inst.AnimState:PlayAnimation("give")
-        end,
+                   State {
+                       name = "useitem",
+                       onenter = function (inst)
+                           inst.components.locomotor:Stop()
+                           inst.AnimState:PlayAnimation("give")
+                       end,
 
-        timeline =
-        {
-            TimeEvent(4 * FRAMES, function (inst)
-                inst:PerformBufferedAction()
-            end),
-        },
+                       timeline =
+                       {
+                           TimeEvent(4 * FRAMES, function (inst)
+                               inst:PerformBufferedAction()
+                           end),
+                       },
 
-        events =
-        {
-            EventHandler("animover", function (inst) inst.sg:GoToState("idle") end),
-        },
-    })
+                       events =
+                       {
+                           EventHandler("animover", function (inst) inst.sg:GoToState("idle") end),
+                       },
+                   })
 AddStategraphActionHandler("wilson", ActionHandler(ACTIONS.USEITEM, "useitem"))
 ACTIONS.USEITEM.priority = 3
 ACTIONS.USEITEM.rmb = true
@@ -1670,6 +1664,7 @@ AddSimPostInit(function (player)
         local taxueVersion = TUNING.TEST_STR:split(":")[2]
         taxueLevelText:SetString(oldSetString .. "  补丁版本:" .. modinfo.version)
         TaxuePatch.patchVersionMatchStr = taxueLevelText:AddChild(Text(BODYTEXTFONT, 60))
+        TaxuePatch.errorWarningStr = taxueLevelText:AddChild(Text(BODYTEXTFONT, 60))
 
         local color = { 1, 0, 0, 1 }
         local str = " 补丁版本不匹配,可能导致bug"
@@ -1680,8 +1675,12 @@ AddSimPostInit(function (player)
         TaxuePatch.patchVersionMatchStr:SetPosition(0, -50)
         TaxuePatch.patchVersionMatchStr:SetColour(color)
         TaxuePatch.patchVersionMatchStr:SetString(str)
+        TaxuePatch.errorWarningStr:SetPosition(0, -100)
+        TaxuePatch.errorWarningStr:SetColour(color)
+        TaxuePatch.errorWarningStr:SetString("如果出现报错,请现在模组群中反馈,而不是直接找梅老板!")
         player:DoTaskInTime(60, function ()
             TaxuePatch.patchVersionMatchStr:Kill()
+            TaxuePatch.errorWarningStr:Kill()
         end)
 
         --兼容4.0.2运势修改
