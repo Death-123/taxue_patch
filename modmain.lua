@@ -912,7 +912,7 @@ addPatchFn("scripts/prefabs/taxue_staff.lua", "buffThings.buffStaff", function (
     }
     for name, data in pairs(staffs) do
         AddPrefabPostInit(name, function (inst)
-            if data.work_efficiency() then
+            if data.work_efficiency then
                 inst.work_efficiency = data.work_efficiency()
                 inst.components.useableitem:SetOnUseFn(function (inst_)
                     if inst_.components.tool then

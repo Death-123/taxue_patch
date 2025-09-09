@@ -1950,7 +1950,8 @@ function TaxuePatch.TaxueIntoChestKey()
     end
     local has = false
     for _, chest in pairs(chests) do
-        has = has or TaxuePatch.IntoChest(chest, false, items)
+        local has_ = TaxuePatch.IntoChest(chest, false, items)
+        has = has or has_
     end
     TaXueSay("一键入箱！")
 end
