@@ -1219,7 +1219,8 @@ function TaxuePatch.TaxueOnKilled(player, target)
             lootdropper = temp.components.lootdropper
             target:Remove()
             player.super_fortune_num = 0
-            player.badluck_num[1] = 0
+            local equipment_colourful = player.components.inventory.equipslots[EQUIPSLOTS.EQUIPMENT_COLOURFUL]
+            player.badluck_num[1] = equipment_colourful and equipment_colourful.equip_value or 0
             TaxueOnKilled(GetPlayer(), target)
             TaXueOnupdate(GetPlayer())
             player.SoundEmitter:PlaySound("dontstarve/common/ghost_spawn")
@@ -1648,6 +1649,7 @@ function TaxuePatch.GetBankStr(player)
         { str = "贫困户", value = 300 },
         { str = "赤贫户", value = 100 },
         { str = "特困户", value = 0 },
+        { str = "负债累累", value = -99999999999 },
     }
     for _, entry in pairs(bankStrMap) do
         if player.bank_value > entry.value then

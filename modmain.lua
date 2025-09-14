@@ -83,7 +83,29 @@ for name, value in pairs(command) do
     GLOBAL[name] = value
 end
 
+AddClassPostConstruct("screens/modconfigurationscreen", function (self)
+    local old = self.ResetToDefaultValues
+    self.ResetToDefaultValues = function (self_)
+        if self_.dycOptions then
+            local function reset()
+                for i, v in pairs(self_.dycOptions) do
+                    self_.dycOptions[i].value = self_.dycOptions[i].default
+                end
+                self_:RefreshOptions()
+            end
 
+            if not self_:IsDefaultSettings() then
+                self_:ConfirmRevert(function ()
+                    TheFrontEnd:PopScreen()
+                    self_:MakeDirty()
+                    reset()
+                end)
+            end
+        else
+            old(self_)
+        end
+    end
+end)
 TheInput:AddKeyDownHandler(TaxuePatch.cfg("configKeybind"), function ()
     if not (GetPlayer() and GetPlayer().prefab == "taxue") or IsPaused() then return end
 
@@ -125,13 +147,13 @@ local PATCHS = {
     ["scripts/prefab_dsc_taxue.lua"] = { mode = "override" },
     --踏雪优化
     --空格收菜
-    ["scripts/game_changed_taxue.lua"] = { md5 = "ce5bed4b9d0c4a361ab698fbfa24d88a", lines = {} },
+    ["scripts/game_changed_taxue.lua"] = { md5 = "cb01f08c6f0f2b2602926c41c7393cdc", lines = {} },
     --修复难度未初始化的崩溃
     ["scripts/widgets/taxue_level.lua"] = { md5 = "2a17053442c7efb4cdb90b5a26505f02", lines = {} },
     ["scripts/prefabs/taxue_treasure.lua"] = { md5 = "5bdb6b4fe02b55d74439a3c72a5469ef", lines = {} },
     --按键排序
-    ["scripts/press_key_taxue.lua"] = { md5 = "2256df86b6b23355ca3a62ed39f9bc5e", lines = {} },
-    ["scripts/public_method_taxue.lua"] = { md5 = "28bce0a5b4d165a8c8b75876d992f757", lines = {} },
+    ["scripts/press_key_taxue.lua"] = { md5 = "c84802e1e2ed91f79a5f9ee536f8d56d", lines = {} },
+    ["scripts/public_method_taxue.lua"] = { md5 = "754625dfc7a12b3594905acd929656de", lines = {} },
     --提高石板路优先级
     ["modworldgenmain.lua"] = { md5 = nil, lines = {} },
     --种子机修复
@@ -149,7 +171,7 @@ local PATCHS = {
     ["scripts/prefabs/taxue_locked_chest.lua"] = { md5 = "a29ef00ba652a835ccdd79f7904bf1bf", lines = {} },
     ["scripts/prefabs/taxue_chest.lua"] = { md5 = "56aeb596b3d8d2387a15b7b463dc28cb", lines = {} },
     --宝石保存,夜明珠地上发光
-    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "d6e2b196b934b180c2cea0e9af3bac90", lines = {} },
+    ["scripts/prefabs/taxue_equipment.lua"] = { md5 = "a536ffd62fb1481c60129e0f8ef43fbd", lines = {} },
     ["scripts/prefabs/taxue_weapon.lua"] = { md5 = "1f4cb22ed04813ed100496e39634b4ea", lines = {} },
     --法杖增强
     ["scripts/prefabs/taxue_staff.lua"] = { md5 = "ce04691460a4f4899f38696f68964454", lines = {} },
@@ -158,7 +180,7 @@ local PATCHS = {
     --梅运券显示
     ["scripts/prefabs/taxue_other_items.lua"] = { md5 = "3f5639a432cef63784fd5e7c755e6fd4", lines = {} },
     --金钱就是力量
-    ["scripts/prefabs/taxue.lua"] = { md5 = "6a9e9bd8fec9f33ac08c3af83feab3a0", lines = {} },
+    ["scripts/prefabs/taxue.lua"] = { md5 = "8a3438bb246528901fa0cb2fd765c3df", lines = {} },
     --售货亭修改
     ["scripts/prefabs/taxue_sell_pavilion.lua"] = { md5 = "8de4fd20897b6c739e50abf4bb2a661d", lines = {} },
     ["scripts/prefabs/taxue_portable_sell_pavilion.lua"] = { md5 = "f3a02e1649d487cc15f4bfb26eeefdf5", lines = {} },
@@ -299,19 +321,19 @@ addPatchFn("scripts/public_method_taxue.lua", "taxueFix.betterDrop", function ()
 end)
 --空格收菜
 addPatchs("scripts/game_changed_taxue.lua", "taxueFix.taxueMoe", {
-    { index = 3130, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
+    { index = 3135, type = "add", content = "		bact.invobject = bact.doer.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)" },
 })
 --修复难度未初始化的崩溃
 addPatch("scripts/widgets/taxue_level.lua", "taxueFix.levelWidgetFix", { index = 33, type = "add", content = "    if not (GetPlayer().difficulty and GetPlayer().difficulty_low) then return end" })
 --按键排序
 addPatch("scripts/press_key_taxue.lua", "taxueFix.itemSort", {
-    index = 251,
+    index = 252,
     type = "add",
     content = [[                    if TaxuePatch.cfg("taxueFix.itemSort") then TaxuePatch.TaxueSortContainer(GetPlayer()) return end]]
 })
 --增强一键入箱
 addPatchs("scripts/press_key_taxue.lua", "taxueFix.intoChest", {
-    { index = 176, type = "add", content = [[if TaxuePatch.cfg("taxueFix.intoChest") then TaxuePatch.TaxueIntoChestKey() return end]] },
+    { index = 177, type = "add", content = [[if TaxuePatch.cfg("taxueFix.intoChest") then TaxuePatch.TaxueIntoChestKey() return end]] },
 })
 addPatchFn("scripts/press_key_taxue.lua", "taxueFix.intoChest", function ()
     AddGamePostInit(function ()
@@ -456,16 +478,6 @@ addPatch("modworldgenmain.lua", "taxueFix.cobbleroad", {
         grounds[#grounds] = cobbleroad
     ]]
 })
---修添加掉落崩溃
-addPatchFn(function ()
-    AddPrefabPostInitAny(function (inst)
-        if inst.taxue_loot then
-            if not inst.components.lootdropper then
-                inst.taxue_loot = function () end
-            end
-        end
-    end)
-end)
 --#endregion
 
 --#region 猫猫定位
@@ -701,6 +713,9 @@ addPatchFn("scripts/prefabs/taxue_book.lua", "oneClickUse.goldBook", function ()
             else
                 GetPlayer().components.talker:Say("周围没有合适的生物！")
             end
+            reader.components.sanity:DoDelta(-20)
+            reader.components.hunger:DoDelta(-20)
+            return true
         end
         inst.components.book.onread = replaceFn("oneClickUse.goldBook", old, new)
     end)
@@ -1660,9 +1675,11 @@ AddSimPostInit(function (player)
         --#endregion
         local taxueLevelText = player.HUD.controls.taxue_widget.text
         TaxuePatch.taxueLevelText = taxueLevelText
-        local oldSetString = taxueLevelText:GetString()
         local taxueVersion = TUNING.TEST_STR:split(":")[2]
-        taxueLevelText:SetString(oldSetString .. "  补丁版本:" .. modinfo.version)
+        if cfg("displaySetting.showVersion") then
+            local oldSetString = taxueLevelText:GetString()
+            taxueLevelText:SetString(oldSetString .. "  补丁版本:" .. modinfo.version)
+        end
         TaxuePatch.patchVersionMatchStr = taxueLevelText:AddChild(Text(BODYTEXTFONT, 60))
         TaxuePatch.errorWarningStr = taxueLevelText:AddChild(Text(BODYTEXTFONT, 60))
 

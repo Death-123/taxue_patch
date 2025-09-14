@@ -45,11 +45,17 @@ end
 ---@param position string
 ---@return string name
 local function GetEquipmentName(position)
-    local slots = { "equipment_purple", "equipment_red", "equipment_yellow", "equipment_blue", "equipment_green" }
-    local color = { "粉色", "红色", "黄色", "蓝色", "绿色" }
+    local slots = {
+        equipment_purple    = "粉色",
+        equipment_red       = "红色",
+        equipment_yellow    = "黄色",
+        equipment_blue      = "蓝色",
+        equipment_green     = "绿色",
+        equipment_colourful = "彩色"
+    }
     for k, v in ipairs(slots) do
         if position == v then
-            return color[k]
+            return v
         end
     end
     return "无效位置"
@@ -841,33 +847,34 @@ local function getItemInfo(target)
         local value = target.equip_value
         local sign = target.equip_sign
         local formatStrs = {
-            equipment_unforgettable      = "血量上限:%s", --刻骨铭心
-            equipment_baby_dragon        = "精神回复:%s/分钟", --幼龙
-            equipment_light_pearl        = "发光范围:%s", --夜明珠
-            equipment_nobel_faceblack    = "欧气值:%s%%", --诺贝尔脸黑奖
-            equipment_fast_sandclock     = "移速:%s%%", --迅捷沙漏
-            equipment_fire_scale         = "伤害:%s", --熔岩火鳞
-            equipment_golden_ring        = "金肉掉落率:%s%%", --黄金戒指
-            equipment_fire_horn          = "暴击率:%s%%", --熔岩火角
-            equipment_fire_claw          = "暴击伤害加成:%s倍", --熔岩火爪
-            equipment_magic_conch        = "变异率:%s%%", --魔法海螺
-            equipment_crown              = "攻速:%s%%", --皇冠
-            equipment_lockpick           = "钥匙掉率:%s%%", --撬锁器
-            equipment_clover             = "植物精华掉率:%s%%", --四叶草
-            equipment_sweetheart_hairpin = "魅力值:%s", --甜心发卡
-            equipment_crystal_hat        = "防水:%s%%", --黯晶礼帽
-            equipment_exp_book           = "额外经验值:%s", --经验秘籍
-            equipment_fire_tooth         = "真实伤害:%s", --熔岩火牙
-            equipment_sea_clover         = "海洋精华掉率:%s%%", --海洋四叶草
-            equipment_thieves_gloves     = "银梅币爆率:%s%%", --窃贼手套
-            equipment_snowflake          = "冰冻层数:%s层", --雪花
-            equipment_volcano_clover     = "火山精华掉率:%s%%", --火山四叶草
-            equipment_threecolour_clover = "精华掉率:%s%%", --三色四叶草
-            equipment_lollipop           = "孵化蛋掉率:%s%%", --波板糖
-            equipment_pearl_mussel       = "珍珠精华掉率:%s%%", --珍珠蚌
-            equipment_loaded_dice        = "灌铅包裹掉率:%s%%", --灌铅骰子
-            equipment_colourful_windmill = "特殊奖励掉率:%s%%", --炫彩风车
-            equipment_perd_tail_feather  = "火鸡精华掉率:%s%%", --火鸡尾羽
+            equipment_unforgettable        = "血量上限:%s", --刻骨铭心
+            equipment_baby_dragon          = "精神回复:%s/分钟", --幼龙
+            equipment_light_pearl          = "发光范围:%s", --夜明珠
+            equipment_nobel_faceblack      = "欧气值:%s%%", --诺贝尔脸黑奖
+            equipment_fast_sandclock       = "移速:%s%%", --迅捷沙漏
+            equipment_fire_scale           = "伤害:%s", --熔岩火鳞
+            equipment_golden_ring          = "金肉掉落率:%s%%", --黄金戒指
+            equipment_fire_horn            = "暴击率:%s%%", --熔岩火角
+            equipment_fire_claw            = "暴击伤害加成:%s倍", --熔岩火爪
+            equipment_magic_conch          = "变异率:%s%%", --魔法海螺
+            equipment_crown                = "攻速:%s%%", --皇冠
+            equipment_lockpick             = "钥匙掉率:%s%%", --撬锁器
+            equipment_clover               = "植物精华掉率:%s%%", --四叶草
+            equipment_sweetheart_hairpin   = "魅力值:%s", --甜心发卡
+            equipment_crystal_hat          = "防水:%s%%", --黯晶礼帽
+            equipment_exp_book             = "额外经验值:%s", --经验秘籍
+            equipment_fire_tooth           = "真实伤害:%s", --熔岩火牙
+            equipment_sea_clover           = "海洋精华掉率:%s%%", --海洋四叶草
+            equipment_thieves_gloves       = "银梅币爆率:%s%%", --窃贼手套
+            equipment_snowflake            = "冰冻层数:%s层", --雪花
+            equipment_volcano_clover       = "火山精华掉率:%s%%", --火山四叶草
+            equipment_threecolour_clover   = "精华掉率:%s%%", --三色四叶草
+            equipment_lollipop             = "孵化蛋掉率:%s%%", --波板糖
+            equipment_pearl_mussel         = "珍珠精华掉率:%s%%", --珍珠蚌
+            equipment_loaded_dice          = "灌铅包裹掉率:%s%%", --灌铅骰子
+            equipment_colourful_windmill   = "特殊奖励掉率:%s%%", --炫彩风车
+            equipment_perd_tail_feather    = "火鸡精华掉率:%s%%", --火鸡尾羽
+            equipment_colourful_lucky_star = "运势加成:%s", --幸运星
         }
         local formatStr = formatStrs[sign]
         if formatStr then

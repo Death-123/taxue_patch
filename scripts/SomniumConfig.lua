@@ -461,6 +461,11 @@ local configs = {
         type = "forceEnable",
         subConfigs = {
             {
+                id = "showVersion",
+                name = "显示补丁版本",
+                description = "在踏雪版本后显示当前补丁版本",
+            },
+            {
                 id = "desColor",
                 name = "描述文字颜色",
                 description = "物品上方显示或信息面板的文字颜色",
@@ -1039,12 +1044,12 @@ end
 ---@return boolean isDefault 是否使用默认值
 function Config:GetValue(key, skipForce)
     local configEntry = self:Get(key)
-    if not configEntry then return nil, false end
-    local value, isDefault = nil, false
+    if not configEntry then return nil, true end
+    local value, isDefault = nil, (configEntry.value == nil)
     if not skipForce and configEntry.forceDisabled then
-        return false, false
+        return false, true
     elseif configEntry.value ~= nil then
-        value = configEntry.value
+        value, isDefault = configEntry.value, false
     elseif configEntry.default ~= nil then
         value, isDefault = configEntry:GetDefault(), true
     else

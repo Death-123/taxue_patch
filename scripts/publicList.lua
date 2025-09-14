@@ -88,31 +88,32 @@ ItemTypeMap = {
         "red_core_gem",
     },
     equipment = {
-        "equipment_unforgettable",      --刻骨铭心
-        "equipment_baby_dragon",        --幼龙
-        "equipment_light_pearl",        --夜明珠
-        "equipment_nobel_faceblack",    --诺贝尔脸黑奖
-        "equipment_fast_sandclock",     --迅捷沙漏
-        "equipment_fire_scale",         --熔岩火鳞
-        "equipment_golden_ring",        --黄金戒指
-        "equipment_fire_horn",          --熔岩火角
-        "equipment_fire_claw",          --熔岩火爪
-        "equipment_crown",              --皇冠
-        "equipment_lockpick",           --撬锁器
-        "equipment_magic_conch",        --魔法海螺
-        "equipment_clover",             --四叶草
-        "equipment_sweetheart_hairpin", --发卡
-        "equipment_crystal_hat",        --礼帽
-        "equipment_exp_book",           --经验书
-        "equipment_fire_tooth",         --火牙
-        "equipment_sea_clover",         --海洋四叶草
-        "equipment_thieves_gloves",     --窃贼手套
-        "equipment_snowflake",          --雪花
-        "equipment_volcano_clover",     --火山四叶草
-        "equipment_lollipop",           --波板糖
-        "equipment_pearl_mussel",       --珍珠蚌
-        "equipment_loaded_dice",        --灌铅骰子
-        "equipment_perd_tail_feather",  --火鸡尾羽
+        "equipment_unforgettable",       --刻骨铭心
+        "equipment_baby_dragon",         --幼龙
+        "equipment_light_pearl",         --夜明珠
+        "equipment_nobel_faceblack",     --诺贝尔脸黑奖
+        "equipment_fast_sandclock",      --迅捷沙漏
+        "equipment_fire_scale",          --熔岩火鳞
+        "equipment_golden_ring",         --黄金戒指
+        "equipment_fire_horn",           --熔岩火角
+        "equipment_fire_claw",           --熔岩火爪
+        "equipment_crown",               --皇冠
+        "equipment_lockpick",            --撬锁器
+        "equipment_magic_conch",         --魔法海螺
+        "equipment_clover",              --四叶草
+        "equipment_sweetheart_hairpin",  --发卡
+        "equipment_crystal_hat",         --礼帽
+        "equipment_exp_book",            --经验书
+        "equipment_fire_tooth",          --火牙
+        "equipment_sea_clover",          --海洋四叶草
+        "equipment_thieves_gloves",      --窃贼手套
+        "equipment_snowflake",           --雪花
+        "equipment_volcano_clover",      --火山四叶草
+        "equipment_lollipop",            --波板糖
+        "equipment_pearl_mussel",        --珍珠蚌
+        "equipment_loaded_dice",         --灌铅骰子
+        "equipment_perd_tail_feather",   --火鸡尾羽
+        "equipment_colourful_lucky_star" --幸运星
     },
     my_ticket = {
         "interest_ticket",              --利息券
@@ -289,6 +290,7 @@ ItemTypeMap = {
         "surprised_sword",    --惊喜之刃
         "golden_bomb",        --黄金炸弹
         "gem_bomb",           --宝石炸弹
+        "egg_bomb",           --孵化蛋炸弹
         "cave_regenerator",   --遗迹之种
     },
     ruins = {
